@@ -8,16 +8,18 @@ interface CardProps {
   className?: string;
   onClick?: () => void;
   hover?: boolean;
+  style?: React.CSSProperties;
 }
 
-/** Asgard-style elevated surface card */
-export function Card({ children, className, onClick, hover = false }: CardProps) {
+/** Asgard-style white card on light bg — raised frosted shadow, rounded-sm */
+export function Card({ children, className, onClick, hover = false, style }: CardProps) {
   return (
     <div
       onClick={onClick}
+      style={style}
       className={cn(
-        'bg-[#1A2332] border border-white/8 rounded-lg p-4',
-        hover && 'hover:border-white/20 transition-colors duration-200 cursor-pointer',
+        'bg-white rounded-sm overflow-hidden raised-frosted',
+        hover && 'cursor-pointer active:scale-[0.98] transition-all duration-150 ease-in-out',
         onClick && 'cursor-pointer',
         className
       )}
@@ -27,10 +29,10 @@ export function Card({ children, className, onClick, hover = false }: CardProps)
   );
 }
 
-/** Panel variant — slightly darker for dense data areas */
-export function Panel({ children, className }: { children: ReactNode; className?: string }) {
+/** Card footer tint section */
+export function CardFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('bg-[#151C28] border border-white/8 rounded-lg p-4', className)}>
+    <div className={cn('bg-frost-tint px-3.5 py-2.5', className)}>
       {children}
     </div>
   );

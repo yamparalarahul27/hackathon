@@ -1,78 +1,55 @@
 'use client';
 
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, Wallet, BarChart3, Layers } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Card, CardFooter } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
 import { StatusDot } from '@/components/ui/StatusDot';
 import { MOCK_KAMINO_POSITIONS, MOCK_PORTFOLIO_SUMMARY } from '@/lib/mockKaminoData';
 import { KaminoVaultPosition } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
-  return (
-    <Card>
-      <p className="label-section mb-2">{label}</p>
-      <p className={`data-lg ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-[#6B7280] mt-1">{sub}</p>}
-    </Card>
-  );
-}
-
-function PositionRow({ position, onClick }: { position: KaminoVaultPosition; onClick: () => void }) {
+function PositionCard({ position, index }: { position: KaminoVaultPosition; index: number }) {
   const pnl = position.currentValueUsd - position.depositValueUsd;
   const pnlPct = position.depositValueUsd > 0 ? (pnl / position.depositValueUsd) * 100 : 0;
   const positive = pnl >= 0;
 
   return (
-    <Card hover onClick={onClick}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          {/* Token pair icons */}
+    <Card hover className="animate-fade-up" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}>
+      <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
+        <div className="flex items-center gap-2">
           <div className="flex -space-x-1">
-            <div className="w-7 h-7 rounded-full bg-[#3B7DDD]/20 border border-white/12 flex items-center justify-center text-[10px] font-medium text-[#3B7DDD]">
+            <div className="w-6 h-6 rounded-full bg-[#19549b]/15 border border-[#19549b]/20 flex items-center justify-center text-[9px] font-medium text-[#19549b]">
               {position.tokenA.symbol.slice(0, 2)}
             </div>
-            <div className="w-7 h-7 rounded-full bg-[#10B981]/20 border border-white/12 flex items-center justify-center text-[10px] font-medium text-[#10B981]">
+            <div className="w-6 h-6 rounded-full bg-[#0fa87a]/15 border border-[#0fa87a]/20 flex items-center justify-center text-[9px] font-medium text-[#0fa87a]">
               {position.tokenB.symbol.slice(0, 2)}
             </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-white">
-              {position.tokenA.symbol}/{position.tokenB.symbol}
-            </p>
-            <p className="text-xs text-[#6B7280]">{position.vaultName}</p>
-          </div>
+          <span className="font-ibm-plex-sans text-lg font-medium tracking-tight text-[#11274d]">
+            {position.tokenA.symbol}/{position.tokenB.symbol}
+          </span>
         </div>
-        <StatusDot variant={positive ? 'success' : 'danger'} />
+        <div className="flex flex-col items-end gap-1">
+          <span className="font-ibm-plex-sans text-[10px] font-medium uppercase text-[#111113]/50">APY</span>
+          <span className="data-lg text-[#0fa87a]">{formatPercent(position.apy)}</span>
+        </div>
       </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <p className="text-[11px] text-[#6B7280] mb-0.5">Value</p>
-          <p className="data-md text-white">{formatUsd(position.currentValueUsd)}</p>
+      <CardFooter className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-ibm-plex-sans text-xs font-medium text-[#6a7282]">Value</span>
+          <span className="w-1 h-1 rounded-full bg-[#6a7282]" />
+          <span className="font-ibm-plex-sans text-xs font-medium text-[#212121]">{formatUsd(position.currentValueUsd)}</span>
         </div>
-        <div>
-          <p className="text-[11px] text-[#6B7280] mb-0.5">APY</p>
-          <p className="data-md text-[#10B981]">{formatPercent(position.apy)}</p>
-        </div>
-        <div>
-          <p className="text-[11px] text-[#6B7280] mb-0.5">P&L</p>
-          <p className={`data-md flex items-center gap-1 ${positive ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-            {positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        <div className="flex items-center gap-2">
+          <span className="font-ibm-plex-sans text-xs font-medium text-[#6a7282]">P&L</span>
+          <span className="w-1 h-1 rounded-full bg-[#6a7282]" />
+          <span className={`font-ibm-plex-sans text-xs font-medium flex items-center gap-0.5 ${positive ? 'text-[#0fa87a]' : 'text-[#ef4444]'}`}>
+            {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
             {positive ? '+' : ''}{formatPercent(pnlPct)}
-          </p>
+          </span>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/8">
-        <span className="text-[11px] text-[#6B7280]">
-          Yield: <span className="text-[#10B981]">+{formatUsd(position.yieldEarnedUsd)}</span>
-        </span>
-        <span className="text-[11px] text-[#6B7280]">
-          IL: <span className="text-[#F59E0B]">{position.impermanentLoss.toFixed(2)}%</span>
-        </span>
-      </div>
+      </CardFooter>
     </Card>
   );
 }
@@ -84,39 +61,47 @@ export function VaultDashboard() {
 
   const strategies = ['all', ...new Set(positions.map(p => p.strategy))];
   const filtered = filter === 'all' ? positions : positions.filter(p => p.strategy === filter);
-
   const totalPnl = summary.totalCurrentValueUsd - summary.totalDepositedUsd;
 
   return (
-    <div className="space-y-6">
-      {/* Demo banner */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-lg">
-        <StatusDot variant="warning" pulse={false} />
-        <span className="text-xs font-medium text-[#F59E0B]">Demo Mode — Showing sample vault data. Connect wallet for real positions.</span>
+    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-12 min-h-screen">
+      {/* Hero stats on dark */}
+      <div className="gradient-frost-hero -mx-4.5 lg:-mx-10 -mt-6 px-4.5 lg:px-10 pt-16 pb-6 mb-6 border-b border-white/20">
+        <div className="max-w-[1400px] mx-auto">
+          <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">Your Vault Portfolio</h1>
+          <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">Track yield, impermanent loss, and performance across Kamino vaults.</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Portfolio Value', value: formatUsd(summary.totalCurrentValueUsd), color: 'text-white' },
+              { label: 'Total Yield', value: `+${formatUsd(summary.totalYieldEarnedUsd)}`, color: 'text-[#7ee5c6]' },
+              { label: 'Net P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatUsd(totalPnl)}`, color: totalPnl >= 0 ? 'text-[#7ee5c6]' : 'text-[#ef4444]' },
+              { label: 'Avg APY', value: formatPercent(summary.weightedAvgApy), color: 'text-[#7ee5c6]' },
+            ].map(stat => (
+              <div key={stat.label}>
+                <p className="label-section mb-1">{stat.label}</p>
+                <p className={`data-lg ${stat.color}`}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Portfolio Value" value={formatUsd(summary.totalCurrentValueUsd)} sub={`${summary.totalPositions} positions`} color="text-white" />
-        <StatCard label="Total Yield" value={`+${formatUsd(summary.totalYieldEarnedUsd)}`} sub={`Avg ${formatPercent(summary.weightedAvgApy)} APY`} color="text-[#10B981]" />
-        <StatCard label="Net P&L" value={`${totalPnl >= 0 ? '+' : ''}${formatUsd(totalPnl)}`} sub={`IL: ${formatUsd(summary.totalImpermanentLossUsd)}`} color={totalPnl >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'} />
-        <StatCard label="Avg APY" value={formatPercent(summary.weightedAvgApy)} sub={summary.bestPerformingVault ? `Best: ${summary.bestPerformingVault}` : undefined} color="text-[#3B7DDD]" />
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2">
-        {strategies.map(s => (
-          <Pill key={s} active={filter === s} onClick={() => setFilter(s)}>
-            {s === 'all' ? 'All' : s.replace('-', ' ')}
-          </Pill>
-        ))}
-      </div>
-
-      {/* Positions grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(p => (
-          <PositionRow key={p.id} position={p} onClick={() => {}} />
-        ))}
+      {/* Content — LIGHT bg */}
+      <div className="max-w-[1400px] mx-auto">
+        <div className="flex flex-col gap-2 mb-4">
+          <h2 className="label-section-light">Your Positions</h2>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+            {strategies.map(s => (
+              <Pill key={s} active={filter === s} onClick={() => setFilter(s)}>
+                {s === 'all' ? 'All' : s.replace('-', ' ')}
+              </Pill>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((p, i) => <PositionCard key={p.id} position={p} index={i} />)}
+        </div>
+        {filtered.length === 0 && <div className="py-12 text-center text-[#6a7282] font-ibm-plex-sans text-sm">No positions found.</div>}
       </div>
     </div>
   );

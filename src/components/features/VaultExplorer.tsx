@@ -111,7 +111,7 @@ export function VaultExplorer() {
                 <td className="text-right py-4 px-3 hidden md:table-cell"><span className="data-sm text-[#6B7280]">{formatCompact(vault.volume24h)}</span></td>
                 <td className="text-right py-4 px-3 hidden md:table-cell"><span className="data-sm text-[#6B7280]">{formatCompact(vault.fees24h)}</span></td>
                 <td className="text-right py-4 pl-3">
-                  <Button variant="success" size="sm">Deposit</Button>
+                  <Button variant="execute" size="sm">Deposit</Button>
                 </td>
               </tr>
             ))}

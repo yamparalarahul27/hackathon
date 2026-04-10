@@ -1,148 +1,185 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ── Asgard Design System ────────────────────────────────────────── */
+/* ── Y-Vault Design System (Asgard-based) ────────────────────── */
+/* Split: dark header/hero + light content with dark cards */
 
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+/* Geist Mono from Google Fonts — hero headings */
 
+/* Geist Pixel Grid — financial numbers */
 @font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-family: 'Geist Pixel Grid';
+  src: url('/fonts/GeistPixel-Grid.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* ── Color Tokens ────────────────────────────────────────────────── */
+/* ── CSS Variables ────────────────────────────────────────────── */
 
 :root {
-  /* Backgrounds */
-  --bg-primary: #0F1521;
-  --bg-surface: #1A2332;
-  --bg-panel: #151C28;
-  --bg-bottom: #0B0F18;
+  /* Frost (blues) */
+  --frost-200: #f1f5f9;
+  --frost-300: #cbd5e1;
+  --frost-400: #19549b;
+  --frost-500: #11274d;
+  --frost-600: #091731;
+  --frost-700: #030f1a;
 
-  /* Accent */
-  --blue-primary: #3B7DDD;
-  --blue-hover: #2B6BC4;
-  --blue-subtle: rgba(59, 125, 221, 0.12);
+  /* Hela (neutrals) */
+  --hela-600: #4c4c5b;
+  --hela-750: #1d2836;
+  --hela-800: #061322;
+  --hela-900: #020e1a;
+
+  /* Loki (greens) */
+  --loki-100: #e5f7f2;
+  --loki-600: #0fa87a;
+  --loki-700: #157357;
 
   /* Semantic */
-  --green: #10B981;
-  --green-bright: #22C55E;
-  --red: #EF4444;
-  --red-soft: #F87171;
-  --amber: #F59E0B;
-  --teal: #0D9373;
-
-  /* Text */
-  --text-primary: #FFFFFF;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
-  --text-subtle: #4B5563;
-
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.12);
-  --border-active: rgba(255, 255, 255, 0.20);
+  --main-bg: #010a13;
+  --ink: #212121;
+  --muted: #6a7282;
+  --off-white: #eeeef0;
+  --true-black: #111113;
+  --green-main: #18df74;
+  --danger: #ef4444;
+  --warning: #f59e0b;
 }
 
 @theme inline {
-  --color-background: var(--bg-primary);
-  --color-foreground: var(--text-primary);
-  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-display: 'Satoshi', 'IBM Plex Sans', system-ui, sans-serif;
+  --color-background: var(--main-bg);
+  --color-foreground: var(--off-white);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
-/* ── Base Styles ─────────────────────────────────────────────────── */
+/* ── Base ─────────────────────────────────────────────────────── */
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--main-bg);
+  color: var(--off-white);
+  font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Utility Classes ─────────────────────────────────────────────── */
+/* ── Font Utilities ───────────────────────────────────────────── */
 
-.font-display {
-  font-family: 'Satoshi', 'IBM Plex Sans', system-ui, sans-serif;
-}
+.font-satoshi       { font-family: 'Geist Mono', 'IBM Plex Mono', monospace; }
+.font-ibm-plex-sans { font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif; }
+.font-instrument    { font-family: 'Instrument Sans', 'Inter', system-ui, sans-serif; }
 
-.font-body {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-}
-
-.font-data {
-  font-family: 'IBM Plex Mono', monospace;
-}
-
-/* Section labels — uppercase with wide tracking */
+/* Section label: uppercase, tiny, wide tracking, muted */
 .label-section {
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.4);
 }
 
-/* Financial data — large */
+/* Label on light bg */
+.label-section-light {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(17, 17, 19, 0.5);
+}
+
+/* Financial data — large (Geist Pixel Grid) */
 .data-lg {
-  font-family: 'IBM Plex Mono', monospace;
-  font-weight: 500;
-  font-size: 1.25rem;
-  letter-spacing: -0.01em;
+  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
+  font-weight: 400;
+  font-size: 1.125rem;
   line-height: 1.2;
 }
 
-/* Financial data — medium */
+/* Financial data — table values */
 .data-md {
-  font-family: 'IBM Plex Mono', monospace;
-  font-weight: 500;
+  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
+  font-weight: 400;
   font-size: 0.875rem;
   line-height: 1.2;
 }
 
 /* Financial data — small */
 .data-sm {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
   font-weight: 400;
   font-size: 0.75rem;
   line-height: 1.2;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── Card Shadows ─────────────────────────────────────────────── */
+
+.raised-frosted {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+.raised-frosted:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-light);
-  border-radius: 3px;
+.raised-frosted-active {
+  box-shadow: 0 2px 8px rgba(25, 84, 155, 0.25);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-active);
+.raised-frosted-tab {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
+/* ── Frost Tint (card footer bg) ──────────────────────────────── */
+
+.bg-frost-tint {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Border Thin ──────────────────────────────────────────────── */
+
+.border-b-thin {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Gradient Hero ────────────────────────────────────────────── */
+
+.gradient-frost-hero {
+  background: linear-gradient(180deg, #010a13 0%, #091731 50%, #0c1f3d 100%);
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--main-bg); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Frosted Icon Box ─────────────────────────────────────────── */
+
+.frosted-icon-box {
+  width: 2rem; height: 2rem; border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.frosted-icon-box svg { width: 1rem; height: 1rem; }
