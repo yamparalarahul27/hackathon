@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/Button';
 import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
 import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
+import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 
 type Step = 'select-vault' | 'enter-amount' | 'payment' | 'confirmation';
 type Method = 'fiat' | 'crypto';
 
 export function DepositFlow() {
+  const { walletAddress, connected, openWalletModal } = useWalletConnection();
   const [step, setStep] = useState<Step>('select-vault');
   const [method, setMethod] = useState<Method>('fiat');
   const [selectedVault, setSelectedVault] = useState<KaminoVaultInfo | null>(null);
@@ -172,8 +174,17 @@ export function DepositFlow() {
           {method === 'crypto' && (
             <Card className="text-center py-8">
               <Wallet size={24} className="text-[#6B7280] mx-auto mb-3" />
-              <p className="text-sm text-[#9CA3AF]">Connect your wallet and deposit USDC directly.</p>
-              <Button className="mt-4">Connect Wallet & Deposit</Button>
+              {connected ? (
+                <>
+                  <p className="text-sm text-[#9CA3AF]">Wallet connected: <span className="data-sm text-white">{walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}</span></p>
+                  <Button className="mt-4">Deposit USDC to Vault</Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-[#9CA3AF]">Connect your wallet to deposit crypto directly.</p>
+                  <Button className="mt-4" onClick={openWalletModal}>Connect Wallet</Button>
+                </>
+              )}
             </Card>
           )}
 
