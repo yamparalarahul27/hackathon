@@ -63,7 +63,7 @@ export function VaultExplorer() {
           <div className="flex gap-2 flex-wrap">
             {strategies.map(s => (
               <Pill key={s} active={strategyFilter === s} onClick={() => setStrategyFilter(s)}>
-                {s === 'all' ? 'All' : s.replace('-', ' ')}
+                {s === 'all' ? 'All' : s.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Pill>
             ))}
           </div>
@@ -95,7 +95,7 @@ export function VaultExplorer() {
                     </div>
                   </td>
                   <td className="text-right py-4 px-3">
-                    <span className="data-md text-[#10B981] flex items-center justify-end gap-1">
+                    <span className="data-md text-[#059669] flex items-center justify-end gap-1">
                       <TrendingUp size={12} />{formatPercent(vault.apy)}
                     </span>
                   </td>

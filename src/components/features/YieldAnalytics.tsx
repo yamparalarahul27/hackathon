@@ -51,7 +51,7 @@ export function YieldAnalytics({ positions }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4">
             <p className="label-section-light mb-1">Total Yield</p>
-            <p className="data-lg text-[#10B981]">+{formatUsd(totalYield)}</p>
+            <p className="data-lg text-[#059669]">+{formatUsd(totalYield)}</p>
           </Card>
           <Card className="p-4">
             <p className="label-section-light mb-1">Total IL</p>
@@ -59,7 +59,7 @@ export function YieldAnalytics({ positions }: Props) {
           </Card>
           <Card className="p-4">
             <p className="label-section-light mb-1">Net Return</p>
-            <p className={`data-lg ${netReturn >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+            <p className={`data-lg ${netReturn >= 0 ? 'text-[#059669]' : 'text-[#EF4444]'}`}>
               {netReturn >= 0 ? '+' : ''}{formatUsd(netReturn)}
             </p>
           </Card>
@@ -117,7 +117,7 @@ export function YieldAnalytics({ positions }: Props) {
                 <span className="text-sm text-[#334155]">{y.vaultName}</span>
               </div>
               <div className="flex items-center gap-6">
-                <span className="data-sm text-[#10B981]">+{formatUsd(y.yieldUsd)}</span>
+                <span className="data-sm text-[#059669]">+{formatUsd(y.yieldUsd)}</span>
                 <span className="data-sm text-[#6B7280]">{formatPercent(y.yieldPercent)} return</span>
                 <span className="data-sm text-[#4B5563] hidden sm:inline">{formatPercent(y.share)} of total</span>
               </div>

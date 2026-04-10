@@ -150,7 +150,7 @@ export function DepositFlow() {
                   <p className="text-xs text-[#6B7280]">{vault.tokenA.symbol}/{vault.tokenB.symbol} · {vault.strategy.replace('-', ' ')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="data-md text-[#10B981]">{formatPercent(vault.apy)} APY</p>
+                  <p className="data-md text-[#059669]">{formatPercent(vault.apy)} APY</p>
                   <p className="text-xs text-[#6B7280]">TVL: {vault.tvl >= 1e6 ? `$${(vault.tvl/1e6).toFixed(1)}M` : `$${(vault.tvl/1e3).toFixed(0)}K`}</p>
                 </div>
               </div>
@@ -165,7 +165,7 @@ export function DepositFlow() {
           <Card className="p-4">
             <p className="text-xs text-[#6B7280] mb-1">Selected Vault</p>
             <p className="text-sm font-semibold text-[#11274d]">{selectedVault.name}</p>
-            <p className="data-sm text-[#10B981]">{formatPercent(selectedVault.apy)} APY</p>
+            <p className="data-sm text-[#059669]">{formatPercent(selectedVault.apy)} APY</p>
           </Card>
 
           <div className="flex gap-2">
@@ -213,7 +213,7 @@ export function DepositFlow() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-[#6B7280]">Est. yearly yield</span>
-                    <span className="data-md text-[#10B981]">+{formatUsd(estimatedYearlyYield)}</span>
+                    <span className="data-md text-[#059669]">+{formatUsd(estimatedYearlyYield)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#6B7280]">Payment</span>
@@ -349,7 +349,7 @@ export function DepositFlow() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#6B7280]">Price impact</span>
-                  <span className="data-sm text-[#10B981]">{swapQuote.priceImpactPct}%</span>
+                  <span className="data-sm text-[#059669]">{swapQuote.priceImpactPct}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#6B7280]">Slippage tolerance</span>
@@ -364,8 +364,8 @@ export function DepositFlow() {
 
             {swapComplete ? (
               <div className="flex items-center justify-center gap-2 py-3">
-                <CheckCircle size={16} className="text-[#10B981]" />
-                <span className="text-sm text-[#10B981]">Swap complete! Depositing to vault...</span>
+                <CheckCircle size={16} className="text-[#059669]" />
+                <span className="text-sm text-[#059669]">Swap complete! Depositing to vault...</span>
               </div>
             ) : (
               <Button
@@ -386,12 +386,12 @@ export function DepositFlow() {
       {/* Step 5: Confirmation */}
       {step === 'confirmation' && selectedVault && (
         <Card className="text-center py-8 space-y-4 px-4">
-          <CheckCircle size={48} className="text-[#10B981] mx-auto" />
+          <CheckCircle size={48} className="text-[#059669] mx-auto" />
           <h3 className="font-display font-bold text-xl text-[#11274d]">Deposit Successful!</h3>
           <div className="space-y-1">
             <p className="text-sm text-[#6B7280]">{estimatedUsdc.toFixed(2)} USDC deposited into</p>
             <p className="text-sm font-semibold text-[#3B7DDD]">{selectedVault.name}</p>
-            <p className="data-md text-[#10B981]">Earning {formatPercent(selectedVault.apy)} APY</p>
+            <p className="data-md text-[#059669]">Earning {formatPercent(selectedVault.apy)} APY</p>
             {swapTargetToken && (
               <p className="text-xs text-[#6B7280] flex items-center justify-center gap-1">
                 <Route size={12} /> Swapped via Jupiter for optimal routing

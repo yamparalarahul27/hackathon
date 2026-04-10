@@ -87,7 +87,7 @@ export function VaultDashboard() {
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
             {strategies.map(s => (
               <Pill key={s} active={filter === s} onClick={() => setFilter(s)}>
-                {s === 'all' ? 'All' : s.replace('-', ' ')}
+                {s === 'all' ? 'All' : s.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </Pill>
             ))}
           </div>
