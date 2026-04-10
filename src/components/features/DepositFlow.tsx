@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { CreditCard, Wallet, ArrowRight, CheckCircle, IndianRupee, DollarSign, Zap, Loader2, ExternalLink, Shield } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { CreditCard, Wallet, ArrowRight, CheckCircle, IndianRupee, DollarSign, Loader2, ExternalLink, Shield, Repeat, Route } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
 import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { MockJupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
 
-type Step = 'select-vault' | 'enter-amount' | 'payment' | 'confirmation';
+type Step = 'select-vault' | 'enter-amount' | 'payment' | 'swap' | 'confirmation';
 type Method = 'fiat' | 'crypto';
+
+const jupiterService = new MockJupiterSwapService();
 
 export function DepositFlow() {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
@@ -21,6 +24,9 @@ export function DepositFlow() {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const [privateMode, setPrivateMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [swapQuote, setSwapQuote] = useState<SwapQuote | null>(null);
+  const [swapLoading, setSwapLoading] = useState(false);
+  const [swapComplete, setSwapComplete] = useState(false);
 
   const vaults = MOCK_KAMINO_VAULTS.filter(v => v.status === 'active');
 
@@ -34,9 +40,59 @@ export function DepositFlow() {
     return estimatedUsdc * (selectedVault.apy / 100);
   }, [estimatedUsdc, selectedVault]);
 
-  const handleDeposit = () => {
+  // Determine if vault needs a swap (USDC → vault's tokenA)
+  const needsSwap = useMemo(() => {
+    if (!selectedVault) return false;
+    return selectedVault.tokenA.mint !== TOKEN_MINTS.USDC && selectedVault.tokenB.mint !== TOKEN_MINTS.USDC;
+  }, [selectedVault]);
+
+  const swapTargetToken = useMemo(() => {
+    if (!selectedVault) return null;
+    // If tokenA is not USDC, we need to swap USDC → tokenA
+    if (selectedVault.tokenA.mint !== TOKEN_MINTS.USDC) return selectedVault.tokenA;
+    // If tokenB is not USDC, we swap USDC → tokenB (for the non-USDC side)
+    if (selectedVault.tokenB.mint !== TOKEN_MINTS.USDC) return selectedVault.tokenB;
+    return null;
+  }, [selectedVault]);
+
+  // Fetch swap quote when entering swap step
+  useEffect(() => {
+    if (step === 'swap' && swapTargetToken && estimatedUsdc > 0) {
+      setSwapLoading(true);
+      setSwapQuote(null);
+      // Get quote for half the USDC (other half stays as USDC for the pair)
+      const halfUsdc = estimatedUsdc / 2;
+      jupiterService.getQuoteForUsdAmount(swapTargetToken.mint, halfUsdc)
+        .then(quote => setSwapQuote(quote))
+        .catch(err => console.error('Quote error:', err))
+        .finally(() => setSwapLoading(false));
+    }
+  }, [step, swapTargetToken, estimatedUsdc]);
+
+  const handlePaymentComplete = () => {
     setLoading(true);
-    setTimeout(() => { setLoading(false); setStep('confirmation'); }, 1500);
+    setTimeout(() => {
+      setLoading(false);
+      // If vault needs a swap, go to swap step. Otherwise skip to confirmation.
+      if (swapTargetToken) {
+        setStep('swap');
+      } else {
+        setStep('confirmation');
+      }
+    }, 1500);
+  };
+
+  const handleSwapExecute = async () => {
+    setSwapLoading(true);
+    try {
+      await jupiterService.executeSwap();
+      setSwapComplete(true);
+      setTimeout(() => setStep('confirmation'), 800);
+    } catch (err) {
+      console.error('Swap failed:', err);
+    } finally {
+      setSwapLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -44,11 +100,18 @@ export function DepositFlow() {
     setSelectedVault(null);
     setAmount('');
     setPrivateMode(false);
+    setSwapQuote(null);
+    setSwapComplete(false);
   };
 
-  // Progress indicator
-  const steps: Step[] = ['select-vault', 'enter-amount', 'payment', 'confirmation'];
+  const steps: Step[] = ['select-vault', 'enter-amount', 'payment', 'swap', 'confirmation'];
   const currentIdx = steps.indexOf(step);
+
+  // Format output amount from swap quote
+  const formatSwapOutput = (quote: SwapQuote) => {
+    const decimals = swapTargetToken?.decimals ?? 6;
+    return (Number(quote.outAmount) / (10 ** decimals)).toFixed(4);
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -59,19 +122,25 @@ export function DepositFlow() {
       </div>
 
       {/* Progress */}
-      <div className="flex items-center gap-2">
-        {steps.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-              i < currentIdx ? 'bg-[#10B981] text-white' :
-              i === currentIdx ? 'bg-[#3B7DDD] text-white' :
-              'bg-white/8 text-[#6B7280]'
-            }`}>
-              {i < currentIdx ? '✓' : i + 1}
+      <div className="flex items-center gap-1">
+        {steps.map((s, i) => {
+          const labels = ['Vault', 'Amount', 'Pay', 'Swap', 'Done'];
+          return (
+            <div key={s} className="flex items-center gap-1">
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                  i < currentIdx ? 'bg-[#10B981] text-white' :
+                  i === currentIdx ? 'bg-[#3B7DDD] text-white' :
+                  'bg-white/8 text-[#6B7280]'
+                }`}>
+                  {i < currentIdx ? '✓' : i + 1}
+                </div>
+                <span className="text-[10px] text-[#6B7280] hidden sm:block">{labels[i]}</span>
+              </div>
+              {i < 4 && <ArrowRight size={10} className="text-[#4B5563] mb-4 sm:mb-0" />}
             </div>
-            {i < 3 && <ArrowRight size={12} className="text-[#4B5563]" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step 1: Select Vault */}
@@ -104,7 +173,6 @@ export function DepositFlow() {
             <p className="data-sm text-[#10B981]">{formatPercent(selectedVault.apy)} APY</p>
           </Card>
 
-          {/* Method toggle */}
           <div className="flex gap-2">
             <Button variant={method === 'fiat' ? 'primary' : 'secondary'} className="flex-1" onClick={() => setMethod('fiat')}>
               <CreditCard size={14} /> Pay with Fiat
@@ -116,7 +184,6 @@ export function DepositFlow() {
 
           {method === 'fiat' && (
             <>
-              {/* Currency */}
               <div className="flex gap-2">
                 <Button variant={currency === 'INR' ? 'primary' : 'secondary'} size="sm" onClick={() => setCurrency('INR')}>
                   <IndianRupee size={12} /> INR
@@ -126,7 +193,6 @@ export function DepositFlow() {
                 </Button>
               </div>
 
-              {/* Amount input */}
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] font-data">{currency === 'INR' ? '₹' : '$'}</span>
                 <input
@@ -144,18 +210,24 @@ export function DepositFlow() {
                     <span className="text-[#6B7280]">You receive (est.)</span>
                     <span className="data-md text-white">{estimatedUsdc.toFixed(2)} USDC</span>
                   </div>
+                  {swapTargetToken && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#6B7280]">Auto-swap via Jupiter</span>
+                      <span className="data-sm text-[#3B7DDD]">USDC → {swapTargetToken.symbol} + USDC</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-[#6B7280]">Est. yearly yield</span>
                     <span className="data-md text-[#10B981]">+{formatUsd(estimatedYearlyYield)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Powered by</span>
+                    <span className="text-[#6B7280]">Payment</span>
                     <span className="text-[#3B7DDD] text-sm">Dodo Payments</span>
                   </div>
                 </Card>
               )}
 
-              {/* Privacy toggle (Umbra) */}
+              {/* Privacy toggle */}
               <div className="flex items-center justify-between px-4 py-3 bg-[#1A2332] border border-white/8 rounded-lg">
                 <div className="flex items-center gap-2">
                   <Shield size={14} className={privateMode ? 'text-[#0D9373]' : 'text-[#6B7280]'} />
@@ -199,14 +271,14 @@ export function DepositFlow() {
         </div>
       )}
 
-      {/* Step 3: Payment */}
+      {/* Step 3: Payment (Dodo) */}
       {step === 'payment' && selectedVault && (
         <div className="space-y-4">
           <Card className="text-center py-8 space-y-4">
             <CreditCard size={32} className="text-[#3B7DDD] mx-auto" />
             <div>
               <p className="data-lg text-white">{currency === 'INR' ? '₹' : '$'}{amount}</p>
-              <p className="text-sm text-[#6B7280] mt-1">→ {estimatedUsdc.toFixed(2)} USDC → {selectedVault.name}</p>
+              <p className="text-sm text-[#6B7280] mt-1">→ {estimatedUsdc.toFixed(2)} USDC{swapTargetToken ? ` → Jupiter Swap → ${selectedVault.name}` : ` → ${selectedVault.name}`}</p>
               {privateMode && (
                 <p className="text-xs text-[#0D9373] mt-1 flex items-center justify-center gap-1">
                   <Shield size={12} /> Private deposit via Umbra
@@ -220,7 +292,7 @@ export function DepositFlow() {
                 <span className="text-sm text-[#9CA3AF]">Processing payment...</span>
               </div>
             ) : (
-              <Button className="w-full" onClick={handleDeposit}>
+              <Button className="w-full" onClick={handlePaymentComplete}>
                 <ExternalLink size={14} /> Pay with Dodo Payments
               </Button>
             )}
@@ -230,7 +302,93 @@ export function DepositFlow() {
         </div>
       )}
 
-      {/* Step 4: Confirmation */}
+      {/* Step 4: Jupiter Swap */}
+      {step === 'swap' && selectedVault && swapTargetToken && (
+        <div className="space-y-4">
+          <Card className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#3B7DDD]/10 flex items-center justify-center">
+                <Repeat size={20} className="text-[#3B7DDD]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Token Swap via Jupiter</p>
+                <p className="text-xs text-[#6B7280]">Best route across Solana DEXes</p>
+              </div>
+            </div>
+
+            {/* Swap visualization */}
+            <div className="flex items-center justify-between p-4 bg-[#151C28] rounded-lg">
+              <div className="text-center">
+                <p className="text-xs text-[#6B7280] mb-1">From</p>
+                <p className="data-md text-white">{(estimatedUsdc / 2).toFixed(2)}</p>
+                <p className="text-xs text-[#9CA3AF]">USDC</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Route size={16} className="text-[#3B7DDD]" />
+                <span className="text-[10px] text-[#6B7280]">Jupiter</span>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-[#6B7280] mb-1">To</p>
+                <p className="data-md text-white">
+                  {swapQuote ? formatSwapOutput(swapQuote) : '—'}
+                </p>
+                <p className="text-xs text-[#9CA3AF]">{swapTargetToken.symbol}</p>
+              </div>
+            </div>
+
+            {/* Quote details */}
+            {swapLoading && (
+              <div className="flex items-center justify-center gap-2 py-3">
+                <Loader2 size={14} className="text-[#3B7DDD] animate-spin" />
+                <span className="text-sm text-[#9CA3AF]">Fetching best route...</span>
+              </div>
+            )}
+
+            {swapQuote && !swapLoading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Route</span>
+                  <span className="text-xs text-[#9CA3AF]">
+                    {swapQuote.routePlan.map(r => r.swapInfo.label).join(' → ')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Price impact</span>
+                  <span className="data-sm text-[#10B981]">{swapQuote.priceImpactPct}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Slippage tolerance</span>
+                  <span className="data-sm text-[#9CA3AF]">{swapQuote.slippageBps / 100}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Remaining USDC (for pair)</span>
+                  <span className="data-sm text-white">{(estimatedUsdc / 2).toFixed(2)} USDC</span>
+                </div>
+              </div>
+            )}
+
+            {swapComplete ? (
+              <div className="flex items-center justify-center gap-2 py-3">
+                <CheckCircle size={16} className="text-[#10B981]" />
+                <span className="text-sm text-[#10B981]">Swap complete! Depositing to vault...</span>
+              </div>
+            ) : (
+              <Button
+                className="w-full"
+                disabled={!swapQuote || swapLoading}
+                onClick={handleSwapExecute}
+              >
+                {swapLoading ? <Loader2 size={14} className="animate-spin" /> : <Repeat size={14} />}
+                {swapLoading ? 'Swapping...' : `Swap USDC → ${swapTargetToken.symbol}`}
+              </Button>
+            )}
+          </Card>
+
+          <Button variant="secondary" onClick={() => setStep('payment')}>Back</Button>
+        </div>
+      )}
+
+      {/* Step 5: Confirmation */}
       {step === 'confirmation' && selectedVault && (
         <Card className="text-center py-8 space-y-4">
           <CheckCircle size={48} className="text-[#10B981] mx-auto" />
@@ -239,7 +397,16 @@ export function DepositFlow() {
             <p className="text-sm text-[#9CA3AF]">{estimatedUsdc.toFixed(2)} USDC deposited into</p>
             <p className="text-sm font-semibold text-[#3B7DDD]">{selectedVault.name}</p>
             <p className="data-md text-[#10B981]">Earning {formatPercent(selectedVault.apy)} APY</p>
-            {privateMode && <p className="text-xs text-[#0D9373] flex items-center justify-center gap-1"><Shield size={12} /> Shielded via Umbra</p>}
+            {swapTargetToken && (
+              <p className="text-xs text-[#9CA3AF] flex items-center justify-center gap-1">
+                <Route size={12} /> Swapped via Jupiter for optimal routing
+              </p>
+            )}
+            {privateMode && (
+              <p className="text-xs text-[#0D9373] flex items-center justify-center gap-1">
+                <Shield size={12} /> Shielded via Umbra
+              </p>
+            )}
           </div>
           <Button onClick={handleReset}>Make Another Deposit</Button>
         </Card>
