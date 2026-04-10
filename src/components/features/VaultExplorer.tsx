@@ -90,7 +90,7 @@ export function VaultExplorer() {
                       <TokenPairIcons tokenA={vault.tokenA} tokenB={vault.tokenB} />
                       <div>
                         <p className="text-sm font-medium text-[#11274d]">{vault.name}</p>
-                        <p className="text-xs text-[#6B7280]">{vault.strategy.replace('-', ' ')}{vault.curator ? ` · ${vault.curator}` : ''}</p>
+                        <p className="text-xs text-[#6B7280]">{vault.strategy.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}{vault.curator ? ` · ${vault.curator}` : ''}</p>
                       </div>
                     </div>
                   </td>

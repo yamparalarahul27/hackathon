@@ -147,7 +147,7 @@ export function DepositFlow() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#11274d]">{vault.name}</p>
-                  <p className="text-xs text-[#6B7280]">{vault.tokenA.symbol}/{vault.tokenB.symbol} · {vault.strategy.replace('-', ' ')}</p>
+                  <p className="text-xs text-[#6B7280]">{vault.tokenA.symbol}/{vault.tokenB.symbol} · {vault.strategy.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}</p>
                 </div>
                 <div className="text-right">
                   <p className="data-md text-[#059669]">{formatPercent(vault.apy)} APY</p>
