@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardFooter } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
 import { StatusDot } from '@/components/ui/StatusDot';
+import { TokenPairIcons } from '@/components/ui/TokenIcon';
 import { MOCK_KAMINO_POSITIONS, MOCK_PORTFOLIO_SUMMARY } from '@/lib/mockKaminoData';
 import { KaminoVaultPosition } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
@@ -18,14 +19,7 @@ function PositionCard({ position, index }: { position: KaminoVaultPosition; inde
     <Card hover className="animate-fade-up" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}>
       <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
         <div className="flex items-center gap-2">
-          <div className="flex -space-x-1">
-            <div className="w-6 h-6 rounded-full bg-[#19549b]/15 border border-[#19549b]/20 flex items-center justify-center text-[9px] font-medium text-[#19549b]">
-              {position.tokenA.symbol.slice(0, 2)}
-            </div>
-            <div className="w-6 h-6 rounded-full bg-[#0fa87a]/15 border border-[#0fa87a]/20 flex items-center justify-center text-[9px] font-medium text-[#0fa87a]">
-              {position.tokenB.symbol.slice(0, 2)}
-            </div>
-          </div>
+          <TokenPairIcons tokenA={position.tokenA} tokenB={position.tokenB} />
           <span className="font-ibm-plex-sans text-lg font-medium tracking-tight text-[#11274d]">
             {position.tokenA.symbol}/{position.tokenB.symbol}
           </span>
@@ -65,8 +59,8 @@ export function VaultDashboard() {
 
   return (
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-12 min-h-screen">
-      {/* Hero stats on dark */}
-      <div className="gradient-frost-hero -mx-4.5 lg:-mx-10 -mt-6 px-4.5 lg:px-10 pt-16 pb-6 mb-6 border-b border-white/20">
+      {/* Hero stats on dark — full viewport width */}
+      <div className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)' }}>
         <div className="max-w-[1400px] mx-auto">
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">Your Vault Portfolio</h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">Track yield, impermanent loss, and performance across Kamino vaults.</p>

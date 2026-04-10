@@ -38,10 +38,10 @@
   --loki-700: #157357;
 
   /* Semantic */
-  --main-bg: #010a13;
+  --main-bg: #f1f5f9;
   --ink: #212121;
   --muted: #6a7282;
-  --off-white: #eeeef0;
+  --off-white: #11274d;
   --true-black: #111113;
   --green-main: #18df74;
   --danger: #ef4444;
@@ -59,7 +59,7 @@
 
 body {
   background: var(--main-bg);
-  color: var(--off-white);
+  color: var(--ink);
   font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -92,11 +92,18 @@ body {
 }
 
 /* Financial data — large (Geist Pixel Grid) */
+/* text-lg (18px) on mobile → text-3xl (30px) on desktop */
 .data-lg {
   font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
   font-weight: 400;
   font-size: 1.125rem;
   line-height: 1.2;
+}
+@media (min-width: 640px) {
+  .data-lg { font-size: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .data-lg { font-size: 1.875rem; }
 }
 
 /* Financial data — table values */
@@ -136,19 +143,19 @@ body {
 /* ── Frost Tint (card footer bg) ──────────────────────────────── */
 
 .bg-frost-tint {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(15, 23, 42, 0.03);
 }
 
 /* ── Border Thin ──────────────────────────────────────────────── */
 
 .border-b-thin {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(17, 17, 19, 0.08);
 }
 
 /* ── Gradient Hero ────────────────────────────────────────────── */
 
 .gradient-frost-hero {
-  background: linear-gradient(180deg, #010a13 0%, #091731 50%, #0c1f3d 100%);
+  background: linear-gradient(#000003, #000036 37.9%, #143f79 81.7%, #496d93 110%, #8cacc6 152.7%, #b6d0dc 196.7%, #fcffff 285%);
 }
 
 /* ── Animations ───────────────────────────────────────────────── */

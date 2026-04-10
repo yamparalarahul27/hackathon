@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
+import { preloadTokenIcons } from '@/lib/tokenIcons';
 import { BottomBar } from '@/components/layout/BottomBar';
 import { VaultDashboard } from '@/components/features/VaultDashboard';
 import { VaultExplorer } from '@/components/features/VaultExplorer';
@@ -16,8 +17,11 @@ export default function Home() {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
   const { positions } = useKaminoVaults(walletAddress);
 
+  // Preload token icons from Jupiter API on mount
+  useEffect(() => { preloadTokenIcons(); }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#010a13]">
+    <div className="min-h-screen flex flex-col bg-[#f1f5f9]">
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -26,8 +30,8 @@ export default function Home() {
         onConnectWallet={openWalletModal}
       />
 
-      <main className="flex-1 flex flex-col">
-        <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex-1">
+      <main className="flex-1 flex flex-col bg-[#f1f5f9]">
+        <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex-1 bg-[#f1f5f9]">
           {activeTab === 'vaults' && <VaultDashboard />}
           {activeTab === 'explore' && <VaultExplorer />}
           {activeTab === 'deposit' && <DepositFlow />}
