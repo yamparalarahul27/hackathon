@@ -546,6 +546,94 @@ All tracks are global except Dodo Payments (India-only). Rahul is based in India
 
 ---
 
+## Devnet Strategy (CRITICAL DECISION)
+
+### Problem
+Kamino and Jupiter are **mainnet-only**. On devnet we can't demo real vault deposits or real swaps. The user story feels fake with mock-only data.
+
+### Decision: Build Real Vault on Devnet (Option B)
+
+Use raw SPL Token operations + PDAs on devnet. No custom Rust/Anchor program needed — just TypeScript + @solana/web3.js.
+
+**What's REAL on devnet:**
+- Wallet connection (real Phantom/Solflare)
+- Devnet USDC transfers (real on-chain transactions)
+- Vault PDA (program-derived address — deterministic, on-chain)
+- Balance changes (wallet shows real USDC moving)
+- Deposit records (stored in Supabase with tx signatures)
+- Dodo Payments checkout (test mode — real checkout flow)
+- Live SOL price (Binance API)
+- Token icons (CDN)
+
+**What's simulated on devnet:**
+- Vault yield accrual (calculated off-chain, shown in UI)
+- Jupiter swap (MockJupiterSwapService — shows route/quote UI)
+- Umbra privacy (UI toggle only until SDK integrated)
+
+### How the Devnet Vault Works
+
+```
+1. User connects wallet (Phantom devnet)
+2. User selects vault + enters amount
+3. App creates a vault PDA: PDA = derivePDA(["y-vault", vault_id, user_wallet])
+4. App builds SPL Token transfer: user wallet → vault PDA (devnet USDC)
+5. User signs transaction in Phantom
+6. On-chain: USDC moves from user to PDA (verifiable on Solscan devnet)
+7. App stores deposit record in Supabase (tx_sig, amount, vault, timestamp)
+8. Dashboard shows real position with real on-chain balance
+9. Withdraw: reverse transfer from PDA → user wallet
+```
+
+### What Judges See (Real vs Simulated)
+
+| What | Real? | How |
+|------|-------|-----|
+| Wallet connects | **REAL** | Phantom/Solflare devnet |
+| USDC deposit tx | **REAL** | SPL Token transfer to PDA, visible on Solscan |
+| Balance changes | **REAL** | Wallet USDC decreases after deposit |
+| Deposit record | **REAL** | Supabase + tx signature proof |
+| Fiat checkout | **REAL** | Dodo Payments test mode |
+| Vault yield | Simulated | Time-based calculation in UI |
+| Jupiter swap | Simulated | Mock service shows route/quote |
+| Privacy (Umbra) | UI only | Toggle visible, no real shielding yet |
+
+### Why This Works for Hackathon
+
+- Judges can verify transactions on Solscan devnet
+- Real wallet interaction = real UX demo
+- No dependency on third-party devnet deployments (Kamino, Jupiter)
+- We own the vault logic — no external protocol risk
+- Dodo Payments test mode works independently
+- Can upgrade to mainnet (real Kamino) post-hackathon
+
+### Implementation Plan
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Create VaultPDAService | 3-4 hrs | Derive PDAs, build deposit/withdraw txs using @solana/web3.js + SPL Token |
+| Create devnet USDC mint (or use existing) | 30 min | Find/create devnet USDC for testing |
+| Update DepositFlow to send real tx | 2-3 hrs | Replace mock with real wallet signing |
+| Store deposits in Supabase | 1-2 hrs | New table: vault_deposits (tx_sig, amount, vault, wallet, timestamp) |
+| Update VaultDashboard to show real positions | 2-3 hrs | Read from Supabase + on-chain PDA balances |
+| Yield simulation logic | 1 hr | Time-based APY calculation from deposit timestamp |
+| Withdraw flow | 2-3 hrs | Reverse transfer from PDA to user |
+| Dodo Payments test mode | 1 hr | Wire API key, test checkout end-to-end |
+
+**Total: ~15-18 hours of work**
+
+### What We Need
+
+```
+1. DODO_PAYMENTS_API_KEY     → dodopayments.com (test mode)
+2. DODO_VAULT_PRODUCT_ID     → Create product in Dodo dashboard
+3. NEXT_PUBLIC_HELIUS_RPC_URL → Helius devnet key (already have one)
+4. NEXT_PUBLIC_SUPABASE_URL   → Confirm still working
+5. NEXT_PUBLIC_SUPABASE_ANON_KEY → Confirm still working
+6. Devnet SOL for testing     → faucet.solana.com
+```
+
+---
+
 ## Demo Flow
 
 For hackathon judges (3-minute walkthrough):
