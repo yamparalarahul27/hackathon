@@ -18,6 +18,10 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Y-Vault — Fiat to DeFi Yield",
   description: "Pay with fiat. Earn DeFi yield. Track everything. Powered by Kamino on Solana.",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

@@ -14,11 +14,17 @@ import { Agentation } from 'agentation';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('vaults');
+  const [selectedVaultAddress, setSelectedVaultAddress] = useState<string | null>(null);
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
   const { positions } = useKaminoVaults(walletAddress);
 
   // Preload token icons from Jupiter API on mount
   useEffect(() => { preloadTokenIcons(); }, []);
+
+  const handleVaultSelect = (vaultAddress: string) => {
+    setSelectedVaultAddress(vaultAddress);
+    setActiveTab('deposit');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f1f5f9]">
@@ -32,9 +38,9 @@ export default function Home() {
 
       <main className="flex-1 flex flex-col bg-[#f1f5f9]">
         <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex-1 bg-[#f1f5f9]">
-          {activeTab === 'vaults' && <VaultDashboard />}
+          {activeTab === 'vaults' && <VaultDashboard onVaultSelect={handleVaultSelect} />}
           {activeTab === 'explore' && <VaultExplorer />}
-          {activeTab === 'deposit' && <DepositFlow />}
+          {activeTab === 'deposit' && <DepositFlow preSelectedVaultAddress={selectedVaultAddress} />}
           {activeTab === 'analytics' && <YieldAnalytics positions={positions} />}
         </div>
       </main>

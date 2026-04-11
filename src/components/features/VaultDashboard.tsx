@@ -10,13 +10,13 @@ import { MOCK_KAMINO_POSITIONS, MOCK_PORTFOLIO_SUMMARY } from '@/lib/mockKaminoD
 import { KaminoVaultPosition } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 
-function PositionCard({ position, index }: { position: KaminoVaultPosition; index: number }) {
+function PositionCard({ position, index, onClick }: { position: KaminoVaultPosition; index: number; onClick?: () => void }) {
   const pnl = position.currentValueUsd - position.depositValueUsd;
   const pnlPct = position.depositValueUsd > 0 ? (pnl / position.depositValueUsd) * 100 : 0;
   const positive = pnl >= 0;
 
   return (
-    <Card hover className="animate-fade-up" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}>
+    <Card hover onClick={onClick} className="animate-fade-up" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'backwards' }}>
       <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
         <div className="flex items-center gap-2">
           <TokenPairIcons tokenA={position.tokenA} tokenB={position.tokenB} />
@@ -48,7 +48,11 @@ function PositionCard({ position, index }: { position: KaminoVaultPosition; inde
   );
 }
 
-export function VaultDashboard() {
+interface VaultDashboardProps {
+  onVaultSelect?: (vaultAddress: string) => void;
+}
+
+export function VaultDashboard({ onVaultSelect }: VaultDashboardProps) {
   const positions = MOCK_KAMINO_POSITIONS;
   const summary = MOCK_PORTFOLIO_SUMMARY;
   const [filter, setFilter] = useState('all');
@@ -93,7 +97,7 @@ export function VaultDashboard() {
           </div>
         </div>
         <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((p, i) => <PositionCard key={p.id} position={p} index={i} />)}
+          {filtered.map((p, i) => <PositionCard key={p.id} position={p} index={i} onClick={() => onVaultSelect?.(p.vaultAddress)} />)}
         </div>
         {filtered.length === 0 && <div className="py-12 text-center text-[#6a7282] font-ibm-plex-sans text-sm">No positions found.</div>}
       </div>

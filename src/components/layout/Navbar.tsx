@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/Button';
-import { Bell, Menu, BarChart3 } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
+import Image from 'next/image';
 
 interface NavbarProps {
   activeTab: string;
@@ -25,10 +26,8 @@ export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress,
     <header className="sticky top-0 z-20 bg-[#f1f5f9]/95 backdrop-blur-lg border-b border-[#cbd5e1]">
       <div className="flex items-center justify-between h-12 px-4 lg:px-6 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-[#19549b] flex items-center justify-center">
-              <BarChart3 size={14} className="text-white" />
-            </div>
+          <div className="flex items-center gap-2">
+            <Image src="/logo.svg" alt="Y-Vault" width={24} height={24} />
             <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">Y-Vault</span>
           </div>
           <nav className="hidden lg:flex items-center gap-6">

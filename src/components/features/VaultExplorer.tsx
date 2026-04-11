@@ -34,7 +34,7 @@ export function VaultExplorer() {
   };
 
   const renderSortHead = (field: SortField, label: string) => (
-    <button onClick={() => toggleSort(field)} className={`flex items-center gap-1 label-section-light transition-colors ${sortField === field ? 'text-[#11274d]' : 'text-[#6B7280] hover:text-[#11274d]'}`}>
+    <button onClick={() => toggleSort(field)} className={`flex items-center gap-1 ml-auto label-section-light transition-colors ${sortField === field ? 'text-[#11274d]' : 'text-[#6B7280] hover:text-[#11274d]'}`}>
       {label} <ArrowUpDown size={10} />
     </button>
   );

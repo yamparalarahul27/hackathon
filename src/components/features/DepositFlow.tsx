@@ -15,11 +15,19 @@ type Method = 'fiat' | 'crypto';
 
 const jupiterService = new MockJupiterSwapService();
 
-export function DepositFlow() {
+interface DepositFlowProps {
+  preSelectedVaultAddress?: string | null;
+}
+
+export function DepositFlow({ preSelectedVaultAddress }: DepositFlowProps) {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
-  const [step, setStep] = useState<Step>('select-vault');
+  const vaults = MOCK_KAMINO_VAULTS.filter(v => v.status === 'active');
+
+  // If a vault is pre-selected, skip to step 2
+  const preVault = preSelectedVaultAddress ? vaults.find(v => v.address === preSelectedVaultAddress) : null;
+  const [step, setStep] = useState<Step>(preVault ? 'enter-amount' : 'select-vault');
   const [method, setMethod] = useState<Method>('fiat');
-  const [selectedVault, setSelectedVault] = useState<KaminoVaultInfo | null>(null);
+  const [selectedVault, setSelectedVault] = useState<KaminoVaultInfo | null>(preVault ?? null);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const [privateMode, setPrivateMode] = useState(false);
@@ -27,8 +35,6 @@ export function DepositFlow() {
   const [swapQuote, setSwapQuote] = useState<SwapQuote | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapComplete, setSwapComplete] = useState(false);
-
-  const vaults = MOCK_KAMINO_VAULTS.filter(v => v.status === 'active');
 
   const estimatedUsdc = useMemo(() => {
     const num = parseFloat(amount) || 0;

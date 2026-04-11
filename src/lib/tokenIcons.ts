@@ -29,9 +29,9 @@ const KNOWN_ICONS: Record<string, string> = {
   // USDT
   'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':
     'https://coin-images.coingecko.com/coins/images/325/small/Tether.png',
-  // ETH (Wormhole)
+  // ETH (standard Ethereum logo — not the Wormhole wrapped version)
   '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs':
-    'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs/logo.png',
+    'https://coin-images.coingecko.com/coins/images/279/small/ethereum.png',
   // JUP
   'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':
     'https://coin-images.coingecko.com/coins/images/34188/small/jup.png',
