@@ -6,10 +6,10 @@
 
 /* Geist Mono from Google Fonts — hero headings */
 
-/* Geist Pixel Grid — financial numbers */
+/* Geist Pixel Square — financial numbers */
 @font-face {
-  font-family: 'Geist Pixel Grid';
-  src: url('/fonts/GeistPixel-Grid.woff2') format('woff2');
+  font-family: 'Geist Pixel Square';
+  src: url('/fonts/GeistPixel-Square.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -96,10 +96,10 @@ body {
   color: rgba(17, 17, 19, 0.5);
 }
 
-/* Financial data — large (Geist Pixel Grid) */
+/* Financial data — large (Geist Pixel Square) */
 /* text-lg (18px) on mobile → text-3xl (30px) on desktop */
 .data-lg {
-  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
+  font-family: 'Geist Pixel Square', 'IBM Plex Mono', monospace;
   font-weight: 400;
   font-size: 1.125rem;
   line-height: 1.2;
@@ -113,7 +113,7 @@ body {
 
 /* Financial data — table values */
 .data-md {
-  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
+  font-family: 'Geist Pixel Square', 'IBM Plex Mono', monospace;
   font-weight: 400;
   font-size: 0.875rem;
   line-height: 1.2;
@@ -121,7 +121,7 @@ body {
 
 /* Financial data — small */
 .data-sm {
-  font-family: 'Geist Pixel Grid', 'IBM Plex Mono', monospace;
+  font-family: 'Geist Pixel Square', 'IBM Plex Mono', monospace;
   font-weight: 400;
   font-size: 0.75rem;
   line-height: 1.2;
