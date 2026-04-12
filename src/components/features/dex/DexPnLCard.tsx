@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
-import { ChevronDown, TrendingUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { DexTrade, FilterType } from '@/lib/dex-types';
 
 interface DexPnLCardProps {
@@ -25,14 +25,9 @@ export const DexPnLCard = React.memo(function DexPnLCard({ trades, activeFilter 
     <Card className="p-4 sm:p-6">
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="frosted-icon-box">
-            <TrendingUp size={16} />
-          </div>
-          <div>
-            <h3 className="font-ibm-plex-sans font-semibold text-sm text-[#11274d]">PnL Analysis</h3>
-            <p className="text-[10px] text-[#6a7282] uppercase tracking-wider">Net Profit & Loss</p>
-          </div>
+        <div>
+          <h3 className="font-ibm-plex-sans font-semibold text-sm text-[#11274d]">PnL Analysis</h3>
+          <p className="text-[10px] text-[#6a7282] uppercase tracking-wider">Net Profit & Loss</p>
         </div>
 
         {/* Main Metric */}
