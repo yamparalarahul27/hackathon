@@ -37,6 +37,11 @@
   --loki-600: #0fa87a;
   --loki-700: #157357;
 
+  /* Customizable (set via Settings modal) */
+  --card-gradient-from: #091731;
+  --card-gradient-to: #19549b;
+  --cta-color: #3B7DDD;
+
   /* Semantic */
   --main-bg: #f1f5f9;
   --ink: #212121;

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/Button';
-import { Bell, Menu } from 'lucide-react';
+import { Bell, Menu, Settings } from 'lucide-react';
 import Image from 'next/image';
 
 interface NavbarProps {
@@ -11,6 +11,7 @@ interface NavbarProps {
   walletConnected?: boolean;
   walletAddress?: string;
   onConnectWallet?: () => void;
+  onSettingsClick?: () => void;
 }
 
 const NAV_ITEMS = [
@@ -21,14 +22,14 @@ const NAV_ITEMS = [
 ];
 
 /** Asgard-style compact header — 48px, transparent + blur */
-export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress, onConnectWallet }: NavbarProps) {
+export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress, onConnectWallet, onSettingsClick }: NavbarProps) {
   return (
     <header className="sticky top-0 z-20 bg-[#f1f5f9]/95 backdrop-blur-lg border-b border-[#cbd5e1]">
       <div className="flex items-center justify-between h-12 px-4 lg:px-6 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="Y-Vault" width={24} height={24} />
-            <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">Y-Vault</span>
+            <Image src="/logo.svg" alt="DeFi Cockpit" width={24} height={24} />
+            <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Cockpit</span>
           </div>
           <nav className="hidden lg:flex items-center gap-6">
             {NAV_ITEMS.map(item => (
@@ -41,6 +42,13 @@ export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress,
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onSettingsClick}
+            className="flex items-center justify-center h-7 px-2 rounded-sm transition-colors duration-150 bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0]"
+            aria-label="Settings"
+          >
+            <Settings size={14} />
+          </button>
           <button className="flex items-center justify-center h-7 px-2 rounded-sm transition-colors duration-150 bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0]">
             <Bell size={14} />
           </button>

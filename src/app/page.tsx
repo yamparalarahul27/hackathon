@@ -8,6 +8,7 @@ import { VaultDashboard } from '@/components/features/VaultDashboard';
 import { VaultExplorer } from '@/components/features/VaultExplorer';
 import { DepositFlow } from '@/components/features/DepositFlow';
 import { YieldAnalytics } from '@/components/features/YieldAnalytics';
+import { SettingsModal, applyThemeSettings } from '@/components/ui/SettingsModal';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 import { Agentation } from 'agentation';
@@ -15,11 +16,15 @@ import { Agentation } from 'agentation';
 export default function Home() {
   const [activeTab, setActiveTab] = useState('vaults');
   const [selectedVaultAddress, setSelectedVaultAddress] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
   const { positions } = useKaminoVaults(walletAddress);
 
-  // Preload token icons from Jupiter API on mount
-  useEffect(() => { preloadTokenIcons(); }, []);
+  // Preload token icons + apply saved theme on mount
+  useEffect(() => {
+    preloadTokenIcons();
+    applyThemeSettings();
+  }, []);
 
   const handleVaultSelect = (vaultAddress: string) => {
     setSelectedVaultAddress(vaultAddress);
@@ -34,6 +39,7 @@ export default function Home() {
         walletConnected={connected}
         walletAddress={walletAddress ?? undefined}
         onConnectWallet={openWalletModal}
+        onSettingsClick={() => setSettingsOpen(true)}
       />
 
       <main className="flex-1 flex flex-col bg-[#f1f5f9]">
@@ -46,6 +52,7 @@ export default function Home() {
       </main>
 
       <BottomBar />
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <Agentation />
     </div>
   );

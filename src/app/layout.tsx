@@ -16,8 +16,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Y-Vault — Fiat to DeFi Yield",
-  description: "Pay with fiat. Earn DeFi yield. Track everything. Powered by Kamino on Solana.",
+  title: "DeFi Cockpit — Real-Time DeFi Intelligence",
+  description: "Real-time DeFi intelligence powered by Solana. Live vault data, token prices, and portfolio analytics.",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",
