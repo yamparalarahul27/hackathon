@@ -6,12 +6,18 @@ import {
   KaminoVaultPosition,
   LPPortfolioSummary,
 } from '../lp-types';
-import {
-  MOCK_KAMINO_VAULTS,
-  MOCK_KAMINO_POSITIONS,
-  MOCK_PORTFOLIO_SUMMARY,
-} from '../mockKaminoData';
 import { HELIUS_RPC_URL } from '../constants';
+
+const EMPTY_SUMMARY: LPPortfolioSummary = {
+  totalPositions: 0,
+  totalDepositedUsd: 0,
+  totalCurrentValueUsd: 0,
+  totalYieldEarnedUsd: 0,
+  totalImpermanentLossUsd: 0,
+  weightedAvgApy: 0,
+  bestPerformingVault: null,
+  worstPerformingVault: null,
+};
 
 interface UseKaminoVaultsReturn {
   vaults: KaminoVaultInfo[];
@@ -19,72 +25,48 @@ interface UseKaminoVaultsReturn {
   summary: LPPortfolioSummary;
   loading: boolean;
   error: string | null;
-  isUsingMockData: boolean;
   refresh: () => Promise<void>;
 }
 
 /**
- * Hook to fetch Kamino vault data for a connected wallet.
- *
- * When a wallet is connected, attempts to fetch real data from Kamino SDK.
- * Falls back to mock data if:
- *  - No wallet connected
- *  - RPC/SDK call fails
- *  - User has no Kamino positions
+ * Hook to fetch real Kamino vault data.
+ * No mock fallback — returns empty arrays + error on failure.
  */
 export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsReturn {
-  const [vaults, setVaults] = useState<KaminoVaultInfo[]>(MOCK_KAMINO_VAULTS);
-  const [positions, setPositions] = useState<KaminoVaultPosition[]>(MOCK_KAMINO_POSITIONS);
-  const [loading, setLoading] = useState(false);
+  const [vaults, setVaults] = useState<KaminoVaultInfo[]>([]);
+  const [positions, setPositions] = useState<KaminoVaultPosition[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUsingMockData, setIsUsingMockData] = useState(true);
 
   const fetchData = useCallback(async () => {
-    if (!walletAddress) {
-      setVaults(MOCK_KAMINO_VAULTS);
-      setPositions(MOCK_KAMINO_POSITIONS);
-      setIsUsingMockData(true);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // Dynamically import to avoid SSR issues with @solana/kit
       const { KaminoVaultService } = await import('@/services/KaminoVaultService');
 
-      // Use mainnet RPC — Helius or fallback
       const rpcUrl = HELIUS_RPC_URL.includes('devnet')
         ? 'https://api.mainnet-beta.solana.com'
         : HELIUS_RPC_URL;
 
       const service = new KaminoVaultService(rpcUrl);
 
-      // Fetch user positions first (faster, more relevant)
-      const realPositions = await service.getUserPositions(walletAddress);
+      // Always fetch vault list (real data for explore page)
+      const realVaults = await service.getVaults();
+      setVaults(realVaults);
 
-      if (realPositions.length > 0) {
+      // Fetch user positions if wallet connected
+      if (walletAddress) {
+        const realPositions = await service.getUserPositions(walletAddress);
         setPositions(realPositions);
-        setIsUsingMockData(false);
-
-        // Fetch full vault list in background
-        service.getVaults().then(realVaults => {
-          if (realVaults.length > 0) setVaults(realVaults);
-        }).catch(() => { /* vault list fetch is non-critical */ });
       } else {
-        // No Kamino positions — show mock data with a note
-        console.log('[useKaminoVaults] No Kamino positions found for wallet, using mock data');
-        setVaults(MOCK_KAMINO_VAULTS);
-        setPositions(MOCK_KAMINO_POSITIONS);
-        setIsUsingMockData(true);
+        setPositions([]);
       }
     } catch (err) {
-      console.error('[useKaminoVaults] Error fetching real data, falling back to mock:', err);
+      console.error('[useKaminoVaults] RPC error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch vault data');
-      setVaults(MOCK_KAMINO_VAULTS);
-      setPositions(MOCK_KAMINO_POSITIONS);
-      setIsUsingMockData(true);
+      setVaults([]);
+      setPositions([]);
     } finally {
       setLoading(false);
     }
@@ -95,7 +77,7 @@ export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsRe
   }, [fetchData]);
 
   const summary = useMemo(() => {
-    if (isUsingMockData) return MOCK_PORTFOLIO_SUMMARY;
+    if (positions.length === 0) return EMPTY_SUMMARY;
 
     const totalDeposited = positions.reduce((s, p) => s + p.depositValueUsd, 0);
     const totalCurrent = positions.reduce((s, p) => s + p.currentValueUsd, 0);
@@ -126,7 +108,7 @@ export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsRe
       bestPerformingVault: bestVault,
       worstPerformingVault: worstVault,
     };
-  }, [positions, isUsingMockData]);
+  }, [positions]);
 
-  return { vaults, positions, summary, loading, error, isUsingMockData, refresh: fetchData };
+  return { vaults, positions, summary, loading, error, refresh: fetchData };
 }

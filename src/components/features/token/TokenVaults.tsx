@@ -4,19 +4,19 @@ import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TrendingUp } from 'lucide-react';
-import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
+import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatPercent } from '@/lib/utils';
 import Link from 'next/link';
 
 interface TokenVaultsProps {
   mint: string;
   symbol: string;
-  allVaults?: typeof MOCK_KAMINO_VAULTS;
+  allVaults?: KaminoVaultInfo[];
 }
 
-export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVaults }: TokenVaultsProps) {
+export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVaults = [] }: TokenVaultsProps) {
   const vaults = useMemo(() => {
-    return (allVaults ?? MOCK_KAMINO_VAULTS).filter(
+    return allVaults.filter(
       v => v.tokenA.mint === mint || v.tokenB.mint === mint
     );
   }, [mint]);

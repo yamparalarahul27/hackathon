@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { CreditCard, Wallet, ArrowRight, CheckCircle, IndianRupee, DollarSign, Loader2, ExternalLink, Shield, Repeat, Route } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
 import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
@@ -22,7 +21,7 @@ interface DepositFlowProps {
 
 export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: DepositFlowProps) {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
-  const vaults = (vaultsProp ?? MOCK_KAMINO_VAULTS).filter(v => v.status === 'active');
+  const vaults = (vaultsProp ?? []).filter(v => v.status === 'active');
 
   // If a vault is pre-selected, skip to step 2
   const preVault = preSelectedVaultAddress ? vaults.find(v => v.address === preSelectedVaultAddress) : null;

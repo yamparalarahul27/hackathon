@@ -16,6 +16,8 @@ import {
   type TokenMarketData,
   type TokenPriceSource,
 } from '@/services/TokenDataService';
+import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 
 interface Props {
   params: Promise<{ mint: string }>;
@@ -25,6 +27,8 @@ export default function TokenDetailPage({ params }: Props) {
   const { mint } = use(params);
   const metadata = getTokenMetadata(mint);
 
+  const { walletAddress } = useWalletConnection();
+  const { vaults } = useKaminoVaults(walletAddress);
   const [marketData, setMarketData] = useState<TokenMarketData | null>(null);
   const [priceSources, setPriceSources] = useState<TokenPriceSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +81,7 @@ export default function TokenDetailPage({ params }: Props) {
         <TokenPriceSources sources={priceSources} loading={loading} />
 
         {/* Vaults Using This Token */}
-        <TokenVaults mint={mint} symbol={metadata.symbol} />
+        <TokenVaults mint={mint} symbol={metadata.symbol} allVaults={vaults} />
 
         {/* Token Info + Links */}
         <TokenInfo metadata={metadata} />

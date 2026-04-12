@@ -5,7 +5,6 @@ import { Search, ArrowUpDown, TrendingUp } from 'lucide-react';
 import { Pill } from '@/components/ui/Pill';
 import { Button } from '@/components/ui/Button';
 import { TokenPairIcons, TokenIcon } from '@/components/ui/TokenIcon';
-import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
 import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatPercent, formatCompact } from '@/lib/utils';
 
@@ -16,7 +15,7 @@ interface VaultExplorerProps {
   vaults?: KaminoVaultInfo[];
 }
 
-export function VaultExplorer({ vaults = MOCK_KAMINO_VAULTS }: VaultExplorerProps) {
+export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>('tvl');
   const [sortDir, setSortDir] = useState<SortDir>('desc');

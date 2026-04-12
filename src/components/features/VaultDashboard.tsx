@@ -6,7 +6,6 @@ import { Card, CardFooter } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
 import { StatusDot } from '@/components/ui/StatusDot';
 import { TokenPairIcons } from '@/components/ui/TokenIcon';
-import { MOCK_KAMINO_POSITIONS, MOCK_PORTFOLIO_SUMMARY } from '@/lib/mockKaminoData';
 import { KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 
@@ -54,7 +53,9 @@ interface VaultDashboardProps {
   onVaultSelect?: (vaultAddress: string) => void;
 }
 
-export function VaultDashboard({ positions = MOCK_KAMINO_POSITIONS, summary = MOCK_PORTFOLIO_SUMMARY, onVaultSelect }: VaultDashboardProps) {
+const EMPTY_SUMMARY: LPPortfolioSummary = { totalPositions: 0, totalDepositedUsd: 0, totalCurrentValueUsd: 0, totalYieldEarnedUsd: 0, totalImpermanentLossUsd: 0, weightedAvgApy: 0, bestPerformingVault: null, worstPerformingVault: null };
+
+export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, onVaultSelect }: VaultDashboardProps) {
   const [filter, setFilter] = useState('all');
 
   const strategies = ['all', ...new Set(positions.map(p => p.strategy))];
