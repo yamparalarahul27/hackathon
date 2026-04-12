@@ -2,13 +2,8 @@
  * Service Factory
  *
  * Centralized factory that returns real or mock service instances
- * based on the current network mode. Ensures the entire app can
- * run in demo mode (devnet/mock) with zero API keys or external deps.
- *
- * Usage:
- *   const services = createServices('mock');
- *   const quote = await services.swap.getQuote({ ... });
- *   const result = await services.deposit.deposit({ ... });
+ * based on the RPC configuration. If a mainnet Helius RPC URL is
+ * configured, real services are used. Otherwise falls back to mock.
  */
 
 import { JupiterSwapService, MockJupiterSwapService } from './JupiterSwapService';
@@ -26,37 +21,45 @@ export interface ServiceInstances {
   isLive: boolean;
 }
 
+// ── Detect network from RPC URL ────────────────────────────────
+
+function detectNetwork(): NetworkMode {
+  if (!HELIUS_RPC_URL) return 'mock';
+  if (HELIUS_RPC_URL.includes('mainnet')) return 'mainnet';
+  if (HELIUS_RPC_URL.includes('devnet')) return 'devnet';
+  return 'mock';
+}
+
 // ── Factory ────────────────────────────────────────────────────
 
-export function createServices(network: NetworkMode = 'mock'): ServiceInstances {
-  const isLive = network === 'mainnet';
+export function createServices(network?: NetworkMode): ServiceInstances {
+  const mode = network ?? detectNetwork();
+  const isLive = mode === 'mainnet';
 
   if (isLive) {
     return {
       swap: new JupiterSwapService(),
       deposit: new KaminoDepositService(HELIUS_RPC_URL),
-      network,
+      network: mode,
       isLive: true,
     };
   }
 
-  // Devnet and mock both use mock services
-  // Jupiter doesn't support devnet, Kamino is mainnet-only
   return {
     swap: new MockJupiterSwapService(),
     deposit: new MockKaminoDepositService(),
-    network,
+    network: mode,
     isLive: false,
   };
 }
 
-// ── Singleton for client components ────────────────────────────
+// ── Singleton ──────────────────────────────────────────────────
 
 let _services: ServiceInstances | null = null;
 
 export function getServices(network?: NetworkMode): ServiceInstances {
   if (!_services || (network && _services.network !== network)) {
-    _services = createServices(network ?? 'mock');
+    _services = createServices(network);
   }
   return _services;
 }

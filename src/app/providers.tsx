@@ -26,10 +26,10 @@ export default function Providers({ children }: PropsWithChildren) {
         autoConnect: false,
         theme: 'dark',
         metadata: {
-            name: 'Y-Vault',
-            description: 'Fiat to DeFi Yield — Powered by Kamino on Solana',
-            url: 'https://y-vault.vercel.app',
-            iconUrls: ['/icon.png']
+            name: 'DeFi Cockpit',
+            description: 'Real-time DeFi intelligence powered by Solana',
+            url: 'https://defi-cockpit.vercel.app',
+            iconUrls: ['/logo.svg']
         }
     }) satisfies IUnifiedWalletConfig, [cluster]);
 
