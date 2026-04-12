@@ -6,6 +6,7 @@ import { Card, CardFooter } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
 import { StatusDot } from '@/components/ui/StatusDot';
 import { TokenPairIcons } from '@/components/ui/TokenIcon';
+import { RpcErrorBanner } from '@/components/ui/RpcErrorBanner';
 import { KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 
@@ -50,12 +51,13 @@ function PositionCard({ position, index, onClick }: { position: KaminoVaultPosit
 interface VaultDashboardProps {
   positions?: KaminoVaultPosition[];
   summary?: LPPortfolioSummary;
+  error?: string | null;
   onVaultSelect?: (vaultAddress: string) => void;
 }
 
 const EMPTY_SUMMARY: LPPortfolioSummary = { totalPositions: 0, totalDepositedUsd: 0, totalCurrentValueUsd: 0, totalYieldEarnedUsd: 0, totalImpermanentLossUsd: 0, weightedAvgApy: 0, bestPerformingVault: null, worstPerformingVault: null };
 
-export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, onVaultSelect }: VaultDashboardProps) {
+export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, error, onVaultSelect }: VaultDashboardProps) {
   const [filter, setFilter] = useState('all');
 
   const strategies = ['all', ...new Set(positions.map(p => p.strategy))];
@@ -84,6 +86,13 @@ export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, onVaul
           </div>
         </div>
       </div>
+
+      {/* Error Banner — after gradient, in light bg area */}
+      {error && (
+        <div className="max-w-[1400px] mx-auto mb-4">
+          <RpcErrorBanner message={error} />
+        </div>
+      )}
 
       {/* Content — LIGHT bg */}
       <div className="max-w-[1400px] mx-auto">

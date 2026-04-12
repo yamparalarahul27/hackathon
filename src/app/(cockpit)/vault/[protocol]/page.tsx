@@ -1,7 +1,6 @@
 'use client';
 
 import { VaultDashboard } from '@/components/features/VaultDashboard';
-import { RpcErrorBanner } from '@/components/ui/RpcErrorBanner';
 import { useRouter } from 'next/navigation';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
@@ -22,9 +21,6 @@ export default function VaultPositionsPage({ params }: Props) {
   };
 
   return (
-    <>
-      {error && <RpcErrorBanner message={error} />}
-      <VaultDashboard positions={positions} summary={summary} onVaultSelect={handleVaultSelect} />
-    </>
+    <VaultDashboard positions={positions} summary={summary} error={error} onVaultSelect={handleVaultSelect} />
   );
 }
