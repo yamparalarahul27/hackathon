@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils';
 import { Button } from '../ui/Button';
 import { Bell, Menu, Settings } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface NavbarProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
   walletConnected?: boolean;
   walletAddress?: string;
   onConnectWallet?: () => void;
@@ -15,29 +15,41 @@ interface NavbarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Vaults', key: 'vaults' },
-  { label: 'Explore', key: 'explore' },
-  { label: 'Deposit', key: 'deposit' },
-  { label: 'Analytics', key: 'analytics' },
+  { label: 'Dashboard', href: '/' },
+  { label: 'DEX', href: '/dex/deriverse' },
+  { label: 'Vaults', href: '/vault/kamino' },
+  { label: 'Swap', href: '/swap' },
 ];
 
-/** Asgard-style compact header — 48px, transparent + blur */
-export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress, onConnectWallet, onSettingsClick }: NavbarProps) {
+/** DeFi Cockpit header — 48px, transparent + blur */
+export function Navbar({ walletConnected, walletAddress, onConnectWallet, onSettingsClick }: NavbarProps) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  };
+
   return (
     <header className="sticky top-0 z-20 bg-[#f1f5f9]/95 backdrop-blur-lg border-b border-[#cbd5e1]">
       <div className="flex items-center justify-between h-12 px-4 lg:px-6 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.svg" alt="DeFi Cockpit" width={24} height={24} />
             <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Cockpit</span>
-          </div>
+          </Link>
           <nav className="hidden lg:flex items-center gap-6">
             {NAV_ITEMS.map(item => (
-              <button key={item.key} onClick={() => onTabChange(item.key)}
-                className={cn('font-ibm-plex-sans text-xs font-normal leading-4 transition-colors duration-150 whitespace-nowrap',
-                  activeTab === item.key ? 'text-[#11274d]' : 'text-[#6a7282] hover:text-[#11274d]')}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'font-ibm-plex-sans text-xs font-normal leading-4 transition-colors duration-150 whitespace-nowrap',
+                  isActive(item.href) ? 'text-[#11274d]' : 'text-[#6a7282] hover:text-[#11274d]'
+                )}
+              >
                 {item.label}
-              </button>
+              </Link>
             ))}
           </nav>
         </div>
@@ -68,13 +80,19 @@ export function Navbar({ activeTab, onTabChange, walletConnected, walletAddress,
           </button>
         </div>
       </div>
+      {/* Mobile nav */}
       <div className="lg:hidden flex items-center gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide">
         {NAV_ITEMS.map(item => (
-          <button key={item.key} onClick={() => onTabChange(item.key)}
-            className={cn('font-ibm-plex-sans text-xs font-normal px-3 py-1.5 whitespace-nowrap transition-colors',
-              activeTab === item.key ? 'text-[#11274d]' : 'text-[#6a7282]')}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'font-ibm-plex-sans text-xs font-normal px-3 py-1.5 whitespace-nowrap transition-colors',
+              isActive(item.href) ? 'text-[#11274d]' : 'text-[#6a7282]'
+            )}
+          >
             {item.label}
-          </button>
+          </Link>
         ))}
       </div>
     </header>
