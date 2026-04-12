@@ -8,8 +8,8 @@ import { VaultDetailHeader } from '@/components/features/vault/VaultDetailHeader
 import { VaultTokenPair } from '@/components/features/vault/VaultTokenPair';
 import { VaultPosition } from '@/components/features/vault/VaultPosition';
 import { VaultDetails } from '@/components/features/vault/VaultDetails';
-import { MOCK_KAMINO_VAULTS, MOCK_KAMINO_POSITIONS } from '@/lib/mockKaminoData';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 
 interface Props {
   params: Promise<{ protocol: string; vaultAddress: string }>;
@@ -17,16 +17,17 @@ interface Props {
 
 export default function VaultDetailPage({ params }: Props) {
   const { protocol, vaultAddress } = use(params);
-  const { connected } = useWalletConnection();
+  const { walletAddress, connected } = useWalletConnection();
+  const { vaults, positions } = useKaminoVaults(walletAddress);
 
   const vault = useMemo(
-    () => MOCK_KAMINO_VAULTS.find(v => v.address === vaultAddress),
-    [vaultAddress]
+    () => vaults.find(v => v.address === vaultAddress),
+    [vaults, vaultAddress]
   );
 
   const position = useMemo(
-    () => MOCK_KAMINO_POSITIONS.find(p => p.vaultAddress === vaultAddress) ?? null,
-    [vaultAddress]
+    () => positions.find(p => p.vaultAddress === vaultAddress) ?? null,
+    [positions, vaultAddress]
   );
 
   if (!vault) {
@@ -44,7 +45,6 @@ export default function VaultDetailPage({ params }: Props) {
   return (
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
       <div className="max-w-[1400px] mx-auto space-y-6">
-        {/* Back Link */}
         <Link
           href={`/vault/${protocol}`}
           className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans"
@@ -52,19 +52,11 @@ export default function VaultDetailPage({ params }: Props) {
           <ArrowLeft size={12} /> Back to Vaults
         </Link>
 
-        {/* Vault Header: name, strategy, APY, TVL, volume, fees */}
         <VaultDetailHeader vault={vault} />
-
-        {/* Token Pair with links to individual token pages */}
         <VaultTokenPair tokenA={vault.tokenA} tokenB={vault.tokenB} />
-
-        {/* User Position (shows when wallet connected) */}
         <VaultPosition position={position} connected={connected} />
-
-        {/* Vault Details: strategy, fee rate, addresses */}
         <VaultDetails vault={vault} />
 
-        {/* Deposit CTA */}
         <Link href={`/vault/${protocol}/deposit?vault=${vault.address}`} className="block">
           <Button className="w-full py-3">
             Deposit into this Vault
