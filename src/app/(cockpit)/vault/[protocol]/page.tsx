@@ -2,6 +2,8 @@
 
 import { VaultDashboard } from '@/components/features/VaultDashboard';
 import { useRouter } from 'next/navigation';
+import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 import { use } from 'react';
 
 interface Props {
@@ -11,10 +13,12 @@ interface Props {
 export default function VaultPositionsPage({ params }: Props) {
   const { protocol } = use(params);
   const router = useRouter();
+  const { walletAddress } = useWalletConnection();
+  const { positions, summary } = useKaminoVaults(walletAddress);
 
   const handleVaultSelect = (vaultAddress: string) => {
-    router.push(`/vault/${protocol}/deposit?vault=${vaultAddress}`);
+    router.push(`/vault/${protocol}/${vaultAddress}`);
   };
 
-  return <VaultDashboard onVaultSelect={handleVaultSelect} />;
+  return <VaultDashboard positions={positions} summary={summary} onVaultSelect={handleVaultSelect} />;
 }

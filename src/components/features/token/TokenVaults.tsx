@@ -11,11 +11,12 @@ import Link from 'next/link';
 interface TokenVaultsProps {
   mint: string;
   symbol: string;
+  allVaults?: typeof MOCK_KAMINO_VAULTS;
 }
 
-export const TokenVaults = React.memo(function TokenVaults({ mint, symbol }: TokenVaultsProps) {
+export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVaults }: TokenVaultsProps) {
   const vaults = useMemo(() => {
-    return MOCK_KAMINO_VAULTS.filter(
+    return (allVaults ?? MOCK_KAMINO_VAULTS).filter(
       v => v.tokenA.mint === mint || v.tokenB.mint === mint
     );
   }, [mint]);

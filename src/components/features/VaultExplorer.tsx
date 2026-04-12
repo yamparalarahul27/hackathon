@@ -6,18 +6,21 @@ import { Pill } from '@/components/ui/Pill';
 import { Button } from '@/components/ui/Button';
 import { TokenPairIcons, TokenIcon } from '@/components/ui/TokenIcon';
 import { MOCK_KAMINO_VAULTS } from '@/lib/mockKaminoData';
+import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatPercent, formatCompact } from '@/lib/utils';
 
 type SortField = 'apy' | 'tvl' | 'volume24h' | 'fees24h';
 type SortDir = 'asc' | 'desc';
 
-export function VaultExplorer() {
+interface VaultExplorerProps {
+  vaults?: KaminoVaultInfo[];
+}
+
+export function VaultExplorer({ vaults = MOCK_KAMINO_VAULTS }: VaultExplorerProps) {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>('tvl');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [strategyFilter, setStrategyFilter] = useState('all');
-
-  const vaults = MOCK_KAMINO_VAULTS;
   const strategies = ['all', ...new Set(vaults.map(v => v.strategy))];
 
   let filtered = vaults;

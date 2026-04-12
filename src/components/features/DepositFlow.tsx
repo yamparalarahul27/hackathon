@@ -17,11 +17,12 @@ const jupiterService = new MockJupiterSwapService();
 
 interface DepositFlowProps {
   preSelectedVaultAddress?: string | null;
+  vaults?: KaminoVaultInfo[];
 }
 
-export function DepositFlow({ preSelectedVaultAddress }: DepositFlowProps) {
+export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: DepositFlowProps) {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
-  const vaults = MOCK_KAMINO_VAULTS.filter(v => v.status === 'active');
+  const vaults = (vaultsProp ?? MOCK_KAMINO_VAULTS).filter(v => v.status === 'active');
 
   // If a vault is pre-selected, skip to step 2
   const preVault = preSelectedVaultAddress ? vaults.find(v => v.address === preSelectedVaultAddress) : null;
