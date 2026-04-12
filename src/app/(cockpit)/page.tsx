@@ -1,8 +1,22 @@
 'use client';
 
-import { redirect } from 'next/navigation';
+import { ProjectOverview } from '@/components/features/ProjectOverview';
+import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 
-// Dashboard content TBD — for now redirect to Vaults
 export default function DashboardPage() {
-  redirect('/vault/kamino');
+  const { walletAddress, connected, openWalletModal } = useWalletConnection();
+  const { vaults, positions, summary, loading, error } = useKaminoVaults(walletAddress);
+
+  return (
+    <ProjectOverview
+      vaults={vaults}
+      positions={positions}
+      summary={summary}
+      loading={loading}
+      error={error}
+      walletConnected={connected}
+      onConnectWallet={openWalletModal}
+    />
+  );
 }
