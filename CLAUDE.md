@@ -73,7 +73,7 @@ Follow `DESIGN.md` strictly. Do NOT deviate from the Asgard-based design system.
 - `rounded-sm` (4px) everywhere
 - Satoshi for headings, Geist Pixel Grid for numbers, IBM Plex Sans for body
 
-**Full project docs:** See `DEXPILOT.md` for all track details, research, build status, execution plan.
+**Full project docs:** See `RESEARCH.md` for track details, research, build status, execution plan.
 
 ## Token Icons
 
