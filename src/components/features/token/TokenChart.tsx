@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
-import { fetchCoinGeckoChart, type TokenChartPoint } from '@/services/TokenDataService';
+import { fetchTokenChart, type TokenChartPoint, type FetchChartResult } from '@/services/TokenChartService';
 
 interface TokenChartProps {
   mint: string;
@@ -22,6 +22,7 @@ const TIME_WINDOWS = [
 export const TokenChart = React.memo(function TokenChart({ mint, currentPrice, color = '#3B7DDD' }: TokenChartProps) {
   const [activeDays, setActiveDays] = useState(7);
   const [chartData, setChartData] = useState<TokenChartPoint[]>([]);
+  const [chartSource, setChartSource] = useState<FetchChartResult['source'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartError, setChartError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,13 +45,14 @@ export const TokenChart = React.memo(function TokenChart({ mint, currentPrice, c
     setLoading(true);
     setChartError(null);
     try {
-      const data = await fetchCoinGeckoChart(mint, days);
-      if (data.length === 0) {
-        setChartError('No chart data from CoinGecko');
-      }
-      setChartData(data);
+      const result = await fetchTokenChart(mint, days);
+      setChartData(result.points);
+      setChartSource(result.source);
     } catch (err) {
-      setChartError('Failed to fetch chart data');
+      const message = err instanceof Error ? err.message : 'Failed to fetch chart data';
+      setChartError(message);
+      setChartData([]);
+      setChartSource(null);
       console.error('[TokenChart] Chart fetch error:', err);
     } finally {
       setLoading(false);
@@ -104,13 +106,20 @@ export const TokenChart = React.memo(function TokenChart({ mint, currentPrice, c
         )}
       </div>
 
-      {/* Time Window Pills */}
-      <div className="flex gap-2 flex-wrap">
-        {TIME_WINDOWS.map(w => (
-          <Pill key={w.days} active={activeDays === w.days} onClick={() => setActiveDays(w.days)}>
-            {w.label}
-          </Pill>
-        ))}
+      {/* Time Window Pills + Source */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {TIME_WINDOWS.map(w => (
+            <Pill key={w.days} active={activeDays === w.days} onClick={() => setActiveDays(w.days)}>
+              {w.label}
+            </Pill>
+          ))}
+        </div>
+        {chartSource && (
+          <span className="text-[10px] text-[#94a3b8] font-ibm-plex-sans uppercase tracking-wide">
+            via {chartSource}
+          </span>
+        )}
       </div>
     </Card>
   );

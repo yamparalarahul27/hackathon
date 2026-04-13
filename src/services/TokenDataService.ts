@@ -29,11 +29,6 @@ export interface TokenPriceSource {
   updatedAt: Date;
 }
 
-export interface TokenChartPoint {
-  time: number; // unix seconds
-  value: number;
-}
-
 export interface TokenMetadata {
   name: string;
   symbol: string;
@@ -116,22 +111,6 @@ export async function fetchCoinGeckoMarketData(mint: string): Promise<TokenMarke
       rank: data.market_cap_rank ?? 0,
     };
   } catch { return null; }
-}
-
-export async function fetchCoinGeckoChart(mint: string, days: number): Promise<TokenChartPoint[]> {
-  const info = TOKEN_MAP[mint];
-  if (!info) return [];
-  try {
-    const res = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${info.geckoId}/market_chart?vs_currency=usd&days=${days}`
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.prices ?? []).map(([ms, price]: [number, number]) => ({
-      time: Math.floor(ms / 1000),
-      value: price,
-    }));
-  } catch { return []; }
 }
 
 export async function fetchBinancePrice(mint: string): Promise<number | null> {
