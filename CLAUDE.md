@@ -35,6 +35,23 @@ Follow `DESIGN.md` strictly. Do NOT deviate from the Asgard-based design system.
 - Dynamic imports for heavy/rare modules
 - Zero `any` types in new code
 
+### 5. Branching & Agentation Rule
+**All new work lands on `stage` first, then promotes to `main` after verification.**
+
+- **Development flow:** feature branch → `stage` → `main`
+- Never push directly to `main`. Always verify on `stage` first.
+- Merging to `main` is a fast-forward/merge AFTER changes are confirmed working on `stage`.
+
+**Agentation is stage-and-local only — NEVER on `main`:**
+- `agentation` package must NOT be in `main`'s `package.json` or `layout.tsx`
+- `stage` branch keeps Agentation (for agent-assisted dev overlay)
+- Local dev branches may use Agentation freely
+- When merging stage → main, strip the `Agentation` import + `<Agentation />` element + the `agentation` dep before committing to main
+- Quick checklist before pushing to main:
+  - [ ] `package.json` has no `"agentation"` entry
+  - [ ] `src/app/(cockpit)/layout.tsx` has no `Agentation` import or render
+  - [ ] `package-lock.json` has no `agentation` references
+
 ---
 
 ## Project Overview
