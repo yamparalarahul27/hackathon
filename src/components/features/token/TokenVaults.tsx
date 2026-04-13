@@ -19,7 +19,7 @@ export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVa
     return allVaults.filter(
       v => v.tokenA.mint === mint || v.tokenB.mint === mint
     );
-  }, [mint]);
+  }, [allVaults, mint]);
 
   if (vaults.length === 0) {
     return (

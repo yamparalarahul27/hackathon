@@ -3,7 +3,7 @@
 import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import type { Cluster } from '@solana/web3.js';
 import type { IUnifiedWalletConfig } from '@jup-ag/wallet-adapter/dist/types/contexts/WalletConnectionProvider';
-import { DEFAULT_WALLET_CLUSTER, SupportedCluster, WALLET_CLUSTER_CONFIG } from '@/lib/constants';
+import { DEFAULT_WALLET_CLUSTER, SupportedCluster } from '@/lib/constants';
 
 type UnifiedWalletProviderType = typeof import('@jup-ag/wallet-adapter')['UnifiedWalletProvider'];
 

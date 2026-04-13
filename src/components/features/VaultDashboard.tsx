@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardFooter } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
-import { StatusDot } from '@/components/ui/StatusDot';
 import { TokenPairIcons } from '@/components/ui/TokenIcon';
 import { RpcErrorBanner } from '@/components/ui/RpcErrorBanner';
 import { KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';

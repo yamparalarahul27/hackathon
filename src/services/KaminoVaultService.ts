@@ -85,8 +85,9 @@ export class KaminoVaultService {
           .add(tokenBAmount.mul(prices[tokenBMint] ?? 0))
           .toNumber();
 
-        // Determine strategy type from DEX
+        // Determine strategy type from on-chain strategy metadata.
         const strategyType = this.inferStrategy(strategy);
+        const feeRate = this.extractFeeRate(strategy);
 
         vaults.push({
           address,
@@ -98,7 +99,7 @@ export class KaminoVaultService {
           apy: 0, // APY requires separate API call; set to 0 for now, enrich later
           fees24h: 0,
           volume24h: 0,
-          feeRate: (strategy as any).feeBps ? Number((strategy as any).feeBps) : 0,
+          feeRate,
           sharesMint: strategy.sharesMint.toString(),
           status: 'active',
         });
@@ -126,58 +127,70 @@ export class KaminoVaultService {
 
     if (positions.length === 0) return [];
 
-    // For each position, get share data to compute value
-    const result: KaminoVaultPosition[] = [];
+    const positionSnapshots = await Promise.all(
+      positions.map(async (position) => {
+        try {
+          const [shareData, strategy] = await Promise.all([
+            this.kamino.getStrategyShareData(position.strategy),
+            this.kamino.getStrategyByAddress(position.strategy),
+          ]);
 
-    for (const pos of positions) {
-      try {
-        const shareData = await this.kamino.getStrategyShareData(pos.strategy);
-        const strategy = await this.kamino.getStrategyByAddress(pos.strategy);
+          if (!strategy) return null;
 
-        if (!strategy) continue;
+          return { position, shareData, strategy };
+        } catch (err) {
+          console.warn('[KaminoVaultService] Error loading position snapshot:', position.strategy.toString(), err);
+          return null;
+        }
+      })
+    );
 
-        const tokenAMint = strategy.tokenAMint.toString();
-        const tokenBMint = strategy.tokenBMint.toString();
-        const prices = await this.priceService.getPrices([tokenAMint, tokenBMint]);
+    const validSnapshots = positionSnapshots.filter(
+      (snapshot): snapshot is NonNullable<typeof snapshot> => snapshot !== null
+    );
 
-        const tokenA = this.buildTokenInfo(tokenAMint, prices[tokenAMint] ?? 0);
-        const tokenB = this.buildTokenInfo(tokenBMint, prices[tokenBMint] ?? 0);
-
-        const sharePriceUsd = shareData.price.toNumber();
-        const sharesOwned = pos.sharesAmount.toNumber();
-        const currentValueUsd = sharesOwned * sharePriceUsd;
-
-        // We don't have deposit history on-chain easily, estimate with current value
-        // In production, you'd track deposits in Supabase
-        const depositValueUsd = currentValueUsd * 0.95; // Rough estimate: assume 5% gain
-        const yieldEarned = currentValueUsd - depositValueUsd;
-
-        const strategyType = this.inferStrategy(strategy);
-
-        result.push({
-          id: `${pos.strategy}-${pos.shareMint}`,
-          vaultAddress: pos.strategy.toString(),
-          vaultName: `${tokenA.symbol}-${tokenB.symbol} ${this.strategyLabel(strategyType)}`,
-          strategy: strategyType,
-          tokenA,
-          tokenB,
-          sharesOwned,
-          sharePrice: sharePriceUsd,
-          depositValueUsd: parseFloat(depositValueUsd.toFixed(2)),
-          currentValueUsd: parseFloat(currentValueUsd.toFixed(2)),
-          yieldEarnedUsd: parseFloat(yieldEarned.toFixed(2)),
-          apy: 0, // Enrich later with APY API
-          impermanentLoss: 0, // Requires historical price data
-          impermanentLossUsd: 0,
-          depositedAt: new Date(), // Would come from tx history
-          lastUpdated: new Date(),
-        });
-      } catch (err) {
-        console.warn('[KaminoVaultService] Error processing position:', pos.strategy.toString(), err);
-      }
+    const mintSet = new Set<string>();
+    for (const snapshot of validSnapshots) {
+      mintSet.add(snapshot.strategy.tokenAMint.toString());
+      mintSet.add(snapshot.strategy.tokenBMint.toString());
     }
+    const prices = await this.priceService.getPrices([...mintSet]);
 
-    return result;
+    return validSnapshots.map(({ position, shareData, strategy }) => {
+      const tokenAMint = strategy.tokenAMint.toString();
+      const tokenBMint = strategy.tokenBMint.toString();
+      const tokenA = this.buildTokenInfo(tokenAMint, prices[tokenAMint] ?? 0);
+      const tokenB = this.buildTokenInfo(tokenBMint, prices[tokenBMint] ?? 0);
+
+      const sharePriceUsd = shareData.price.toNumber();
+      const sharesOwned = position.sharesAmount.toNumber();
+      const currentValueUsd = sharesOwned * sharePriceUsd;
+
+      // We don't have deposit history on-chain easily, estimate with current value.
+      // In production, this should be replaced with stored per-deposit events.
+      const depositValueUsd = currentValueUsd * 0.95;
+      const yieldEarned = currentValueUsd - depositValueUsd;
+      const strategyType = this.inferStrategy(strategy);
+
+      return {
+        id: `${position.strategy}-${position.shareMint}`,
+        vaultAddress: position.strategy.toString(),
+        vaultName: `${tokenA.symbol}-${tokenB.symbol} ${this.strategyLabel(strategyType)}`,
+        strategy: strategyType,
+        tokenA,
+        tokenB,
+        sharesOwned,
+        sharePrice: sharePriceUsd,
+        depositValueUsd: parseFloat(depositValueUsd.toFixed(2)),
+        currentValueUsd: parseFloat(currentValueUsd.toFixed(2)),
+        yieldEarnedUsd: parseFloat(yieldEarned.toFixed(2)),
+        apy: 0, // Enrich later with APY API.
+        impermanentLoss: 0, // Requires historical price data.
+        impermanentLossUsd: 0,
+        depositedAt: new Date(), // Would come from tx history.
+        lastUpdated: new Date(),
+      };
+    });
   }
 
   /**
@@ -241,9 +254,21 @@ export class KaminoVaultService {
     };
   }
 
-  private inferStrategy(strategy: any): VaultStrategy {
-    // Check strategy type from the on-chain data
-    const strategyType = strategy?.strategyType;
+  private extractFeeRate(strategy: unknown): number {
+    if (!strategy || typeof strategy !== 'object') return 0;
+
+    const feeBps = Reflect.get(strategy, 'feeBps');
+    if (typeof feeBps === 'number' && Number.isFinite(feeBps)) return feeBps;
+    if (typeof feeBps === 'bigint') return Number(feeBps);
+    return 0;
+  }
+
+  private inferStrategy(strategy: unknown): VaultStrategy {
+    if (!strategy || typeof strategy !== 'object') {
+      return 'concentrated-liquidity';
+    }
+
+    const strategyType = Reflect.get(strategy, 'strategyType');
     if (strategyType) {
       const typeStr = JSON.stringify(strategyType).toLowerCase();
       if (typeStr.includes('lending')) return 'lending';

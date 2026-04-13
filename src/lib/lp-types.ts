@@ -1,7 +1,7 @@
 /**
  * DexPilot LP & Vault Type Definitions
  *
- * Types for Kamino vault positions, Dodo Payments, and LP analytics.
+ * Types for Kamino vault positions and LP analytics.
  */
 
 // ── Kamino Vault Types ──────────────────────────────────────────────
@@ -60,32 +60,6 @@ export interface LPPortfolioSummary {
   weightedAvgApy: number;
   bestPerformingVault: string | null;
   worstPerformingVault: string | null;
-}
-
-// ── Dodo Payments Types ─────────────────────────────────────────────
-
-export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
-export type PaymentCurrency = 'INR' | 'USD' | 'EUR';
-
-export interface DodoPaymentSession {
-  sessionId: string;
-  amount: number;
-  currency: PaymentCurrency;
-  status: PaymentStatus;
-  usdcAmount: number;       // equivalent USDC to receive
-  targetVault?: string;     // Kamino vault to deposit into
-  walletAddress: string;
-  createdAt: Date;
-  completedAt?: Date;
-}
-
-export interface FiatToVaultConfig {
-  fiatAmount: number;
-  fiatCurrency: PaymentCurrency;
-  targetVault: KaminoVaultInfo;
-  estimatedUsdc: number;
-  estimatedShares: number;
-  estimatedApy: number;
 }
 
 // ── Analytics Types ─────────────────────────────────────────────────

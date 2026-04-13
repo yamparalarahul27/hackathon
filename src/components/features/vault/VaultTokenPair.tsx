@@ -12,9 +12,6 @@ interface VaultTokenPairProps {
 }
 
 function TokenCard({ token }: { token: TokenInfo }) {
-  const change = ((Math.random() - 0.4) * 10); // placeholder until real data
-  const isPositive = change >= 0;
-
   return (
     <Card className="p-4 flex-1">
       <div className="flex items-center gap-2 mb-2">

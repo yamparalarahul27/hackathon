@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Search, ArrowUpDown, TrendingUp } from 'lucide-react';
 import { Pill } from '@/components/ui/Pill';
 import { Button } from '@/components/ui/Button';
-import { TokenPairIcons, TokenIcon } from '@/components/ui/TokenIcon';
+import { TokenPairIcons } from '@/components/ui/TokenIcon';
 import { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatPercent, formatCompact } from '@/lib/utils';
 

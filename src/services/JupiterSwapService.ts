@@ -11,7 +11,7 @@
  * For devnet demo: use mock mode which simulates swap quotes.
  */
 
-import { Connection, VersionedTransaction, PublicKey } from '@solana/web3.js';
+import { Connection, VersionedTransaction } from '@solana/web3.js';
 
 // ── Constants ──────────────────────────────────────────────────
 

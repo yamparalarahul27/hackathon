@@ -9,9 +9,9 @@ export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://derivers
 export const PROGRAM_ID = process.env.NEXT_PUBLIC_PROGRAM_ID ?? 'Drvrseg8AQLP8B96DBGmHRjFGviFNYTkHueY9g3k27Gu';
 export const DERIVERSE_VERSION = parseInt(process.env.NEXT_PUBLIC_DERIVERSE_VERSION ?? '12', 10);
 
-// RPC Configuration — Helius mainnet key MUST be set via NEXT_PUBLIC_HELIUS_RPC_URL env var.
-// No fallback — if the env var is missing, RPC calls will fail and show an error banner.
-export const HELIUS_RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? '';
+// RPC Configuration.
+// Prefer server-only HELIUS_RPC_URL. NEXT_PUBLIC_HELIUS_RPC_URL is legacy fallback.
+export const HELIUS_RPC_URL = process.env.HELIUS_RPC_URL ?? process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? '';
 export const RPC_HTTP = process.env.NEXT_PUBLIC_RPC_HTTP ?? HELIUS_RPC_URL;
 
 export type SupportedCluster = 'devnet' | 'mainnet-beta';
@@ -47,11 +47,9 @@ export const KAMINO_MAIN_MARKET = process.env.NEXT_PUBLIC_KAMINO_MAIN_MARKET ?? 
 export const KAMINO_KLEND_PROGRAM = 'KLend2g3cP87ber41GXWsSZQz5jjNMN3yUiYMnN8zu8';
 export const KAMINO_KLIQUIDITY_PROGRAM = '6LtLpnUFNByNXLyCoK9wA2MykKAmQNZKBdY8s47dehDc';
 
-// ── DexPilot: External APIs ─────────────────────────────────────────
+// ── External APIs ────────────────────────────────────────────────────
 
 export const JUPITER_PRICE_API = 'https://api.jup.ag/price/v2';
-export const DODO_PAYMENTS_API = process.env.NEXT_PUBLIC_DODO_API_BASE ?? 'https://api.dodopayments.com';
-export const DODO_PAYMENTS_KEY = process.env.DODO_PAYMENTS_API_KEY ?? '';
 
 // ── DexPilot: QuickNode / RPC Fast ──────────────────────────────────
 

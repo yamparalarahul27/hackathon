@@ -1,14 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Connection } from "@solana/web3.js";
-import { HELIUS_RPC_URL } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-export function getRpcConnection(): Connection {
-  return new Connection(HELIUS_RPC_URL, "confirmed");
 }
 
 export function formatUsd(value: number): string {
