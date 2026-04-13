@@ -43,13 +43,12 @@ export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsRe
     setError(null);
 
     try {
+      if (!HELIUS_RPC_URL) {
+        throw new Error('NEXT_PUBLIC_HELIUS_RPC_URL is not configured. Set your Helius mainnet RPC URL in environment variables.');
+      }
+
       const { KaminoVaultService } = await import('@/services/KaminoVaultService');
-
-      const rpcUrl = HELIUS_RPC_URL.includes('devnet')
-        ? 'https://api.mainnet-beta.solana.com'
-        : HELIUS_RPC_URL;
-
-      const service = new KaminoVaultService(rpcUrl);
+      const service = new KaminoVaultService(HELIUS_RPC_URL);
 
       // Always fetch vault list (real data for explore page)
       const realVaults = await service.getVaults();

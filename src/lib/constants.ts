@@ -9,8 +9,9 @@ export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://derivers
 export const PROGRAM_ID = process.env.NEXT_PUBLIC_PROGRAM_ID ?? 'Drvrseg8AQLP8B96DBGmHRjFGviFNYTkHueY9g3k27Gu';
 export const DERIVERSE_VERSION = parseInt(process.env.NEXT_PUBLIC_DERIVERSE_VERSION ?? '12', 10);
 
-// RPC Configuration — API key must be provided via NEXT_PUBLIC_HELIUS_RPC_URL env var
-export const HELIUS_RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? 'https://devnet.helius-rpc.com';
+// RPC Configuration — Helius mainnet key MUST be set via NEXT_PUBLIC_HELIUS_RPC_URL env var.
+// No fallback — if the env var is missing, RPC calls will fail and show an error banner.
+export const HELIUS_RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? '';
 export const RPC_HTTP = process.env.NEXT_PUBLIC_RPC_HTTP ?? HELIUS_RPC_URL;
 
 export type SupportedCluster = 'devnet' | 'mainnet-beta';
@@ -22,7 +23,7 @@ export const WALLET_CLUSTER_CONFIG: Record<SupportedCluster, { rpcUrl: string }>
         rpcUrl: process.env.NEXT_PUBLIC_RPC_DEVNET ?? HELIUS_RPC_URL
     },
     'mainnet-beta': {
-        rpcUrl: process.env.NEXT_PUBLIC_RPC_MAINNET ?? 'https://api.mainnet-beta.solana.com'
+        rpcUrl: process.env.NEXT_PUBLIC_RPC_MAINNET ?? HELIUS_RPC_URL
     }
 };
 
