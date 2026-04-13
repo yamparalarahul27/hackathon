@@ -22,6 +22,13 @@ interface MarketTicker {
   change24h: number;
 }
 
+// Map Binance symbols to Solana mint addresses for token page links
+const SYMBOL_TO_MINT: Record<string, string> = {
+  SOL: 'So11111111111111111111111111111111111111112',
+  BTC: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC (Portal)
+  ETH: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', // ETH (Portal)
+};
+
 function useMarketData() {
   const [tickers, setTickers] = useState<MarketTicker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,20 +204,27 @@ export function ProjectOverview({
                     <div className="h-12 animate-pulse bg-[#e2e8f0] rounded-sm" />
                   </Card>
                 ))
-              : tickers.map((t) => (
-                  <Card key={t.symbol} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-ibm-plex-sans text-xs text-[#6a7282] mb-1">{t.symbol}/USD</p>
-                        <p className="data-md text-[#11274d]">{formatUsd(t.price)}</p>
+              : tickers.map((t) => {
+                  const mint = SYMBOL_TO_MINT[t.symbol];
+                  const cardContent = (
+                    <Card hover={!!mint} className="p-4 h-full">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-ibm-plex-sans text-xs text-[#6a7282] mb-1">{t.symbol}/USD</p>
+                          <p className="data-md text-[#11274d]">{formatUsd(t.price)}</p>
+                        </div>
+                        <div className={`flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-ibm-plex-sans font-medium ${t.change24h >= 0 ? 'bg-[#ecfdf5] text-[#059669]' : 'bg-[#fef2f2] text-[#ef4444]'}`}>
+                          <TrendingUp size={12} className={t.change24h < 0 ? 'rotate-180' : ''} />
+                          {t.change24h >= 0 ? '+' : ''}{t.change24h.toFixed(2)}%
+                        </div>
                       </div>
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-ibm-plex-sans font-medium ${t.change24h >= 0 ? 'bg-[#ecfdf5] text-[#059669]' : 'bg-[#fef2f2] text-[#ef4444]'}`}>
-                        <TrendingUp size={12} className={t.change24h < 0 ? 'rotate-180' : ''} />
-                        {t.change24h >= 0 ? '+' : ''}{t.change24h.toFixed(2)}%
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+
+                  return mint
+                    ? <Link key={t.symbol} href={`/token/${mint}`}>{cardContent}</Link>
+                    : <div key={t.symbol}>{cardContent}</div>;
+                })}
           </div>
         </section>
 
