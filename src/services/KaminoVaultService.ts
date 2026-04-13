@@ -18,16 +18,17 @@ import {
   VaultStrategy,
 } from '../lib/lp-types';
 import { TokenPriceService } from './TokenPriceService';
+import { getTokenIcon } from '../lib/tokenIcons';
 
-// Known token metadata (extend as needed)
-const TOKEN_META: Record<string, Partial<TokenInfo>> = {
-  'So11111111111111111111111111111111111111112':  { symbol: 'SOL',  decimals: 9, logoUri: '/tokens/sol.png' },
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', decimals: 6, logoUri: '/tokens/usdc.png' },
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':  { symbol: 'USDT', decimals: 6, logoUri: '/tokens/usdt.png' },
-  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol: 'ETH',  decimals: 8, logoUri: '/tokens/eth.png' },
-  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol: 'JUP',  decimals: 6, logoUri: '/tokens/jup.png' },
-  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL':  { symbol: 'JTO',  decimals: 9, logoUri: '/tokens/jto.png' },
-  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK', decimals: 5, logoUri: '/tokens/bonk.png' },
+// Known token decimals + symbols. Logos resolved via getTokenIcon (CDN).
+const TOKEN_META: Record<string, { symbol: string; decimals: number }> = {
+  'So11111111111111111111111111111111111111112':  { symbol: 'SOL',  decimals: 9 },
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', decimals: 6 },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', decimals: 6 },
+  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol: 'ETH',  decimals: 8 },
+  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol: 'JUP',  decimals: 6 },
+  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL':  { symbol: 'JTO',  decimals: 9 },
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK', decimals: 5 },
 };
 
 export class KaminoVaultService {
@@ -245,11 +246,12 @@ export class KaminoVaultService {
 
   private buildTokenInfo(mint: string, priceUsd: number): TokenInfo {
     const meta = TOKEN_META[mint];
+    const symbol = meta?.symbol ?? mint.slice(0, 6);
     return {
       mint,
-      symbol: meta?.symbol ?? mint.slice(0, 6),
+      symbol,
       decimals: meta?.decimals ?? 9,
-      logoUri: meta?.logoUri,
+      logoUri: getTokenIcon(mint, symbol),
       priceUsd,
     };
   }

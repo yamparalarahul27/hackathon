@@ -3,7 +3,7 @@
 import React, { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import type { Cluster } from '@solana/web3.js';
 import type { IUnifiedWalletConfig } from '@jup-ag/wallet-adapter/dist/types/contexts/WalletConnectionProvider';
-import { DEFAULT_WALLET_CLUSTER, SupportedCluster } from '@/lib/constants';
+import { APP_BASE_URL, DEFAULT_WALLET_CLUSTER, SupportedCluster } from '@/lib/constants';
 
 type UnifiedWalletProviderType = typeof import('@jup-ag/wallet-adapter')['UnifiedWalletProvider'];
 
@@ -28,7 +28,7 @@ export default function Providers({ children }: PropsWithChildren) {
         metadata: {
             name: 'DeFi Cockpit',
             description: 'Real-time DeFi intelligence powered by Solana',
-            url: 'https://defi-cockpit.vercel.app',
+            url: APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
             iconUrls: ['/logo.svg']
         }
     }) satisfies IUnifiedWalletConfig, [cluster]);

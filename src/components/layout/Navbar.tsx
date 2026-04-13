@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', href: '/' },
   { label: 'Market', href: '/market' },
   { label: 'DEX', href: '/dex/deriverse' },
+  { label: 'Lend', href: '/lend/kamino' },
   { label: 'Vaults', href: '/vault/kamino' },
   { label: 'Swap', href: '/swap' },
 ];
