@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   KaminoVaultInfo,
   KaminoVaultPosition,
@@ -19,61 +19,100 @@ const EMPTY_SUMMARY: LPPortfolioSummary = {
   worstPerformingVault: null,
 };
 
+const VAULT_REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
+
 interface UseKaminoVaultsReturn {
   vaults: KaminoVaultInfo[];
   positions: KaminoVaultPosition[];
   summary: LPPortfolioSummary;
   loading: boolean;
   error: string | null;
+  lastUpdated: Date | null;
   refresh: () => Promise<void>;
 }
 
 /**
  * Hook to fetch real Kamino vault data.
- * No mock fallback — returns empty arrays + error on failure.
+ *
+ * - General vaults: fetched on mount and refreshed every 1 hour.
+ * - User positions: fetched only when a wallet is connected.
+ * - No mock fallback — returns empty arrays + error on failure.
  */
 export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsReturn {
   const [vaults, setVaults] = useState<KaminoVaultInfo[]>([]);
   const [positions, setPositions] = useState<KaminoVaultPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch general vault list (no wallet needed)
+  const fetchVaults = useCallback(async () => {
+    if (!HELIUS_RPC_URL) {
+      setError('NEXT_PUBLIC_HELIUS_RPC_URL is not configured. Set your Helius mainnet RPC URL in environment variables.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      if (!HELIUS_RPC_URL) {
-        throw new Error('NEXT_PUBLIC_HELIUS_RPC_URL is not configured. Set your Helius mainnet RPC URL in environment variables.');
-      }
-
       const { KaminoVaultService } = await import('@/services/KaminoVaultService');
       const service = new KaminoVaultService(HELIUS_RPC_URL);
-
-      // Always fetch vault list (real data for explore page)
       const realVaults = await service.getVaults();
       setVaults(realVaults);
-
-      // Fetch user positions if wallet connected
-      if (walletAddress) {
-        const realPositions = await service.getUserPositions(walletAddress);
-        setPositions(realPositions);
-      } else {
-        setPositions([]);
-      }
+      setLastUpdated(new Date());
+      setError(null);
     } catch (err) {
-      console.error('[useKaminoVaults] RPC error:', err);
+      console.error('[useKaminoVaults] RPC error fetching vaults:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch vault data');
       setVaults([]);
-      setPositions([]);
-    } finally {
-      setLoading(false);
     }
-  }, [walletAddress]);
+  }, []);
 
+  // Fetch user positions (only when wallet is connected)
+  const fetchPositions = useCallback(async (wallet: string) => {
+    if (!HELIUS_RPC_URL) return;
+
+    try {
+      const { KaminoVaultService } = await import('@/services/KaminoVaultService');
+      const service = new KaminoVaultService(HELIUS_RPC_URL);
+      const realPositions = await service.getUserPositions(wallet);
+      setPositions(realPositions);
+    } catch (err) {
+      console.error('[useKaminoVaults] RPC error fetching positions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch wallet positions');
+      setPositions([]);
+    }
+  }, []);
+
+  // Full fetch: vaults + positions if wallet connected
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    await fetchVaults();
+    if (walletAddress) {
+      await fetchPositions(walletAddress);
+    }
+    setLoading(false);
+  }, [fetchVaults, fetchPositions, walletAddress]);
+
+  // Initial fetch + 1hr interval for general vaults
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchVaults().then(() => setLoading(false));
+
+    intervalRef.current = setInterval(fetchVaults, VAULT_REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchVaults]);
+
+  // Fetch user positions when wallet connects/changes
+  useEffect(() => {
+    if (walletAddress) {
+      fetchPositions(walletAddress);
+    } else {
+      setPositions([]);
+    }
+  }, [walletAddress, fetchPositions]);
 
   const summary = useMemo(() => {
     if (positions.length === 0) return EMPTY_SUMMARY;
@@ -109,5 +148,5 @@ export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsRe
     };
   }, [positions]);
 
-  return { vaults, positions, summary, loading, error, refresh: fetchData };
+  return { vaults, positions, summary, loading, error, lastUpdated, refresh };
 }

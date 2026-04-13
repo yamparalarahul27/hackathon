@@ -87,6 +87,7 @@ interface ProjectOverviewProps {
   error: string | null;
   walletConnected: boolean;
   onConnectWallet: () => void;
+  lastUpdated: Date | null;
 }
 
 export function ProjectOverview({
@@ -97,6 +98,7 @@ export function ProjectOverview({
   error,
   walletConnected,
   onConnectWallet,
+  lastUpdated,
 }: ProjectOverviewProps) {
   const { tickers, loading: marketLoading } = useMarketData();
   const topVaults = [...vaults].sort((a, b) => b.apy - a.apy).slice(0, 5);
@@ -215,7 +217,14 @@ export function ProjectOverview({
         {/* ── Top Vaults by APY ─────────────────────────────────── */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="label-section-light">Top Vaults by APY</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="label-section-light">Top Vaults by APY</h2>
+              {lastUpdated && (
+                <span className="font-ibm-plex-sans text-[10px] text-[#94a3b8]">
+                  Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · refreshes every 1hr
+                </span>
+              )}
+            </div>
             <Link href="/vault/kamino/explore" className="font-ibm-plex-sans text-xs text-[#19549b] hover:text-[#143f78] flex items-center gap-1">
               View all <ArrowRight size={12} />
             </Link>

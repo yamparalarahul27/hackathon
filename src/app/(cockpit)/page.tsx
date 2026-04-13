@@ -6,7 +6,7 @@ import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 
 export default function DashboardPage() {
   const { walletAddress, connected, openWalletModal } = useWalletConnection();
-  const { vaults, positions, summary, loading, error } = useKaminoVaults(walletAddress);
+  const { vaults, positions, summary, loading, error, lastUpdated } = useKaminoVaults(walletAddress);
 
   return (
     <ProjectOverview
@@ -17,6 +17,7 @@ export default function DashboardPage() {
       error={error}
       walletConnected={connected}
       onConnectWallet={openWalletModal}
+      lastUpdated={lastUpdated}
     />
   );
 }
