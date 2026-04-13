@@ -83,6 +83,10 @@ export const TokenChart = React.memo(function TokenChart({ mint, currentPrice, c
           <div className="absolute inset-0 flex items-center justify-center text-sm text-[#94a3b8] font-ibm-plex-sans">
             {livelineError ? 'Chart library failed to load' : 'Loading chart...'}
           </div>
+        ) : currentPrice <= 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-[#94a3b8] font-ibm-plex-sans">
+            Loading price...
+          </div>
         ) : (
           <Liveline
             data={chartData}
@@ -95,7 +99,7 @@ export const TokenChart = React.memo(function TokenChart({ mint, currentPrice, c
             scrub={true}
             pulse={false}
             formatValue={formatValue}
-            window={chartData.length > 0 ? chartData[chartData.length - 1].time - chartData[0].time : 86400}
+            window={Math.floor(Date.now() / 1000) - chartData[0].time}
           />
         )}
       </div>

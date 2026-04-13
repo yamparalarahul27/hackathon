@@ -17,16 +17,16 @@ interface TokenVaultsProps {
 export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVaults = [] }: TokenVaultsProps) {
   const vaults = useMemo(() => {
     return allVaults.filter(
-      v => v.tokenA.mint === mint || v.tokenB.mint === mint
+      v => (v.tokenA.mint === mint || v.tokenB.mint === mint) && v.apy >= 5
     );
   }, [allVaults, mint]);
 
   if (vaults.length === 0) {
     return (
       <div>
-        <p className="label-section-light mb-3">Vaults Using {symbol}</p>
+        <p className="label-section-light mb-3">Vaults Using {symbol} · 5%+ APY</p>
         <Card className="p-4 text-center">
-          <p className="text-sm text-[#94a3b8] font-ibm-plex-sans">No Kamino vaults found using {symbol}</p>
+          <p className="text-sm text-[#94a3b8] font-ibm-plex-sans">No Kamino vaults with 5%+ APY using {symbol}</p>
         </Card>
       </div>
     );
@@ -34,7 +34,7 @@ export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVa
 
   return (
     <div>
-      <p className="label-section-light mb-3">Vaults Using {symbol}</p>
+      <p className="label-section-light mb-3">Vaults Using {symbol} · 5%+ APY</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {vaults.map(vault => (
           <Card key={vault.address} hover className="p-4">
