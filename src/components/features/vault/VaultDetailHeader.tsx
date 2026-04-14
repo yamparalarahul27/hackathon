@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { TokenPairIcons } from '@/components/ui/TokenIcon';
 import { StatusDot } from '@/components/ui/StatusDot';
@@ -32,8 +33,22 @@ export const VaultDetailHeader = React.memo(function VaultDetailHeader({ vault }
         <TokenPairIcons tokenA={vault.tokenA} tokenB={vault.tokenB} />
         <div>
           <h1 className="font-display font-bold text-lg text-[#11274d]">{vault.name}</h1>
-          <div className="flex items-center gap-2 text-xs text-[#6a7282] font-ibm-plex-sans">
-            <span>Kamino</span>
+          <div className="flex items-center gap-2 text-xs text-[#6a7282] font-ibm-plex-sans flex-wrap">
+            <a
+              href={`https://app.kamino.finance/liquidity/${vault.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[#11274d] hover:text-[#3B7DDD] transition-colors"
+            >
+              <img
+                src="https://app.kamino.finance/favicon.ico"
+                alt="Kamino"
+                className="w-3.5 h-3.5 rounded-sm"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <span className="font-medium">Kamino Vault</span>
+              <ExternalLink size={10} />
+            </a>
             {vault.curator && <><span>·</span><span>{vault.curator}</span></>}
             <span>·</span>
             <StatusDot variant={vault.status === 'active' ? 'live' : 'danger'} />
