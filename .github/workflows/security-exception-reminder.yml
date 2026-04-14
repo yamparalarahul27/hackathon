@@ -1,0 +1,103 @@
+name: Security Exception Reminder
+
+on:
+  schedule:
+    # Daily at 09:00 IST (03:30 UTC)
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    name: Check Security Exception Expiry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create reminder issues for expiring exceptions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const core = require('@actions/core');
+
+            const exceptionsPath = path.join(process.env.GITHUB_WORKSPACE, 'scripts', 'audit-exceptions.json');
+            if (!fs.existsSync(exceptionsPath)) {
+              core.info('No audit exception file found. Nothing to do.');
+              return;
+            }
+
+            const raw = fs.readFileSync(exceptionsPath, 'utf8');
+            const parsed = JSON.parse(raw);
+            const exceptions = Array.isArray(parsed.exceptions) ? parsed.exceptions : [];
+            const now = new Date();
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const thresholdDays = 7;
+            let hasExpired = false;
+
+            for (const ex of exceptions) {
+              const id = String(ex.id || '').trim().toUpperCase();
+              const reason = String(ex.reason || '').trim();
+              const owner = String(ex.owner || 'security').trim();
+              const expiresOn = String(ex.expiresOn || '').trim();
+
+              if (!id || !expiresOn) continue;
+
+              const expiryDate = new Date(`${expiresOn}T23:59:59Z`);
+              if (Number.isNaN(expiryDate.getTime())) continue;
+
+              const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / msPerDay);
+              const isExpired = daysLeft < 0;
+              const isNearExpiry = daysLeft >= 0 && daysLeft <= thresholdDays;
+
+              if (!isExpired && !isNearExpiry) continue;
+              if (isExpired) hasExpired = true;
+
+              const title = `[Security Exception Expiry] ${id} (${expiresOn})`;
+              const marker = `<!-- security-exception:${id}:${expiresOn} -->`;
+              const statusLine = isExpired
+                ? `Status: EXPIRED (${Math.abs(daysLeft)} day(s) ago)`
+                : `Status: Expiring in ${daysLeft} day(s)`;
+
+              const body = [
+                marker,
+                `Security exception requires review.`,
+                ``,
+                `- Advisory: ${id}`,
+                `- Expires on: ${expiresOn}`,
+                `- ${statusLine}`,
+                `- Owner: ${owner}`,
+                `- Reason: ${reason || 'N/A'}`,
+                ``,
+                `Action required: upgrade/remove exception or extend with explicit approval.`,
+              ].join('\n');
+
+              const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title.replace(/"/g, '\\"')}"`;
+              const existing = await github.rest.search.issuesAndPullRequests({
+                q: searchQuery,
+                per_page: 1,
+              });
+
+              if (existing.data.items.length > 0) {
+                core.info(`Open reminder already exists for ${id} (${expiresOn}).`);
+                continue;
+              }
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+
+              core.info(`Created reminder issue for ${id} (${expiresOn}).`);
+            }
+
+            if (hasExpired) {
+              core.setFailed('One or more security exceptions are expired.');
+            }
