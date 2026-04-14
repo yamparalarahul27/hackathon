@@ -22,12 +22,16 @@ export const PROGRAM_ID = DERIVERSE_PROGRAM_ID;
 export const HELIUS_RPC_URL =
   process.env.HELIUS_RPC_URL ?? process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? '';
 
-/** QuickNode mainnet endpoint — fallback RPC + WSS source. */
+/** QuickNode mainnet endpoint. */
 export const QUICKNODE_RPC_URL =
   process.env.QUICKNODE_RPC_URL ?? process.env.NEXT_PUBLIC_QUICKNODE_RPC ?? '';
 export const QUICKNODE_WSS_URL = process.env.QUICKNODE_WSS_URL ?? '';
 
-/** Default RPC for client-side code (Helius first, QuickNode fallback). */
+/** RPC Fast mainnet endpoint. */
+export const RPCFAST_RPC_URL = process.env.RPCFAST_RPC_URL ?? '';
+export const RPCFAST_WSS_URL = process.env.RPCFAST_WSS_URL ?? '';
+
+/** Default RPC for client-side code (Helius first, then others). */
 export const RPC_HTTP =
   process.env.NEXT_PUBLIC_RPC_HTTP ??
   process.env.NEXT_PUBLIC_HELIUS_RPC_URL ??

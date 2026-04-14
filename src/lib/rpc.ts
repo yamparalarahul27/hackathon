@@ -1,50 +1,69 @@
 /**
- * RPC endpoint rotator.
+ * RPC endpoint rotator — round-robin + failover.
  *
- * Tries Helius → QuickNode in order. If a call throws, falls back to the
- * next available endpoint. This protects us from rate-limit / outage on a
- * single provider (Helius free tier is 100K req/day).
+ * 3 providers: Helius → QuickNode → RPC Fast
+ *
+ * Round-robin: each call starts from the NEXT provider in rotation,
+ * spreading load evenly so no single provider hits rate limits first.
+ * If the chosen provider fails, falls back to the remaining ones.
  *
  * Usage (server-side):
- *   const result = await withRpcFallback((rpcUrl) => {
+ *   const result = await withRpcRotation((rpcUrl) => {
  *     const service = new KaminoLendService(rpcUrl);
  *     return service.getMainMarket();
  *   });
- *
- * Public envs are included as fallbacks for client/SDK code, but
- * server-only envs are preferred.
  */
 
+/** Deduplicated list of configured server-side RPC endpoints. */
 function rpcCandidates(): string[] {
-  return [
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+  const envKeys = [
     process.env.HELIUS_RPC_URL,
     process.env.QUICKNODE_RPC_URL,
+    process.env.RPCFAST_RPC_URL,
     process.env.NEXT_PUBLIC_HELIUS_RPC_URL,
     process.env.NEXT_PUBLIC_QUICKNODE_RPC,
-  ].filter((u): u is string => Boolean(u && u.trim()));
+  ];
+  for (const url of envKeys) {
+    if (url && url.trim() && !seen.has(url)) {
+      seen.add(url);
+      candidates.push(url);
+    }
+  }
+  return candidates;
 }
 
+/** Global round-robin counter — survives across requests in the same process. */
+let roundRobinIndex = 0;
+
 /**
- * Try the operation against each configured RPC in order.
- * Throws the last error if every endpoint fails.
+ * Round-robin + failover: starts from the next provider in rotation,
+ * tries all configured endpoints before giving up.
  */
 export async function withRpcFallback<T>(operation: (rpcUrl: string) => Promise<T>): Promise<T> {
   const endpoints = rpcCandidates();
   if (endpoints.length === 0) {
-    throw new Error('No Solana RPC URL configured (set HELIUS_RPC_URL or QUICKNODE_RPC_URL)');
+    throw new Error('No Solana RPC URL configured (set HELIUS_RPC_URL, QUICKNODE_RPC_URL, or RPCFAST_RPC_URL)');
   }
 
+  // Pick starting index via round-robin
+  const startIdx = roundRobinIndex % endpoints.length;
+  roundRobinIndex++;
+
   let lastError: unknown = null;
-  for (let i = 0; i < endpoints.length; i++) {
-    const url = endpoints[i];
+  for (let attempt = 0; attempt < endpoints.length; attempt++) {
+    const idx = (startIdx + attempt) % endpoints.length;
+    const url = endpoints[idx];
+    const provider = providerName(url);
     try {
       return await operation(url);
     } catch (err) {
       lastError = err;
-      const provider = providerName(url);
-      const nextProvider = i + 1 < endpoints.length ? providerName(endpoints[i + 1]) : null;
+      const nextIdx = (idx + 1) % endpoints.length;
+      const nextProvider = attempt + 1 < endpoints.length ? providerName(endpoints[nextIdx]) : null;
       console.warn(
-        `[rpc] ${provider} failed${nextProvider ? `, falling back to ${nextProvider}` : ' (no more endpoints)'}:`,
+        `[rpc] ${provider} failed${nextProvider ? `, rotating to ${nextProvider}` : ' (no more endpoints)'}:`,
         err instanceof Error ? err.message : err
       );
     }
@@ -52,10 +71,14 @@ export async function withRpcFallback<T>(operation: (rpcUrl: string) => Promise<
   throw lastError ?? new Error('All RPC endpoints failed');
 }
 
+/** Alias for backward compat. */
+export const withRpcRotation = withRpcFallback;
+
 /** Cheap provider label for logs (no key leak). */
 function providerName(url: string): string {
   if (url.includes('helius')) return 'helius';
   if (url.includes('quiknode') || url.includes('quicknode')) return 'quicknode';
+  if (url.includes('rpcfast')) return 'rpcfast';
   try {
     return new URL(url).hostname;
   } catch {
@@ -63,11 +86,22 @@ function providerName(url: string): string {
   }
 }
 
-/** First-available URL, useful when the operation isn't easily retried. */
+/** Round-robin pick — returns the next provider URL in rotation. */
+export function getNextRpcUrl(): string {
+  const endpoints = rpcCandidates();
+  if (endpoints.length === 0) {
+    throw new Error('No Solana RPC URL configured');
+  }
+  const idx = roundRobinIndex % endpoints.length;
+  roundRobinIndex++;
+  return endpoints[idx];
+}
+
+/** First-available URL (no rotation). */
 export function getPrimaryRpcUrl(): string {
   const [primary] = rpcCandidates();
   if (!primary) {
-    throw new Error('No Solana RPC URL configured (set HELIUS_RPC_URL or QUICKNODE_RPC_URL)');
+    throw new Error('No Solana RPC URL configured');
   }
   return primary;
 }
