@@ -108,19 +108,27 @@ export class KaminoVaultService {
       }
     }
 
-    // Enrich top vaults (by TVL) with real APY from Kamino REST API
-    await this.enrichWithMetrics(vaults);
+    // Enrich ALL vaults with real metrics from Kamino REST API
+    await this.enrichWithMetrics(vaults, vaults.length);
 
-    return vaults;
+    // Only return vaults that were successfully enriched with real API data.
+    // Vaults without API data still have broken on-chain TVL — don't show them.
+    const enriched = vaults.filter((v) => this.enrichedAddresses.has(v.address));
+
+    console.log(`[KaminoVaultService] Returning ${enriched.length} enriched vaults (${vaults.length - enriched.length} filtered out)`);
+
+    return enriched;
   }
 
   /**
-   * Fetch APY + metrics from Kamino's free REST API for the top vaults.
-   * Only fetches the top N by TVL to avoid excessive API calls.
+   * Fetch APY + metrics from Kamino's free REST API for vaults.
    */
+  /** Set of vault addresses that were successfully enriched by the API. */
+  public enrichedAddresses = new Set<string>();
+
   private async enrichWithMetrics(vaults: KaminoVaultInfo[], topN = 100): Promise<void> {
-    const sorted = [...vaults].sort((a, b) => b.tvl - a.tvl);
-    const toEnrich = sorted.slice(0, topN);
+    this.enrichedAddresses.clear();
+    const toEnrich = vaults.slice(0, topN);
 
     const CONCURRENCY = 10;
     interface MetricsResult {
@@ -169,7 +177,7 @@ export class KaminoVaultService {
       await Promise.all(fetches);
     }
 
-    // Apply enrichment
+    // Apply enrichment and track which vaults got real API data
     for (const vault of vaults) {
       const enriched = results.get(vault.address);
       if (enriched) {
@@ -186,10 +194,11 @@ export class KaminoVaultService {
           vault.tokenB.symbol = enriched.tokenBSymbol;
           vault.name = `${vault.tokenA.symbol}-${vault.tokenB.symbol} ${this.strategyLabel(vault.strategy)}`;
         }
+        this.enrichedAddresses.add(vault.address);
       }
     }
 
-    console.log(`[KaminoVaultService] Enriched ${results.size}/${vaults.length} vaults with real APY`);
+    console.log(`[KaminoVaultService] Enriched ${this.enrichedAddresses.size}/${vaults.length} vaults with real API data`);
   }
 
   /**
