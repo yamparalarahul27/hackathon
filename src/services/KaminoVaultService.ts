@@ -4,7 +4,8 @@
  * Integrates with Kamino's kliquidity-sdk to fetch real vault data,
  * user positions, share prices, and strategy details from mainnet.
  *
- * Falls back gracefully to mock data if RPC calls fail.
+ * APY enriched via Kamino's free REST API (no key required):
+ * GET https://api.kamino.finance/strategies/{address}/metrics?env=mainnet-beta
  */
 
 import { Kamino, type KaminoPosition, type ShareDataWithAddress } from '@kamino-finance/kliquidity-sdk';
@@ -95,9 +96,9 @@ export class KaminoVaultService {
           tokenA,
           tokenB,
           tvl: Math.round(tvl),
-          apy: 0, // APY requires separate API call; set to 0 for now, enrich later
-          fees24h: 0,
-          volume24h: 0,
+          apy: 0,       // enriched below from Kamino REST API
+          fees24h: 0,    // enriched below
+          volume24h: 0,  // enriched below
           feeRate,
           sharesMint: strategy.sharesMint.toString(),
           status: 'active',
@@ -107,7 +108,62 @@ export class KaminoVaultService {
       }
     }
 
+    // Enrich top vaults (by TVL) with real APY from Kamino REST API
+    await this.enrichWithMetrics(vaults);
+
     return vaults;
+  }
+
+  /**
+   * Fetch APY + metrics from Kamino's free REST API for the top vaults.
+   * Only fetches the top N by TVL to avoid excessive API calls.
+   */
+  private async enrichWithMetrics(vaults: KaminoVaultInfo[], topN = 100): Promise<void> {
+    const sorted = [...vaults].sort((a, b) => b.tvl - a.tvl);
+    const toEnrich = sorted.slice(0, topN);
+
+    const CONCURRENCY = 10;
+    const results = new Map<string, { apy: number; fees24h: number; volume24h: number }>();
+
+    for (let i = 0; i < toEnrich.length; i += CONCURRENCY) {
+      const batch = toEnrich.slice(i, i + CONCURRENCY);
+      const fetches = batch.map(async (vault) => {
+        try {
+          const res = await fetch(
+            `https://api.kamino.finance/strategies/${vault.address}/metrics?env=mainnet-beta`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+
+          const apyRaw = parseFloat(data?.kaminoApy?.totalApy ?? data?.kaminoApy?.vault?.apy7d ?? '0');
+          // Kamino API returns APY as decimal (0.13 = 13%). Convert to percentage for display.
+          const apyPercent = apyRaw * 100;
+
+          results.set(vault.address, {
+            apy: apyPercent,
+            fees24h: parseFloat(data?.apy?.vault?.feeApr ?? '0') > 0
+              ? vault.tvl * parseFloat(data.apy.vault.feeApr) / 365
+              : 0,
+            volume24h: 0, // Kamino API doesn't expose volume directly
+          });
+        } catch {
+          // Silent — vault keeps apy=0 if fetch fails
+        }
+      });
+      await Promise.all(fetches);
+    }
+
+    // Apply enrichment
+    for (const vault of vaults) {
+      const enriched = results.get(vault.address);
+      if (enriched) {
+        vault.apy = parseFloat(enriched.apy.toFixed(2));
+        vault.fees24h = Math.round(enriched.fees24h);
+      }
+    }
+
+    console.log(`[KaminoVaultService] Enriched ${results.size}/${vaults.length} vaults with real APY`);
   }
 
   /**
@@ -155,7 +211,7 @@ export class KaminoVaultService {
     }
     const prices = await this.priceService.getPrices([...mintSet]);
 
-    return validSnapshots.map(({ position, shareData, strategy }) => {
+    const positionResults = validSnapshots.map(({ position, shareData, strategy }) => {
       const tokenAMint = strategy.tokenAMint.toString();
       const tokenBMint = strategy.tokenBMint.toString();
       const tokenA = this.buildTokenInfo(tokenAMint, prices[tokenAMint] ?? 0);
@@ -164,11 +220,6 @@ export class KaminoVaultService {
       const sharePriceUsd = shareData.price.toNumber();
       const sharesOwned = position.sharesAmount.toNumber();
       const currentValueUsd = sharesOwned * sharePriceUsd;
-
-      // We do not infer synthetic PnL from guessed entry values.
-      // Until we persist deposit events, we report neutral baseline.
-      const depositValueUsd = currentValueUsd;
-      const yieldEarned = 0;
       const strategyType = this.inferStrategy(strategy);
 
       return {
@@ -180,16 +231,31 @@ export class KaminoVaultService {
         tokenB,
         sharesOwned,
         sharePrice: sharePriceUsd,
-        depositValueUsd: parseFloat(depositValueUsd.toFixed(2)),
+        // Only real on-chain values — no fake deposit/yield/IL
+        depositValueUsd: 0,          // unknown without tx history
         currentValueUsd: parseFloat(currentValueUsd.toFixed(2)),
-        yieldEarnedUsd: parseFloat(yieldEarned.toFixed(2)),
-        apy: 0, // Enrich later with APY API.
-        impermanentLoss: 0, // Requires historical price data.
+        yieldEarnedUsd: 0,           // unknown without tx history
+        apy: 0,                      // enriched below
+        impermanentLoss: 0,          // unknown without historical prices
         impermanentLossUsd: 0,
-        depositedAt: new Date(), // Should come from persisted deposit events when available.
+        depositedAt: new Date(),     // unknown without tx history
         lastUpdated: new Date(),
       };
     });
+
+    // Enrich positions with real APY from Kamino REST API
+    const posVaults: KaminoVaultInfo[] = positionResults.map((p) => ({
+      address: p.vaultAddress, name: p.vaultName, strategy: p.strategy,
+      tokenA: p.tokenA, tokenB: p.tokenB, tvl: 0, apy: 0, fees24h: 0,
+      volume24h: 0, feeRate: 0, sharesMint: '', status: 'active',
+    }));
+    await this.enrichWithMetrics(posVaults, posVaults.length);
+    for (const pos of positionResults) {
+      const enriched = posVaults.find((v) => v.address === pos.vaultAddress);
+      if (enriched) pos.apy = enriched.apy;
+    }
+
+    return positionResults;
   }
 
   /**

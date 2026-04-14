@@ -109,7 +109,6 @@ export function ProjectOverview({
 }: ProjectOverviewProps) {
   const { tickers, loading: marketLoading } = useMarketData();
   const topVaults = [...vaults].sort((a, b) => b.apy - a.apy).slice(0, 5);
-  const totalPnl = summary.totalCurrentValueUsd - summary.totalDepositedUsd;
 
   return (
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
@@ -132,12 +131,11 @@ export function ProjectOverview({
           </p>
 
           {walletConnected ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {[
                 { label: 'Portfolio Value', value: formatUsd(summary.totalCurrentValueUsd), color: 'text-white' },
-                { label: 'Total Yield', value: `+${formatUsd(summary.totalYieldEarnedUsd)}`, color: 'text-[#7ee5c6]' },
-                { label: 'Net P&L', value: `${totalPnl >= 0 ? '+' : ''}${formatUsd(totalPnl)}`, color: totalPnl >= 0 ? 'text-[#7ee5c6]' : 'text-[#ef4444]' },
-                { label: 'Avg APY', value: formatPercent(summary.weightedAvgApy), color: 'text-[#7ee5c6]' },
+                { label: 'Positions', value: summary.totalPositions.toString(), color: 'text-white' },
+                { label: 'Avg APY', value: summary.weightedAvgApy > 0 ? formatPercent(summary.weightedAvgApy) : '—', color: 'text-[#7ee5c6]' },
               ].map(stat => (
                 <div key={stat.label}>
                   <p className="label-section mb-1">{stat.label}</p>
@@ -318,12 +316,7 @@ export function ProjectOverview({
 
             {positions.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {positions.slice(0, 3).map((p, i) => {
-                  const pnl = p.currentValueUsd - p.depositValueUsd;
-                  const pnlPct = p.depositValueUsd > 0 ? (pnl / p.depositValueUsd) * 100 : 0;
-                  const positive = pnl >= 0;
-
-                  return (
+                {positions.slice(0, 3).map((p, i) => (
                     <Link key={p.id} href={`/vault/kamino/${p.vaultAddress}`}>
                       <Card hover className="animate-fade-up" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'backwards' }}>
                         <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
@@ -333,20 +326,21 @@ export function ProjectOverview({
                               {p.tokenA.symbol}/{p.tokenB.symbol}
                             </span>
                           </div>
-                          <span className="data-sm text-[#0fa87a]">{formatPercent(p.apy)} APY</span>
+                          {p.apy > 0 && (
+                            <span className="data-sm text-[#0fa87a]">{formatPercent(p.apy)} APY</span>
+                          )}
                         </div>
                         <CardFooter className="flex items-center justify-between">
                           <span className="font-ibm-plex-sans text-xs text-[#6a7282]">
-                            {formatUsd(p.currentValueUsd)}
+                            Value: {formatUsd(p.currentValueUsd)}
                           </span>
-                          <span className={`font-ibm-plex-sans text-xs font-medium ${positive ? 'text-[#0fa87a]' : 'text-[#ef4444]'}`}>
-                            {positive ? '+' : ''}{formatPercent(pnlPct)}
+                          <span className="font-ibm-plex-sans text-xs text-[#6a7282]">
+                            {p.sharesOwned.toFixed(2)} shares
                           </span>
                         </CardFooter>
                       </Card>
                     </Link>
-                  );
-                })}
+                ))}
               </div>
             ) : (
               <Card className="p-8 text-center">
