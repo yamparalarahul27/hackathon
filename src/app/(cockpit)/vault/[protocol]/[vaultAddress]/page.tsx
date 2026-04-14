@@ -8,6 +8,8 @@ import { VaultDetailHeader } from '@/components/features/vault/VaultDetailHeader
 import { VaultTokenPair } from '@/components/features/vault/VaultTokenPair';
 import { VaultPosition } from '@/components/features/vault/VaultPosition';
 import { VaultDetails } from '@/components/features/vault/VaultDetails';
+import { VaultPairPools } from '@/components/features/vault/VaultPairPools';
+import { VaultLstInfo } from '@/components/features/vault/VaultLstInfo';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useKaminoVaults } from '@/lib/hooks/useKaminoVaults';
 
@@ -55,6 +57,19 @@ export default function VaultDetailPage({ params }: Props) {
         <VaultDetailHeader vault={vault} />
         <VaultTokenPair tokenA={vault.tokenA} tokenB={vault.tokenB} />
         <VaultPosition position={position} connected={connected} />
+        <VaultLstInfo
+          mintA={vault.tokenA.mint}
+          mintB={vault.tokenB.mint}
+          symbolA={vault.tokenA.symbol}
+          symbolB={vault.tokenB.symbol}
+          vaultApy={vault.apy}
+        />
+        <VaultPairPools
+          mintA={vault.tokenA.mint}
+          mintB={vault.tokenB.mint}
+          symbolA={vault.tokenA.symbol}
+          symbolB={vault.tokenB.symbol}
+        />
         <VaultDetails vault={vault} />
 
         <Link href={`/vault/${protocol}/deposit?vault=${vault.address}`} className="block">

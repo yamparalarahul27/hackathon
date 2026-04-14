@@ -8,6 +8,7 @@ import { TokenChart } from '@/components/features/token/TokenChart';
 import { TokenMarketStats } from '@/components/features/token/TokenMarketStats';
 import { TokenPriceSources } from '@/components/features/token/TokenPriceSources';
 import { TokenVaults } from '@/components/features/token/TokenVaults';
+import { TokenDexPairs } from '@/components/features/token/TokenDexPairs';
 import { TokenInfo } from '@/components/features/token/TokenInfo';
 import {
   getTokenMetadata,
@@ -79,6 +80,9 @@ export default function TokenDetailPage({ params }: Props) {
 
         {/* Price Oracle Comparison */}
         <TokenPriceSources sources={priceSources} loading={loading} />
+
+        {/* Top DEX Pairs */}
+        <TokenDexPairs mint={mint} symbol={metadata.symbol} />
 
         {/* Vaults Using This Token */}
         <TokenVaults mint={mint} symbol={metadata.symbol} allVaults={vaults} />
