@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { label: 'DEX', href: '/dex/deriverse' },
   { label: 'Lend', href: '/lend/kamino' },
   { label: 'Vaults', href: '/vault/kamino' },
+  { label: 'LSTs', href: '/lst' },
   { label: 'Swap', href: '/swap' },
 ];
 
