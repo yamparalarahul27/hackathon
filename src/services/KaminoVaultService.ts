@@ -123,7 +123,14 @@ export class KaminoVaultService {
     const toEnrich = sorted.slice(0, topN);
 
     const CONCURRENCY = 10;
-    const results = new Map<string, { apy: number; fees24h: number; volume24h: number }>();
+    interface MetricsResult {
+      apy: number;
+      tvl: number;
+      fees24h: number;
+      tokenASymbol: string | null;
+      tokenBSymbol: string | null;
+    }
+    const results = new Map<string, MetricsResult>();
 
     for (let i = 0; i < toEnrich.length; i += CONCURRENCY) {
       const batch = toEnrich.slice(i, i + CONCURRENCY);
@@ -136,19 +143,27 @@ export class KaminoVaultService {
           if (!res.ok) return;
           const data = await res.json();
 
-          const apyRaw = parseFloat(data?.kaminoApy?.totalApy ?? data?.kaminoApy?.vault?.apy7d ?? '0');
-          // Kamino API returns APY as decimal (0.13 = 13%). Convert to percentage for display.
-          const apyPercent = apyRaw * 100;
+          // Use 7-day APY (stable, matches kamino.finance UI)
+          // Kamino returns decimal: 0.5549 = 55.49%. Multiply by 100 for display.
+          const apy7d = parseFloat(data?.kaminoApy?.vault?.apy7d ?? '0');
+          const apyPercent = apy7d * 100;
+
+          // Use API's TVL (correctly computed) instead of our on-chain math
+          const apiTvl = parseFloat(data?.totalValueLocked ?? '0');
+
+          // Estimate 24h fees from feeApr and the corrected TVL
+          const feeApr = parseFloat(data?.apy?.vault?.feeApr ?? '0');
+          const fees24h = feeApr > 0 && apiTvl > 0 ? apiTvl * feeApr / 365 : 0;
 
           results.set(vault.address, {
             apy: apyPercent,
-            fees24h: parseFloat(data?.apy?.vault?.feeApr ?? '0') > 0
-              ? vault.tvl * parseFloat(data.apy.vault.feeApr) / 365
-              : 0,
-            volume24h: 0, // Kamino API doesn't expose volume directly
+            tvl: apiTvl,
+            fees24h,
+            tokenASymbol: data?.tokenA ?? null,
+            tokenBSymbol: data?.tokenB ?? null,
           });
         } catch {
-          // Silent — vault keeps apy=0 if fetch fails
+          // Silent — vault keeps defaults if fetch fails
         }
       });
       await Promise.all(fetches);
@@ -160,6 +175,17 @@ export class KaminoVaultService {
       if (enriched) {
         vault.apy = parseFloat(enriched.apy.toFixed(2));
         vault.fees24h = Math.round(enriched.fees24h);
+        // Override TVL with API's correctly computed value
+        if (enriched.tvl > 0) vault.tvl = Math.round(enriched.tvl);
+        // Fix token symbols for tokens not in our hardcoded map
+        if (enriched.tokenASymbol && vault.tokenA.symbol === vault.tokenA.mint.slice(0, 6)) {
+          vault.tokenA.symbol = enriched.tokenASymbol;
+          vault.name = `${vault.tokenA.symbol}-${vault.tokenB.symbol} ${this.strategyLabel(vault.strategy)}`;
+        }
+        if (enriched.tokenBSymbol && vault.tokenB.symbol === vault.tokenB.mint.slice(0, 6)) {
+          vault.tokenB.symbol = enriched.tokenBSymbol;
+          vault.name = `${vault.tokenA.symbol}-${vault.tokenB.symbol} ${this.strategyLabel(vault.strategy)}`;
+        }
       }
     }
 
