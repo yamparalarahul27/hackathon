@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PublicKey } from '@solana/web3.js';
 import { KaminoVaultService } from '@/services/KaminoVaultService';
 import type { KaminoVaultInfo, KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';
+import { withRpcFallback } from '@/lib/rpc';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,22 +51,19 @@ function isValidWalletAddress(walletAddress: string): boolean {
 }
 
 async function fetchOverview(walletAddress: string | null): Promise<KaminoOverviewResponse> {
-  const rpcUrl = process.env.HELIUS_RPC_URL ?? process.env.NEXT_PUBLIC_HELIUS_RPC_URL ?? '';
-  if (!rpcUrl) {
-    throw new Error('HELIUS_RPC_URL is not configured');
-  }
+  return withRpcFallback(async (rpcUrl) => {
+    const service = new KaminoVaultService(rpcUrl);
+    const vaults = await service.getVaults();
+    const positions = walletAddress ? await service.getUserPositions(walletAddress) : [];
+    const summary = service.calculateSummary(positions);
 
-  const service = new KaminoVaultService(rpcUrl);
-  const vaults = await service.getVaults();
-  const positions = walletAddress ? await service.getUserPositions(walletAddress) : [];
-  const summary = service.calculateSummary(positions);
-
-  return {
-    vaults,
-    positions,
-    summary,
-    lastUpdated: new Date().toISOString(),
-  };
+    return {
+      vaults,
+      positions,
+      summary,
+      lastUpdated: new Date().toISOString(),
+    };
+  });
 }
 
 export async function GET(request: NextRequest) {

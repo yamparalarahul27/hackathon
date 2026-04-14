@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { KaminoLendService } from '@/services/KaminoLendService';
 import type { LendingMarketSnapshot } from '@/lib/lend-types';
+import { withRpcFallback } from '@/lib/rpc';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,17 +32,10 @@ function isRateLimited(ip: string): boolean {
 }
 
 async function fetchSnapshot(): Promise<LendingMarketSnapshot> {
-  const rpcUrl =
-    process.env.HELIUS_RPC_URL ??
-    process.env.QUICKNODE_RPC_URL ??
-    process.env.NEXT_PUBLIC_HELIUS_RPC_URL ??
-    process.env.NEXT_PUBLIC_QUICKNODE_RPC ??
-    '';
-  if (!rpcUrl) {
-    throw new Error('No Solana RPC URL configured (HELIUS_RPC_URL or QUICKNODE_RPC_URL)');
-  }
-  const service = new KaminoLendService(rpcUrl);
-  return service.getMainMarket();
+  return withRpcFallback((rpcUrl) => {
+    const service = new KaminoLendService(rpcUrl);
+    return service.getMainMarket();
+  });
 }
 
 export async function GET(request: NextRequest) {
