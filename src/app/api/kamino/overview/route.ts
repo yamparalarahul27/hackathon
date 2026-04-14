@@ -17,28 +17,46 @@ interface KaminoOverviewResponse {
 const RESPONSE_CACHE_TTL_MS = 30_000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
+const TRUST_PROXY_HEADERS = process.env.TRUST_PROXY_HEADERS === 'true';
 
 const responseCache = new Map<string, { expiresAt: number; payload: KaminoOverviewResponse }>();
 const inFlightRequests = new Map<string, Promise<KaminoOverviewResponse>>();
 const rateLimitState = new Map<string, { windowStart: number; count: number }>();
 
-function getClientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip') ?? 'unknown';
+function extractIp(request: NextRequest): string {
+  if (TRUST_PROXY_HEADERS) {
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0]?.trim() ?? 'unknown';
+    const realIp = request.headers.get('x-real-ip');
+    if (realIp) return realIp.trim();
+  }
+
+  const directIp = request.headers.get('cf-connecting-ip');
+  if (directIp) return directIp.trim();
+  return 'unknown';
 }
 
-function isRateLimited(clientIp: string): boolean {
+function getRateLimitKey(request: NextRequest, walletAddress: string | null): string {
+  const ip = extractIp(request);
+  const walletPart = walletAddress ? walletAddress.slice(0, 8) : 'anon';
+  return `${ip}:${walletPart}`;
+}
+
+function isRateLimited(key: string): { limited: boolean; retryAfterSeconds: number } {
   const now = Date.now();
-  const entry = rateLimitState.get(clientIp);
+  const entry = rateLimitState.get(key);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    rateLimitState.set(clientIp, { windowStart: now, count: 1 });
-    return false;
+    rateLimitState.set(key, { windowStart: now, count: 1 });
+    return { limited: false, retryAfterSeconds: 0 };
   }
 
   entry.count += 1;
-  return entry.count > RATE_LIMIT_MAX_REQUESTS;
+  const retryAfterMs = Math.max(0, RATE_LIMIT_WINDOW_MS - (now - entry.windowStart));
+  return {
+    limited: entry.count > RATE_LIMIT_MAX_REQUESTS,
+    retryAfterSeconds: Math.ceil(retryAfterMs / 1000),
+  };
 }
 
 function isValidWalletAddress(walletAddress: string): boolean {
@@ -67,15 +85,20 @@ async function fetchOverview(walletAddress: string | null): Promise<KaminoOvervi
 }
 
 export async function GET(request: NextRequest) {
-  const clientIp = getClientIp(request);
-  if (isRateLimited(clientIp)) {
+  const walletAddress = request.nextUrl.searchParams.get('wallet');
+  const limit = isRateLimited(getRateLimitKey(request, walletAddress));
+  if (limit.limited) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again shortly.' },
-      { status: 429 }
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(limit.retryAfterSeconds),
+        },
+      }
     );
   }
 
-  const walletAddress = request.nextUrl.searchParams.get('wallet');
   if (walletAddress && !isValidWalletAddress(walletAddress)) {
     return NextResponse.json(
       { error: 'Invalid wallet address.' },
@@ -88,7 +111,10 @@ export async function GET(request: NextRequest) {
   const cached = responseCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return NextResponse.json(cached.payload, {
-      headers: { 'Cache-Control': 'private, max-age=15' },
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=60, stale-if-error=120',
+        'X-Data-State': 'fresh-cache',
+      },
     });
   }
 
@@ -106,7 +132,10 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'private, max-age=15' },
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=60, stale-if-error=120',
+        'X-Data-State': 'live',
+      },
     });
   } catch (error) {
     console.error('[API/kamino/overview] Failed to fetch overview:', error);

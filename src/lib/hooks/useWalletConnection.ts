@@ -4,7 +4,9 @@ import { useMemo } from 'react';
 import { useUnifiedWallet, useUnifiedWalletContext } from '@jup-ag/wallet-adapter';
 import type { PublicKey } from '@solana/web3.js';
 import type { WalletName } from '@solana/wallet-adapter-base';
+import { WalletReadyState } from '@solana/wallet-adapter-base';
 import type { Wallet } from '@solana/wallet-adapter-react';
+import type { VersionedTransaction } from '@solana/web3.js';
 
 export interface WalletConnectionState {
     publicKey: PublicKey | null;
@@ -17,6 +19,10 @@ export interface WalletConnectionState {
     selectWallet: (walletName: WalletName | null) => void;
     walletName: string | null;
     wallets: Wallet[];
+    installedWallets: Wallet[];
+    hasInstalledWallets: boolean;
+    signTransaction?: (tx: VersionedTransaction) => Promise<VersionedTransaction>;
+    canSignTransactions: boolean;
     openWalletModal: () => void;
     isWalletModalOpen: boolean;
 }
@@ -46,6 +52,12 @@ export function useWalletConnection(): WalletConnectionState {
     };
 
     const openWalletModal = () => setShowModal(true);
+    const adapter = wallet?.adapter;
+    const availableWallets = wallets ?? [];
+    const canSignTransactions = isSignerAdapter(adapter);
+    const signTransaction = canSignTransactions
+        ? adapter.signTransaction.bind(adapter)
+        : undefined;
 
     return {
         publicKey: publicKey ?? null,
@@ -57,8 +69,23 @@ export function useWalletConnection(): WalletConnectionState {
         disconnect,
         selectWallet,
         walletName: wallet?.adapter.name ?? null,
-        wallets,
+        wallets: availableWallets,
+        installedWallets: availableWallets.filter((w) => w.readyState === WalletReadyState.Installed),
+        hasInstalledWallets: availableWallets.some((w) => w.readyState === WalletReadyState.Installed),
+        signTransaction,
+        canSignTransactions,
         openWalletModal,
         isWalletModalOpen: showModal
     };
+}
+
+function isSignerAdapter(
+    adapter: unknown
+): adapter is { signTransaction: (tx: VersionedTransaction) => Promise<VersionedTransaction> } {
+    return Boolean(
+        adapter &&
+        typeof adapter === 'object' &&
+        'signTransaction' in adapter &&
+        typeof (adapter as { signTransaction?: unknown }).signTransaction === 'function'
+    );
 }

@@ -35,14 +35,28 @@ export default function TokenDetailPage({ params }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchCoinGeckoMarketData(mint),
-      fetchAllPriceSources(mint),
-    ]).then(([market, sources]) => {
-      setMarketData(market);
-      setPriceSources(sources);
-    }).finally(() => setLoading(false));
+    let cancelled = false;
+
+    Promise.resolve().then(async () => {
+      if (cancelled) return;
+      setLoading(true);
+
+      try {
+        const [market, sources] = await Promise.all([
+          fetchCoinGeckoMarketData(mint),
+          fetchAllPriceSources(mint),
+        ]);
+        if (cancelled) return;
+        setMarketData(market);
+        setPriceSources(sources);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [mint]);
 
   // Unknown token fallback

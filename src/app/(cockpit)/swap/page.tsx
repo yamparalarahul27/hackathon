@@ -2,12 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { ArrowDownUp, Loader2 } from 'lucide-react';
+import { Connection } from '@solana/web3.js';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { MockJupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
+import { JupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { WALLET_CLUSTER_CONFIG, DEFAULT_WALLET_CLUSTER } from '@/lib/constants';
 
-const swapService = new MockJupiterSwapService();
+const swapService = new JupiterSwapService();
 
 const TOKENS = [
   { symbol: 'SOL', mint: TOKEN_MINTS.SOL, decimals: 9 },
@@ -19,7 +21,14 @@ const TOKENS = [
 ];
 
 export default function SwapPage() {
-  const { connected, openWalletModal } = useWalletConnection();
+  const {
+    connected,
+    openWalletModal,
+    publicKey,
+    signTransaction,
+    canSignTransactions,
+    hasInstalledWallets,
+  } = useWalletConnection();
   const [inputToken, setInputToken] = useState(TOKENS[1]); // USDC
   const [outputToken, setOutputToken] = useState(TOKENS[0]); // SOL
   const [amount, setAmount] = useState('');
@@ -27,6 +36,14 @@ export default function SwapPage() {
   const [loading, setLoading] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const rpcUrl = WALLET_CLUSTER_CONFIG[DEFAULT_WALLET_CLUSTER].rpcUrl;
+  const connection = useMemo(() => {
+    if (!rpcUrl) return null;
+    return new Connection(rpcUrl, 'confirmed');
+  }, [rpcUrl]);
 
   const outputAmount = useMemo(() => {
     if (!quote) return '';
@@ -36,8 +53,15 @@ export default function SwapPage() {
   const handleGetQuote = async () => {
     const num = parseFloat(amount);
     if (!num || num <= 0) return;
+    if (inputToken.mint === outputToken.mint) {
+      setError('Select two different tokens to swap.');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+    setSuccess(false);
+    setTxSignature(null);
     setQuote(null);
     try {
       const baseUnits = Math.floor(num * (10 ** inputToken.decimals));
@@ -49,22 +73,53 @@ export default function SwapPage() {
       });
       setQuote(q);
     } catch (err) {
-      console.error('Quote failed:', err);
+      const message = err instanceof Error ? err.message : 'Unable to fetch quote.';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSwap = async () => {
+    const num = parseFloat(amount);
+    if (!num || num <= 0) return;
+    if (!connected || !publicKey) {
+      openWalletModal();
+      return;
+    }
+    if (!signTransaction || !canSignTransactions) {
+      setError('Connected wallet does not support transaction signing.');
+      return;
+    }
+    if (!connection) {
+      setError('No public RPC URL configured. Set NEXT_PUBLIC_RPC_MAINNET or NEXT_PUBLIC_HELIUS_RPC_URL.');
+      return;
+    }
+
     setSwapping(true);
+    setError(null);
     try {
-      await swapService.executeSwap();
+      const baseUnits = Math.floor(num * (10 ** inputToken.decimals));
+      const result = await swapService.executeSwap(
+        {
+          inputMint: inputToken.mint,
+          outputMint: outputToken.mint,
+          amount: baseUnits,
+          slippageBps: 50,
+        },
+        publicKey.toBase58(),
+        signTransaction,
+        connection
+      );
+
+      setTxSignature(result.txSignature);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setQuote(null);
       setAmount('');
     } catch (err) {
-      console.error('Swap failed:', err);
+      const message = err instanceof Error ? err.message : 'Swap failed.';
+      setError(message);
     } finally {
       setSwapping(false);
     }
@@ -75,6 +130,7 @@ export default function SwapPage() {
     setOutputToken(inputToken);
     setQuote(null);
     setAmount('');
+    setError(null);
   };
 
   return (
@@ -82,7 +138,7 @@ export default function SwapPage() {
       <div className="max-w-md mx-auto space-y-6">
         <div>
           <h2 className="font-display font-bold text-xl text-[#11274d]">Swap</h2>
-          <p className="text-sm text-[#6a7282] mt-1">Swap tokens via Jupiter</p>
+          <p className="text-sm text-[#6a7282] mt-1">Swap tokens via Jupiter with pre-sign quote checks and on-chain confirmation.</p>
         </div>
 
         <Card className="p-5 space-y-4">
@@ -147,6 +203,7 @@ export default function SwapPage() {
           {/* Quote Details */}
           {quote && (
             <div className="space-y-2 pt-2 border-t border-[#e2e8f0]">
+              <p className="text-[11px] text-[#11274d] font-ibm-plex-sans font-medium">Review before wallet signature</p>
               <div className="flex justify-between text-xs font-ibm-plex-sans">
                 <span className="text-[#6a7282]">Price impact</span>
                 <span className="text-[#059669]">{quote.priceImpactPct}%</span>
@@ -169,15 +226,39 @@ export default function SwapPage() {
             </div>
           )}
 
+          {txSignature && (
+            <a
+              href={`https://solscan.io/tx/${txSignature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center text-xs text-[#3B7DDD] hover:underline"
+            >
+              View transaction on Solscan
+            </a>
+          )}
+
+          {error && (
+            <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
+              <p className="text-xs text-[#b91c1c] font-ibm-plex-sans">{error}</p>
+            </div>
+          )}
+
           {/* Actions */}
           {!connected ? (
-            <Button className="w-full" onClick={openWalletModal}>Connect Wallet</Button>
+            <div className="space-y-2">
+              <Button className="w-full" onClick={openWalletModal}>Connect Wallet</Button>
+              {!hasInstalledWallets && (
+                <p className="text-[11px] text-[#6a7282] text-center">
+                  No wallet detected. Install a Solana wallet extension or open in a wallet in-app browser.
+                </p>
+              )}
+            </div>
           ) : !quote ? (
-            <Button className="w-full" onClick={handleGetQuote} disabled={!amount || loading}>
+            <Button className="w-full" onClick={handleGetQuote} disabled={!amount || loading || inputToken.mint === outputToken.mint}>
               {loading ? <Loader2 size={14} className="animate-spin" /> : 'Get Quote'}
             </Button>
           ) : (
-            <Button className="w-full" onClick={handleSwap} disabled={swapping}>
+            <Button className="w-full" onClick={handleSwap} disabled={swapping || !canSignTransactions}>
               {swapping ? <Loader2 size={14} className="animate-spin" /> : `Swap ${inputToken.symbol} → ${outputToken.symbol}`}
             </Button>
           )}

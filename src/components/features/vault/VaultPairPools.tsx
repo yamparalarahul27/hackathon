@@ -23,12 +23,26 @@ export const VaultPairPools = React.memo(function VaultPairPools({ mintA, mintB,
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchPairsForTokenPair(mintA, mintB, 8)
-      .then(setPairs)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    Promise.resolve().then(async () => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const nextPairs = await fetchPairsForTokenPair(mintA, mintB, 8);
+        if (!cancelled) setPairs(nextPairs);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [mintA, mintB]);
 
   if (loading) {

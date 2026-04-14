@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 // ── Preset Options ─────────────────────────────────────────────
@@ -61,16 +61,14 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [selectedGradient, setSelectedGradient] = useState(CARD_GRADIENTS[0].id);
-  const [selectedCta, setSelectedCta] = useState(CTA_COLORS[0].id);
-
-  // Load saved preferences on mount
-  useEffect(() => {
-    const storedGradient = localStorage.getItem(STORAGE_KEY_GRADIENT);
-    const storedCta = localStorage.getItem(STORAGE_KEY_CTA);
-    if (storedGradient) setSelectedGradient(storedGradient);
-    if (storedCta) setSelectedCta(storedCta);
-  }, []);
+  const [selectedGradient, setSelectedGradient] = useState(() => {
+    if (typeof window === 'undefined') return CARD_GRADIENTS[0].id;
+    return localStorage.getItem(STORAGE_KEY_GRADIENT) ?? CARD_GRADIENTS[0].id;
+  });
+  const [selectedCta, setSelectedCta] = useState(() => {
+    if (typeof window === 'undefined') return CTA_COLORS[0].id;
+    return localStorage.getItem(STORAGE_KEY_CTA) ?? CTA_COLORS[0].id;
+  });
 
   const handleGradientChange = (id: string) => {
     setSelectedGradient(id);

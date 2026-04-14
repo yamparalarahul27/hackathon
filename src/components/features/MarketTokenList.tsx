@@ -66,7 +66,11 @@ export function MarketTokenList() {
           'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=solana-ecosystem&order=market_cap_desc&per_page=50&page=1&sparkline=false'
         );
         if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
-        const data: MarketToken[] = await res.json();
+        const raw = await res.json();
+        if (!Array.isArray(raw)) {
+          throw new Error('CoinGecko returned unexpected payload.');
+        }
+        const data = raw as MarketToken[];
         setTokens(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch market data');

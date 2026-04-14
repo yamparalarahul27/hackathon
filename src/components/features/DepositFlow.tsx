@@ -2,16 +2,18 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Wallet, ArrowRight, CheckCircle, Loader2, Shield, Repeat, Route } from 'lucide-react';
+import { Connection } from '@solana/web3.js';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import type { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
-import { MockJupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
+import { JupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
+import { WALLET_CLUSTER_CONFIG, DEFAULT_WALLET_CLUSTER } from '@/lib/constants';
 
 type Step = 'select-vault' | 'enter-amount' | 'swap' | 'confirmation';
 
-const jupiterService = new MockJupiterSwapService();
+const jupiterService = new JupiterSwapService();
 
 interface DepositFlowProps {
   preSelectedVaultAddress?: string | null;
@@ -19,8 +21,17 @@ interface DepositFlowProps {
 }
 
 export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: DepositFlowProps) {
-  const { connected, openWalletModal } = useWalletConnection();
+  const {
+    connected,
+    openWalletModal,
+    publicKey,
+    signTransaction,
+    canSignTransactions,
+    hasInstalledWallets,
+  } = useWalletConnection();
   const vaults = (vaultsProp ?? []).filter((vault) => vault.status === 'active');
+  const rpcUrl = WALLET_CLUSTER_CONFIG[DEFAULT_WALLET_CLUSTER].rpcUrl;
+  const connection = useMemo(() => (rpcUrl ? new Connection(rpcUrl, 'confirmed') : null), [rpcUrl]);
 
   const initialVault = preSelectedVaultAddress
     ? vaults.find((vault) => vault.address === preSelectedVaultAddress) ?? null
@@ -33,6 +44,8 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
   const [swapQuote, setSwapQuote] = useState<SwapQuote | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapComplete, setSwapComplete] = useState(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
+  const [swapSignature, setSwapSignature] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedVault && preSelectedVaultAddress) {
@@ -62,11 +75,15 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
     if (step === 'swap' && swapTargetToken && estimatedUsdc > 0) {
       setSwapLoading(true);
       setSwapQuote(null);
+      setSwapError(null);
       const halfUsdc = estimatedUsdc / 2;
       jupiterService
         .getQuoteForUsdAmount(swapTargetToken.mint, halfUsdc)
         .then((quote) => setSwapQuote(quote))
-        .catch((error) => console.error('Swap quote error:', error))
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : 'Failed to fetch quote';
+          setSwapError(message);
+        })
         .finally(() => setSwapLoading(false));
     }
   }, [step, swapTargetToken, estimatedUsdc]);
@@ -86,13 +103,41 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
   };
 
   const handleSwapExecute = async () => {
+    if (!connected || !publicKey) {
+      openWalletModal();
+      return;
+    }
+    if (!signTransaction || !canSignTransactions) {
+      setSwapError('Connected wallet does not support transaction signing.');
+      return;
+    }
+    if (!connection || !swapTargetToken) {
+      setSwapError('No mainnet RPC endpoint configured for swap execution.');
+      return;
+    }
+
     setSwapLoading(true);
+    setSwapError(null);
     try {
-      await jupiterService.executeSwap();
+      const halfUsdcBaseUnits = Math.floor((estimatedUsdc / 2) * 1e6);
+      const result = await jupiterService.executeSwap(
+        {
+          inputMint: TOKEN_MINTS.USDC,
+          outputMint: swapTargetToken.mint,
+          amount: halfUsdcBaseUnits,
+          slippageBps: 50,
+        },
+        publicKey.toBase58(),
+        signTransaction,
+        connection
+      );
+
+      setSwapSignature(result.txSignature);
       setSwapComplete(true);
       setTimeout(() => setStep('confirmation'), 700);
     } catch (error) {
-      console.error('Swap failed:', error);
+      const message = error instanceof Error ? error.message : 'Swap failed.';
+      setSwapError(message);
     } finally {
       setSwapLoading(false);
     }
@@ -105,6 +150,8 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
     setPrivateMode(false);
     setSwapQuote(null);
     setSwapComplete(false);
+    setSwapError(null);
+    setSwapSignature(null);
   };
 
   const steps: Step[] = ['select-vault', 'enter-amount', 'swap', 'confirmation'];
@@ -131,6 +178,12 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
             </div>
             <Button size="sm" onClick={openWalletModal}>Connect</Button>
           </Card>
+        )}
+
+        {!connected && !hasInstalledWallets && (
+          <p className="text-xs text-[#6B7280] text-center -mt-3">
+            No wallet detected. Install a Solana wallet extension or use a wallet in-app browser.
+          </p>
         )}
 
         <div className="flex items-center gap-1">
@@ -293,6 +346,7 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
 
               {swapQuote && !swapLoading && (
                 <div className="space-y-2">
+                  <p className="text-[11px] text-[#11274d] font-medium">Review before wallet signature</p>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#6B7280]">Route</span>
                     <span className="text-xs text-[#6B7280]">{swapQuote.routePlan.map((route) => route.swapInfo.label).join(' → ')}</span>
@@ -308,13 +362,19 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
                 </div>
               )}
 
+              {swapError && (
+                <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
+                  <p className="text-xs text-[#b91c1c]">{swapError}</p>
+                </div>
+              )}
+
               {swapComplete ? (
                 <div className="flex items-center justify-center gap-2 py-3">
                   <CheckCircle size={16} className="text-[#059669]" />
                   <span className="text-sm text-[#059669]">Swap complete! Finalizing deposit...</span>
                 </div>
               ) : (
-                <Button className="w-full" disabled={!swapQuote || swapLoading} onClick={handleSwapExecute}>
+                <Button className="w-full" disabled={!swapQuote || swapLoading || !canSignTransactions} onClick={handleSwapExecute}>
                   {swapLoading ? <Loader2 size={14} className="animate-spin" /> : <Repeat size={14} />}
                   {swapLoading ? 'Swapping...' : `Swap USDC → ${swapTargetToken.symbol}`}
                 </Button>
@@ -328,21 +388,34 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
         {step === 'confirmation' && selectedVault && (
           <Card className="text-center py-8 space-y-4 px-4">
             <CheckCircle size={48} className="text-[#059669] mx-auto" />
-            <h3 className="font-display font-bold text-xl text-[#11274d]">Deposit Successful!</h3>
+            <h3 className="font-display font-bold text-xl text-[#11274d]">Swap Completed!</h3>
             <div className="space-y-1">
-              <p className="text-sm text-[#6B7280]">{estimatedUsdc.toFixed(2)} USDC deposited into</p>
+              <p className="text-sm text-[#6B7280]">Prepared {estimatedUsdc.toFixed(2)} USDC vault allocation for</p>
               <p className="text-sm font-semibold text-[#3B7DDD]">{selectedVault.name}</p>
-              <p className="data-md text-[#059669]">Earning {formatPercent(selectedVault.apy)} APY</p>
+              <p className="data-md text-[#059669]">Target vault APY: {formatPercent(selectedVault.apy)}</p>
               {swapTargetToken && (
                 <p className="text-xs text-[#6B7280] flex items-center justify-center gap-1">
                   <Route size={12} /> Swapped via Jupiter for optimal routing
                 </p>
+              )}
+              {swapSignature && (
+                <a
+                  href={`https://solscan.io/tx/${swapSignature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#3B7DDD] hover:underline inline-block"
+                >
+                  View swap transaction
+                </a>
               )}
               {privateMode && (
                 <p className="text-xs text-[#0D9373] flex items-center justify-center gap-1">
                   <Shield size={12} /> Private routing enabled
                 </p>
               )}
+              <p className="text-[11px] text-[#6B7280]">
+                Vault deposit transaction execution is the next integration step in the flow.
+              </p>
             </div>
             <Button onClick={handleReset}>Make Another Deposit</Button>
           </Card>

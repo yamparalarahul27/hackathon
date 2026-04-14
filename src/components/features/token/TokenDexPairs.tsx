@@ -17,12 +17,26 @@ export const TokenDexPairs = React.memo(function TokenDexPairs({ mint, symbol }:
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchPairsForToken(mint, 8)
-      .then(setPairs)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    Promise.resolve().then(async () => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const nextPairs = await fetchPairsForToken(mint, 8);
+        if (!cancelled) setPairs(nextPairs);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [mint]);
 
   return (

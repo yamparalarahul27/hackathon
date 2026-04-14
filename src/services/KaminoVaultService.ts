@@ -7,9 +7,8 @@
  * Falls back gracefully to mock data if RPC calls fail.
  */
 
-import { Kamino, type KaminoPosition, type ShareDataWithAddress, type StrategyWithAddress } from '@kamino-finance/kliquidity-sdk';
+import { Kamino, type KaminoPosition, type ShareDataWithAddress } from '@kamino-finance/kliquidity-sdk';
 import { createSolanaRpc } from '@solana/kit';
-import Decimal from 'decimal.js';
 import {
   KaminoVaultInfo,
   KaminoVaultPosition,
@@ -78,7 +77,6 @@ export class KaminoVaultService {
         const tokenB = this.buildTokenInfo(tokenBMint, prices[tokenBMint] ?? 0);
 
         // Calculate TVL from share data
-        const sharePrice = sd.shareData.price;
         const tokenAAmount = sd.shareData.balance.tokenAAmounts;
         const tokenBAmount = sd.shareData.balance.tokenBAmounts;
 
@@ -167,10 +165,10 @@ export class KaminoVaultService {
       const sharesOwned = position.sharesAmount.toNumber();
       const currentValueUsd = sharesOwned * sharePriceUsd;
 
-      // We don't have deposit history on-chain easily, estimate with current value.
-      // In production, this should be replaced with stored per-deposit events.
-      const depositValueUsd = currentValueUsd * 0.95;
-      const yieldEarned = currentValueUsd - depositValueUsd;
+      // We do not infer synthetic PnL from guessed entry values.
+      // Until we persist deposit events, we report neutral baseline.
+      const depositValueUsd = currentValueUsd;
+      const yieldEarned = 0;
       const strategyType = this.inferStrategy(strategy);
 
       return {
@@ -188,7 +186,7 @@ export class KaminoVaultService {
         apy: 0, // Enrich later with APY API.
         impermanentLoss: 0, // Requires historical price data.
         impermanentLossUsd: 0,
-        depositedAt: new Date(), // Would come from tx history.
+        depositedAt: new Date(), // Should come from persisted deposit events when available.
         lastUpdated: new Date(),
       };
     });
@@ -272,11 +270,27 @@ export class KaminoVaultService {
 
     const strategyType = Reflect.get(strategy, 'strategyType');
     if (strategyType) {
-      const typeStr = JSON.stringify(strategyType).toLowerCase();
+      const typeStr = this.strategyTypeToString(strategyType);
       if (typeStr.includes('lending')) return 'lending';
       if (typeStr.includes('multiply') || typeStr.includes('leverage')) return 'multiply';
     }
     return 'concentrated-liquidity';
+  }
+
+  private strategyTypeToString(strategyType: unknown): string {
+    try {
+      if (typeof strategyType === 'string') return strategyType.toLowerCase();
+      if (typeof strategyType === 'bigint') return strategyType.toString();
+      if (strategyType && typeof strategyType === 'object') {
+        return JSON.stringify(
+          strategyType,
+          (_key, value) => (typeof value === 'bigint' ? value.toString() : value)
+        ).toLowerCase();
+      }
+      return String(strategyType).toLowerCase();
+    } catch {
+      return String(strategyType).toLowerCase();
+    }
   }
 
   private strategyLabel(strategy: VaultStrategy): string {
