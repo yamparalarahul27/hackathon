@@ -13,7 +13,7 @@ npm run typecheck
 echo "[pre-push] Running build"
 npm run build
 
-echo "[pre-push] Running runtime audit (high+)"
-npm run audit:high
+echo "[pre-push] Running runtime advisory gate"
+npm run audit:gate
 
 echo "[pre-push] All checks passed"

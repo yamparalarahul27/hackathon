@@ -1,0 +1,10 @@
+{
+  "exceptions": [
+    {
+      "id": "GHSA-3gc7-fjrx-p6mg",
+      "reason": "Upstream dependency chain (Solana/Kamino) has no patched bigint-buffer release yet.",
+      "expiresOn": "2026-04-28",
+      "owner": "security"
+    }
+  ]
+}

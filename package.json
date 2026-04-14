@@ -9,8 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "audit:high": "npm audit --omit=dev --audit-level=high",
+    "audit:gate": "node ./scripts/audit-gate.mjs",
     "prepush:check": "bash ./scripts/prepush-checks.sh",
-    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push scripts/prepush-checks.sh"
+    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push scripts/prepush-checks.sh scripts/audit-gate.mjs"
   },
   "dependencies": {
     "@deriverse/kit": "^1.0.51",
