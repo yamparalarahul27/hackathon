@@ -84,9 +84,11 @@ export function getTokenMetadata(mint: string): TokenMetadata | null {
 
 export async function fetchJupiterPrice(mint: string): Promise<number | null> {
   try {
-    const res = await fetch(`https://api.jup.ag/price/v2?ids=${mint}`);
+    const { JUPITER_PRICE_API, jupiterHeaders } = await import('../lib/constants');
+    const res = await fetch(`${JUPITER_PRICE_API}?ids=${mint}`, { headers: jupiterHeaders() });
     const data = await res.json();
-    return data.data?.[mint]?.price ? parseFloat(data.data[mint].price) : null;
+    const price = data?.[mint]?.usdPrice;
+    return typeof price === 'number' && Number.isFinite(price) ? price : null;
   } catch { return null; }
 }
 

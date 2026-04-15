@@ -12,8 +12,12 @@
  */
 
 import { Connection, type ParsedTransactionWithMeta } from '@solana/web3.js';
-import { Engine, PROGRAM_ID as DERIVERSE_PROGRAM_ID } from '@deriverse/kit';
-import { createSolanaRpc } from '@solana/kit';
+import { Engine } from '@deriverse/kit';
+import { createSolanaRpc, address } from '@solana/kit';
+// Use our app's constant — the kit's PROGRAM_ID export points at a
+// different (test) program. The real on-chain Deriverse program ID lives
+// in src/lib/constants.ts (overridable via NEXT_PUBLIC_DERIVERSE_PROGRAM_ID).
+import { DERIVERSE_PROGRAM_ID } from '@/lib/constants';
 import type {
   SpotFillOrderReportModel,
   PerpFillOrderReportModel,
@@ -36,6 +40,10 @@ const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 600;
 const MAX_SIGNATURES = 200;
 
+// Deriverse on-chain program version. Matches upstream Deriverse repo.
+// Override per environment with NEXT_PUBLIC_DERIVERSE_VERSION.
+const DERIVERSE_VERSION = parseInt(process.env.NEXT_PUBLIC_DERIVERSE_VERSION ?? '12', 10);
+
 // ── Service ────────────────────────────────────────────────────
 
 export class DeriverseTradeService {
@@ -46,8 +54,14 @@ export class DeriverseTradeService {
     if (!devnetRpcUrl) throw new Error('DeriverseTradeService requires a devnet RPC URL');
     this.connection = new Connection(devnetRpcUrl, 'confirmed');
     const rpc = createSolanaRpc(devnetRpcUrl);
+    // Engine REQUIRES programId + version — without them logsDecode silently
+    // returns []. Matches upstream Deriverse repo (constants.ts/services).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.engine = new Engine(rpc as any, { uiNumbers: false });
+    this.engine = new Engine(rpc as any, {
+      programId: address(DERIVERSE_PROGRAM_ID),
+      version: DERIVERSE_VERSION,
+      uiNumbers: false,
+    });
   }
 
   /**
@@ -67,22 +81,28 @@ export class DeriverseTradeService {
 
     if (signatures.length === 0) return [];
 
-    // 2. Fetch + parse transactions in batches
+    // 2. Fetch + parse transactions one at a time (parallel via Promise.all).
+    //    Helius free tier rejects JSON-RPC batch requests (-32403), so we use
+    //    individual getParsedTransaction calls — matches upstream Deriverse.
     const trades: DexTrade[] = [];
     const sigStrings = signatures.map((s) => s.signature);
 
     for (let i = 0; i < sigStrings.length; i += BATCH_SIZE) {
       const batch = sigStrings.slice(i, i + BATCH_SIZE);
-      const txs = await this.connection.getParsedTransactions(batch, {
-        maxSupportedTransactionVersion: 0,
-        commitment: 'confirmed',
-      });
+
+      const txs = await Promise.all(
+        batch.map((sig) =>
+          this.connection
+            .getParsedTransaction(sig, { maxSupportedTransactionVersion: 0, commitment: 'confirmed' })
+            .catch(() => null)
+        )
+      );
 
       for (let j = 0; j < txs.length; j++) {
         const tx = txs[j];
         if (!tx?.meta?.logMessages) continue;
 
-        // Only process transactions that involve Deriverse program
+        // Only process transactions that involve the Deriverse program
         const isDerivverse = tx.meta.logMessages.some(
           (log) => log.includes(DERIVERSE_PROGRAM_ID)
         );
@@ -92,7 +112,7 @@ export class DeriverseTradeService {
         trades.push(...parsed);
       }
 
-      // Rate-limit friendly
+      // Be rate-limit friendly between concurrency windows
       if (i + BATCH_SIZE < sigStrings.length) {
         await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
       }
@@ -110,9 +130,16 @@ export class DeriverseTradeService {
     const logs = tx.meta?.logMessages ?? [];
     const blockTime = tx.blockTime ? new Date(tx.blockTime * 1000) : new Date();
 
+    // Engine.logsDecode expects only `Program data:`-prefixed lines
+    // (the raw log array includes system lines like "Program invoked…"
+    // which make the decoder throw and lose the entire tx). Match the
+    // upstream Deriverse project's filter pattern.
+    const programDataLogs = logs.filter((line) => line.startsWith('Program data: '));
+    if (programDataLogs.length === 0) return [];
+
     let messages;
     try {
-      messages = this.engine.logsDecode(logs);
+      messages = this.engine.logsDecode(programDataLogs);
     } catch {
       return [];
     }
@@ -131,6 +158,7 @@ export class DeriverseTradeService {
     }
 
     // Second pass: collect fills
+    let fillSeq = 0;
     for (const msg of messages) {
       if (this.isSpotFill(msg)) {
         const symbol = INSTRUMENT_SYMBOLS[0] ?? 'UNKNOWN';
@@ -142,7 +170,7 @@ export class DeriverseTradeService {
         const fee = feesMap.get(msg.clientId) ?? (msg.rebates / QUOTE_DECIMALS);
 
         trades.push({
-          id: `${signature}-spot-${msg.orderId}-${msg.seqNo}`,
+          id: `${signature}-spot-${msg.orderId}-${fillSeq++}`,
           symbol: base ?? 'SOL',
           quoteCurrency: 'USDC',
           side,
@@ -171,7 +199,7 @@ export class DeriverseTradeService {
         const fee = feesMap.get(msg.clientId) ?? (msg.rebates / QUOTE_DECIMALS);
 
         trades.push({
-          id: `${signature}-perp-${msg.orderId}-${msg.seqNo}`,
+          id: `${signature}-perp-${msg.orderId}-${fillSeq++}`,
           symbol: base ?? 'SOL',
           quoteCurrency: 'USDC',
           side,

@@ -1,17 +1,23 @@
 /**
- * Jupiter Swap Service
+ * Jupiter Swap Service — Swap API V2 (/swap/v2/order)
  *
- * Wraps Jupiter quote + swap APIs for token swaps on Solana mainnet.
- * Includes retry/jitter for quote & build requests and explicit confirmation
- * polling so we don't treat "sent" as "landed".
+ * Aligned with Jupiter's current developer docs. V2's /order endpoint
+ * returns both the quote AND the ready-to-sign transaction in a single
+ * call when a taker is provided. Without a taker, it returns a quote
+ * preview only. This lets us preserve the two-step UX (preview → confirm)
+ * while reducing the API surface to one endpoint.
+ *
+ * Docs: https://developers.jup.ag
  */
 
 import { Connection, VersionedTransaction, type RpcResponseAndContext, type SimulatedTransactionResponse } from '@solana/web3.js';
+import {
+  JUPITER_SWAP_ORDER_API,
+  jupiterHeaders,
+} from '../lib/constants';
 
 // ── Constants ──────────────────────────────────────────────────
 
-const JUPITER_QUOTE_API = 'https://lite-api.jup.ag/swap/v1/quote';
-const JUPITER_SWAP_API = 'https://lite-api.jup.ag/swap/v1/swap';
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 
 // Common Solana token mints
@@ -25,7 +31,7 @@ export const TOKEN_MINTS = {
   BONK: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
 } as const;
 
-// ── Types ──────────────────────────────────────────────────────
+// ── Public Types ───────────────────────────────────────────────
 
 export interface SwapQuote {
   inputMint: string;
@@ -46,8 +52,6 @@ interface RoutePlanStep {
     outputMint: string;
     inAmount: string;
     outAmount: string;
-    feeAmount: string;
-    feeMint: string;
   };
   percent: number;
 }
@@ -68,26 +72,56 @@ export interface SwapQuoteParams {
   slippageBps?: number;
 }
 
-interface BuildSwapApiResponse {
-  swapTransaction: string;
-  lastValidBlockHeight?: number;
-  prioritizationFeeLamports?: number;
-  computeUnitLimit?: number;
-  simulationError?: unknown;
-}
+// ── V2 /order response shape (matches docs + live probe) ───────
 
-interface BuiltSwapTransaction {
-  transaction: VersionedTransaction;
-  blockhash: string;
-  lastValidBlockHeight: number | null;
-  prioritizationFeeLamports: number | null;
-  computeUnitLimit: number | null;
-  simulationError: unknown;
+interface JupiterOrderResponse {
+  swapType: string;
+  inputMint: string;
+  outputMint: string;
+  inAmount: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: string;
+  slippageBps: number;
+  priceImpactPct: string;
+  routePlan: RoutePlanStep[];
+  // Populated only when `taker` is provided + no error
+  transaction?: string | null;
+  requestId?: string;
+  // Error fields (present on failure even with taker)
+  errorCode?: number;
+  errorMessage?: string;
+  // Informational fee fields
+  prioritizationFeeLamports?: number;
+  rentFeeLamports?: number;
 }
 
 // ── Service ────────────────────────────────────────────────────
 
 export class JupiterSwapService {
+  private async fetchOrder(
+    params: SwapQuoteParams,
+    taker?: string
+  ): Promise<JupiterOrderResponse> {
+    const url = new URL(JUPITER_SWAP_ORDER_API);
+    url.searchParams.set('inputMint', params.inputMint);
+    url.searchParams.set('outputMint', params.outputMint);
+    url.searchParams.set('amount', params.amount.toString());
+    if (params.slippageBps !== undefined) {
+      url.searchParams.set('slippageBps', params.slippageBps.toString());
+    }
+    if (taker) url.searchParams.set('taker', taker);
+
+    const response = await this.fetchWithRetry(url.toString(), {
+      headers: jupiterHeaders(),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Jupiter /order ${response.status}: ${body.slice(0, 200)}`);
+    }
+    return response.json() as Promise<JupiterOrderResponse>;
+  }
+
   private async fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
     const maxAttempts = 3;
     let lastError: unknown = null;
@@ -96,7 +130,6 @@ export class JupiterSwapService {
       try {
         const response = await fetch(url, init);
         if (response.ok) return response;
-
         if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt === maxAttempts) {
           return response;
         }
@@ -104,7 +137,6 @@ export class JupiterSwapService {
         lastError = error;
         if (attempt === maxAttempts) break;
       }
-
       await sleep(Math.floor((200 * (2 ** (attempt - 1))) + Math.random() * 250));
     }
 
@@ -112,42 +144,31 @@ export class JupiterSwapService {
   }
 
   /**
-   * Get a swap quote from Jupiter.
-   * Amount is in the input token's smallest unit (e.g., lamports for SOL, 1e6 for USDC).
+   * Preview a swap. Returns routing, amounts, and price impact without a
+   * transaction. No wallet involved. Slippage defaults to 50 bps.
    */
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    const { inputMint, outputMint, amount, slippageBps = 50 } = params;
-
-    const url = new URL(JUPITER_QUOTE_API);
-    url.searchParams.set('inputMint', inputMint);
-    url.searchParams.set('outputMint', outputMint);
-    url.searchParams.set('amount', amount.toString());
-    url.searchParams.set('slippageBps', slippageBps.toString());
-
-    const response = await this.fetchWithRetry(url.toString(), {
-      headers: { 'Accept': 'application/json' },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Jupiter Quote API error: ${response.status} — ${error}`);
-    }
-
-    return response.json() as Promise<SwapQuote>;
+    const slippageBps = params.slippageBps ?? 50;
+    const order = await this.fetchOrder({ ...params, slippageBps });
+    return {
+      inputMint: order.inputMint,
+      outputMint: order.outputMint,
+      inAmount: order.inAmount,
+      outAmount: order.outAmount,
+      otherAmountThreshold: order.otherAmountThreshold,
+      priceImpactPct: order.priceImpactPct,
+      routePlan: order.routePlan,
+      slippageBps: order.slippageBps ?? slippageBps,
+    };
   }
 
-  /**
-   * Get a swap quote for a human-readable amount.
-   * Converts USD amount to token base units automatically.
-   */
+  /** Convenience: quote USD into a target token (spends USDC). */
   async getQuoteForUsdAmount(
     outputMint: string,
     usdAmount: number,
     slippageBps = 50
   ): Promise<SwapQuote> {
-    // USDC has 6 decimals
-    const usdcBaseUnits = Math.floor(usdAmount * 1e6);
-
+    const usdcBaseUnits = Math.floor(usdAmount * 1e6); // USDC = 6 decimals
     return this.getQuote({
       inputMint: TOKEN_MINTS.USDC,
       outputMint,
@@ -157,47 +178,7 @@ export class JupiterSwapService {
   }
 
   /**
-   * Build a swap transaction from a quote.
-   * Returns a VersionedTransaction ready to be signed by the user's wallet.
-   */
-  async buildSwapTransaction(
-    quote: SwapQuote,
-    userPublicKey: string
-  ): Promise<BuiltSwapTransaction> {
-    const response = await this.fetchWithRetry(JUPITER_SWAP_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        quoteResponse: quote,
-        userPublicKey,
-        wrapAndUnwrapSol: true,
-        dynamicComputeUnitLimit: true,
-        prioritizationFeeLamports: 'auto',
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Jupiter Swap API error: ${response.status} — ${error}`);
-    }
-
-    const payload = await response.json() as BuildSwapApiResponse;
-    const decodedTx = decodeBase64(payload.swapTransaction);
-    const transaction = VersionedTransaction.deserialize(decodedTx);
-
-    return {
-      transaction,
-      blockhash: transaction.message.recentBlockhash,
-      lastValidBlockHeight: payload.lastValidBlockHeight ?? null,
-      prioritizationFeeLamports: payload.prioritizationFeeLamports ?? null,
-      computeUnitLimit: payload.computeUnitLimit ?? null,
-      simulationError: payload.simulationError ?? null,
-    };
-  }
-
-  /**
-   * Execute a full swap: quote → build tx → sign → send.
-   * Requires a connected wallet that can sign transactions.
+   * Full swap: /order (with taker) → decode → sign → send + confirm via RPC.
    */
   async executeSwap(
     params: SwapQuoteParams,
@@ -205,39 +186,48 @@ export class JupiterSwapService {
     signTransaction: (tx: VersionedTransaction) => Promise<VersionedTransaction>,
     connection: Connection
   ): Promise<SwapResult> {
-    const quote = await this.getQuote(params);
-    const built = await this.buildSwapTransaction(quote, userPublicKey);
+    const order = await this.fetchOrder(params, userPublicKey);
 
-    if (built.simulationError) {
-      throw new Error(`Jupiter simulation failed before signing: ${JSON.stringify(built.simulationError)}`);
+    if (order.errorMessage || order.errorCode) {
+      throw new Error(`Jupiter swap rejected: ${order.errorMessage ?? `code ${order.errorCode}`}`);
+    }
+    if (!order.transaction) {
+      throw new Error('Jupiter did not return a transaction for this order.');
     }
 
-    const signedTx = await signTransaction(built.transaction);
-    const simulation = await this.simulateSignedTransaction(connection, signedTx);
+    const raw = decodeBase64(order.transaction);
+    const tx = VersionedTransaction.deserialize(raw);
+
+    const simulation = await connection.simulateTransaction(tx, {
+      replaceRecentBlockhash: false,
+      sigVerify: false,
+      commitment: 'processed',
+    });
     if (simulation.value.err) {
       throw new Error(`Swap simulation failed: ${JSON.stringify(simulation.value.err)}`);
     }
 
-    const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+    const signed = await signTransaction(tx);
+    const postSignSimulation = await this.simulateSignedTransaction(connection, signed);
+    if (postSignSimulation.value.err) {
+      throw new Error(`Signed swap simulation failed: ${JSON.stringify(postSignSimulation.value.err)}`);
+    }
+
+    const sig = await connection.sendRawTransaction(signed.serialize(), {
       skipPreflight: true,
       maxRetries: 3,
       preflightCommitment: 'processed',
     });
 
-    await this.waitForConfirmation(
-      connection,
-      txSignature,
-      built.blockhash,
-      built.lastValidBlockHeight
-    );
+    await this.waitForConfirmation(connection, sig, tx.message.recentBlockhash);
 
     return {
-      txSignature,
-      inputAmount: Number(quote.inAmount),
-      outputAmount: Number(quote.outAmount),
-      priceImpact: parseFloat(quote.priceImpactPct),
-      prioritizationFeeLamports: built.prioritizationFeeLamports,
-      computeUnitLimit: built.computeUnitLimit,
+      txSignature: sig,
+      inputAmount: Number(order.inAmount),
+      outputAmount: Number(order.outAmount),
+      priceImpact: parseFloat(order.priceImpactPct),
+      prioritizationFeeLamports: order.prioritizationFeeLamports ?? null,
+      computeUnitLimit: null, // Not surfaced by V2 /order; left for future.
     };
   }
 
@@ -255,57 +245,33 @@ export class JupiterSwapService {
   private async waitForConfirmation(
     connection: Connection,
     signature: string,
-    blockhash: string,
-    lastValidBlockHeight: number | null
+    blockhash: string
   ): Promise<void> {
     const deadline = Date.now() + 60_000;
 
     while (Date.now() < deadline) {
-      const [statusResult, currentHeight] = await Promise.all([
-        connection.getSignatureStatuses([signature]),
-        lastValidBlockHeight ? connection.getBlockHeight('processed') : Promise.resolve(0),
-      ]);
-
+      const statusResult = await connection.getSignatureStatuses([signature]);
       const status = statusResult.value[0];
       if (status?.err) {
         throw new Error(`Swap transaction failed on-chain: ${JSON.stringify(status.err)}`);
       }
-
       if (status?.confirmationStatus === 'confirmed' || status?.confirmationStatus === 'finalized') {
         return;
       }
-
-      if (lastValidBlockHeight && currentHeight > lastValidBlockHeight) {
-        throw new Error('Swap transaction expired before confirmation. Please try again.');
-      }
-
       await sleep(1_200);
     }
 
-    if (lastValidBlockHeight) {
-      await connection.confirmTransaction(
-        {
-          signature,
-          blockhash,
-          lastValidBlockHeight,
-        },
-        'confirmed'
-      );
-      return;
-    }
-
-    await connection.confirmTransaction(signature, 'confirmed');
+    // Timeout safety net — let Solana drop or finalize.
+    await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight: await connection.getBlockHeight('processed') }, 'confirmed');
   }
 }
 
-// ── Mock Service (for devnet demo) ─────────────────────────────
+// ── Mock Service (devnet demo) ─────────────────────────────────
 
 export class MockJupiterSwapService {
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    // Simulate realistic swap rates
     const { inputMint, outputMint, amount, slippageBps = 50 } = params;
 
-    // Simple price simulation based on known token prices
     const prices: Record<string, number> = {
       [TOKEN_MINTS.USDC]: 1.0,
       [TOKEN_MINTS.SOL]: 178.50,
@@ -320,7 +286,6 @@ export class MockJupiterSwapService {
     const outputPrice = prices[outputMint] ?? 1;
     const inputDecimals = inputMint === TOKEN_MINTS.SOL ? 9 : 6;
     const outputDecimals = outputMint === TOKEN_MINTS.SOL ? 9 : 6;
-
     const inputUsd = (amount / (10 ** inputDecimals)) * inputPrice;
     const outputTokens = inputUsd / outputPrice;
     const outAmount = Math.floor(outputTokens * (10 ** outputDecimals));
@@ -341,8 +306,6 @@ export class MockJupiterSwapService {
           outputMint,
           inAmount: amount.toString(),
           outAmount: outAmount.toString(),
-          feeAmount: Math.floor(amount * 0.003).toString(),
-          feeMint: inputMint,
         },
         percent: 100,
       }],
@@ -363,23 +326,20 @@ export class MockJupiterSwapService {
     });
   }
 
-  async buildSwapTransaction(): Promise<VersionedTransaction> {
-    throw new Error('Mock service cannot build real transactions. Connect to mainnet for live swaps.');
-  }
-
   async executeSwap(): Promise<SwapResult> {
-    // Simulate a successful swap
     await new Promise(resolve => setTimeout(resolve, 1500));
     return {
       txSignature: `mock_swap_${Date.now().toString(36)}`,
-      inputAmount: 50_000_000, // 50 USDC
-      outputAmount: 280_000_000, // ~0.28 SOL
+      inputAmount: 50_000_000,
+      outputAmount: 280_000_000,
       priceImpact: 0.12,
       prioritizationFeeLamports: null,
       computeUnitLimit: null,
     };
   }
 }
+
+// ── Helpers ────────────────────────────────────────────────────
 
 function decodeBase64(value: string): Uint8Array {
   if (typeof atob === 'function') {
@@ -390,7 +350,6 @@ function decodeBase64(value: string): Uint8Array {
     }
     return bytes;
   }
-
   return Uint8Array.from(Buffer.from(value, 'base64'));
 }
 

@@ -8,12 +8,18 @@
  * - stale cache fallback semantics
  */
 
-import { JUPITER_PRICE_API } from '../lib/constants';
+import { JUPITER_PRICE_API, jupiterHeaders } from '../lib/constants';
 
-interface JupiterPriceResponse {
-  data: Record<string, { id: string; type: string; price: string }>;
-  timeTaken: number;
-}
+// Price API v3 response — no `data` wrapper, price is `usdPrice` (number).
+// Docs: https://developers.jup.ag/docs/price-api
+type JupiterPriceResponse = Record<string, {
+  usdPrice: number;
+  liquidity?: number;
+  priceChange24h?: number;
+  decimals?: number;
+  blockId?: number;
+  createdAt?: string;
+}>;
 
 interface PriceCacheEntry {
   price: number;
@@ -128,10 +134,10 @@ export class TokenPriceService {
     const prices: Record<string, number> = {};
 
     for (const mint of mints) {
-      const value = data.data[mint]?.price;
-      if (value === undefined) continue;
-      const parsed = parseFloat(value);
-      if (Number.isFinite(parsed)) prices[mint] = parsed;
+      const value = data[mint]?.usdPrice;
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        prices[mint] = value;
+      }
     }
 
     return prices;
@@ -144,7 +150,7 @@ export class TokenPriceService {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         const response = await fetch(url, {
-          headers: { 'Accept': 'application/json' },
+          headers: jupiterHeaders(),
         });
 
         if (response.ok || !RETRYABLE_STATUS_CODES.has(response.status) || attempt === maxAttempts) {

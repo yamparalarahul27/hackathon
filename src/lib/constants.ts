@@ -68,6 +68,21 @@ export const KAMINO_KLIQUIDITY_PROGRAM = '6LtLpnUFNByNXLyCoK9wA2MykKAmQNZKBdY8s4
 
 // ── External APIs ────────────────────────────────────────────────────
 
-export const JUPITER_PRICE_API = 'https://api.jup.ag/price/v2';
+// Jupiter (docs: https://developers.jup.ag). All products live under api.jup.ag.
+// Keyless throughput is 0.5 RPS; set JUPITER_API_KEY (portal.jup.ag) for 1+ RPS.
+export const JUPITER_API_BASE = 'https://api.jup.ag';
+export const JUPITER_PRICE_API = `${JUPITER_API_BASE}/price/v3`;
+export const JUPITER_SWAP_ORDER_API = `${JUPITER_API_BASE}/swap/v2/order`;
+export const JUPITER_SWAP_EXECUTE_API = `${JUPITER_API_BASE}/swap/v2/execute`;
+export const JUPITER_TOKENS_SEARCH_API = `${JUPITER_API_BASE}/tokens/v2/search`;
+export const JUPITER_API_KEY = process.env.JUPITER_API_KEY ?? '';
+
+/** Extra headers for every Jupiter request (API key if set, Accept always). */
+export function jupiterHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { Accept: 'application/json', ...extra };
+  if (JUPITER_API_KEY) headers['x-api-key'] = JUPITER_API_KEY;
+  return headers;
+}
+
 export const BIRDEYE_API_BASE = 'https://public-api.birdeye.so';
 export const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY ?? '';
