@@ -26,16 +26,13 @@ interface KaminoOverviewApiResponse {
 
 const EMPTY_SUMMARY: LPPortfolioSummary = {
   totalPositions: 0,
-  totalDepositedUsd: 0,
   totalCurrentValueUsd: 0,
-  totalYieldEarnedUsd: 0,
-  totalImpermanentLossUsd: 0,
   weightedAvgApy: 0,
   bestPerformingVault: null,
   worstPerformingVault: null,
 };
 
-const CLIENT_REFRESH_INTERVAL_MS = 60_000;
+const CLIENT_REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const CLIENT_CACHE_TTL_MS = 30_000;
 
 const clientCache = new Map<string, { timestamp: number; payload: KaminoOverviewApiResponse }>();

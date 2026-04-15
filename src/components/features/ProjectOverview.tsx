@@ -5,14 +5,13 @@ import Link from 'next/link';
 import { ArrowRight, TrendingUp, BarChart3, ArrowLeftRight, Vault, Wallet } from 'lucide-react';
 import { Card, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { TokenPairIcons } from '@/components/ui/TokenIcon';
+import { TokenIcon } from '@/components/ui/TokenIcon';
 import { RpcErrorBanner } from '@/components/ui/RpcErrorBanner';
 import { KaminoVaultInfo, KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';
 import { formatUsd, formatPercent, formatCompact } from '@/lib/utils';
 
 const EMPTY_SUMMARY: LPPortfolioSummary = {
-  totalPositions: 0, totalDepositedUsd: 0, totalCurrentValueUsd: 0,
-  totalYieldEarnedUsd: 0, totalImpermanentLossUsd: 0, weightedAvgApy: 0,
+  totalPositions: 0, totalCurrentValueUsd: 0, weightedAvgApy: 0,
   bestPerformingVault: null, worstPerformingVault: null,
 };
 
@@ -233,7 +232,7 @@ export function ProjectOverview({
               <h2 className="label-section-light">Top Vaults by APY</h2>
               {lastUpdated && (
                 <span className="font-ibm-plex-sans text-[10px] text-[#94a3b8]">
-                  Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · refreshes every 1hr
+                  Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · refreshes every 30min
                 </span>
               )}
             </div>
@@ -258,7 +257,7 @@ export function ProjectOverview({
                     <th className="text-left py-3 pr-4 pl-4"><span className="label-section-light">Vault</span></th>
                     <th className="text-right py-3 px-3"><span className="label-section-light">APY</span></th>
                     <th className="text-right py-3 px-3"><span className="label-section-light">TVL</span></th>
-                    <th className="text-right py-3 px-3 hidden md:table-cell"><span className="label-section-light">24h Fees</span></th>
+                    <th className="text-right py-3 px-3 hidden md:table-cell"><span className="label-section-light">Holders</span></th>
                     <th className="text-right py-3 pl-3 pr-4"><span className="label-section-light">Action</span></th>
                   </tr>
                 </thead>
@@ -267,11 +266,11 @@ export function ProjectOverview({
                     <tr key={vault.address} className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc] transition-colors">
                       <td className="py-3.5 pr-4 pl-4">
                         <div className="flex items-center gap-3">
-                          <TokenPairIcons tokenA={vault.tokenA} tokenB={vault.tokenB} size="sm" />
+                          <TokenIcon mint={vault.token.mint} symbol={vault.token.symbol} size="sm" />
                           <div>
                             <p className="text-sm font-medium text-[#11274d]">{vault.name}</p>
                             <p className="text-xs text-[#6B7280] hidden sm:block">
-                              {vault.strategy.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                              {vault.token.symbol} Earn
                             </p>
                           </div>
                         </div>
@@ -285,7 +284,7 @@ export function ProjectOverview({
                         <span className="data-md text-[#11274d]">{formatCompact(vault.tvl)}</span>
                       </td>
                       <td className="text-right py-3.5 px-3 hidden md:table-cell">
-                        <span className="data-sm text-[#6B7280]">{formatCompact(vault.fees24h)}</span>
+                        <span className="data-sm text-[#6B7280]">{vault.holders.toLocaleString()}</span>
                       </td>
                       <td className="text-right py-3.5 pl-3 pr-4">
                         <Link href={`/vault/kamino/${vault.address}`}>
@@ -321,9 +320,9 @@ export function ProjectOverview({
                       <Card hover className="animate-fade-up" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'backwards' }}>
                         <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
                           <div className="flex items-center gap-2">
-                            <TokenPairIcons tokenA={p.tokenA} tokenB={p.tokenB} size="sm" />
+                            <TokenIcon mint={p.token.mint} symbol={p.token.symbol} size="sm" />
                             <span className="font-ibm-plex-sans text-sm font-medium text-[#11274d]">
-                              {p.tokenA.symbol}/{p.tokenB.symbol}
+                              {p.vaultName}
                             </span>
                           </div>
                           {p.apy > 0 && (
@@ -362,7 +361,7 @@ export function ProjectOverview({
                 { label: 'Total Vaults', value: vaults.length.toString() },
                 { label: 'Combined TVL', value: formatCompact(vaults.reduce((s, v) => s + v.tvl, 0)) },
                 { label: 'Highest APY', value: formatPercent(Math.max(...vaults.map(v => v.apy))) },
-                { label: '24h Volume', value: formatCompact(vaults.reduce((s, v) => s + v.volume24h, 0)) },
+                { label: 'Total Holders', value: vaults.reduce((s, v) => s + v.holders, 0).toLocaleString() },
               ].map((stat) => (
                 <Card key={stat.label} className="p-4">
                   <p className="label-section-light mb-1">{stat.label}</p>

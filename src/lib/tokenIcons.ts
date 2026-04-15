@@ -55,28 +55,16 @@ const KNOWN_ICONS: Record<string, string> = {
     'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png',
 };
 
-// ── Runtime cache from Jupiter API ─────────────────────────────
+// ── Runtime cache (populated lazily when we fetch metadata) ─────
 
-const jupiterCache: Map<string, string> = new Map();
-let jupiterFetched = false;
+const iconCache: Map<string, string> = new Map();
 
 /**
- * Preload icons from Jupiter Token API (best effort, non-blocking).
- * This enriches the cache for tokens not in KNOWN_ICONS.
+ * Cache an icon URL for a mint (called by token metadata services
+ * when they receive a token record from Jupiter Tokens V2 or similar).
  */
-export async function preloadTokenIcons(): Promise<void> {
-  if (jupiterFetched) return;
-  try {
-    const res = await fetch('https://token.jup.ag/strict', { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) return;
-    const tokens: Array<{ address: string; logoURI?: string }> = await res.json();
-    for (const t of tokens) {
-      if (t.logoURI) jupiterCache.set(t.address, t.logoURI);
-    }
-    jupiterFetched = true;
-  } catch {
-    // Silent — KNOWN_ICONS + fallback handle it
-  }
+export function cacheTokenIcon(mint: string, logoUri: string): void {
+  if (mint && logoUri) iconCache.set(mint, logoUri);
 }
 
 // ── Public API ─────────────────────────────────────────────────
@@ -84,9 +72,14 @@ export async function preloadTokenIcons(): Promise<void> {
 /**
  * Get token icon URL. Resolution order:
  * 1. KNOWN_ICONS (hardcoded, verified working)
- * 2. Jupiter cache (runtime, covers thousands of tokens)
- * 3. Solana token-list CDN (legacy, may 404)
+ * 2. Runtime cache (populated by metadata fetchers)
+ * 3. Solana token-list CDN (legacy, may 404 — onError falls back)
  * 4. Generated avatar (always works)
+ *
+ * NOTE: Jupiter's old `token.jup.ag/strict` bulk-list endpoint was removed
+ * when we aligned with the current Tokens V2 docs. For on-demand lookups,
+ * call `api.jup.ag/tokens/v2/search?query=<mint>` and feed the result to
+ * cacheTokenIcon().
  */
 export function getTokenIcon(mint: string, symbol?: string): string {
   if (!mint) return getFallbackIcon(symbol ?? '?');
@@ -94,8 +87,8 @@ export function getTokenIcon(mint: string, symbol?: string): string {
   // 1. Known reliable URL
   if (KNOWN_ICONS[mint]) return KNOWN_ICONS[mint];
 
-  // 2. Jupiter runtime cache
-  const cached = jupiterCache.get(mint);
+  // 2. Runtime cache
+  const cached = iconCache.get(mint);
   if (cached) return cached;
 
   // 3. Solana token-list CDN (may 404, onError handles it)

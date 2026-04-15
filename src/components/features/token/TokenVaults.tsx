@@ -16,9 +16,7 @@ interface TokenVaultsProps {
 
 export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVaults = [] }: TokenVaultsProps) {
   const vaults = useMemo(() => {
-    return allVaults.filter(
-      v => (v.tokenA.mint === mint || v.tokenB.mint === mint) && v.apy >= 5
-    );
+    return allVaults.filter((v) => v.token.mint === mint && v.apy >= 5);
   }, [allVaults, mint]);
 
   if (vaults.length === 0) {

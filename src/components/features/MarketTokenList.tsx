@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, TrendingUp, ArrowUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
@@ -51,6 +51,7 @@ function getCategory(id: string): FilterTab {
 // ── Component ─────────────────────────────────────────────────
 
 export function MarketTokenList() {
+  const router = useRouter();
   const [tokens, setTokens] = useState<MarketToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -223,9 +224,10 @@ export function MarketTokenList() {
                   const mint = GECKO_TO_MINT[token.id];
                   const href = mint ? `/token/${mint}` : undefined;
 
-                  const row = (
+                  return (
                     <tr
                       key={token.id}
+                      onClick={href ? () => router.push(href) : undefined}
                       className={`border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc] transition-colors ${href ? 'cursor-pointer' : ''}`}
                     >
                       <td className="py-3.5 pl-4 pr-2">
@@ -269,8 +271,6 @@ export function MarketTokenList() {
                       </td>
                     </tr>
                   );
-
-                  return href ? <Link key={token.id} href={href} className="contents">{row}</Link> : row;
                 })}
               </tbody>
             </table>

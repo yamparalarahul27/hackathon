@@ -19,12 +19,16 @@ export const VaultDetails = React.memo(function VaultDetails({ vault }: VaultDet
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Strategy</span>
-          <span className="text-xs text-[#11274d] font-ibm-plex-sans capitalize">{vault.strategy.replace('-', ' ')}</span>
+          <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Deposit Token</span>
+          <span className="text-xs text-[#11274d] font-ibm-plex-sans uppercase">{vault.token.symbol}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Fee Rate</span>
-          <span className="data-sm text-[#11274d]">{vault.feeRate} bps</span>
+          <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Performance Fee</span>
+          <span className="data-sm text-[#11274d]">{vault.performanceFeeBps} bps</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Management Fee</span>
+          <span className="data-sm text-[#11274d]">{vault.managementFeeBps} bps</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-[#94a3b8] font-ibm-plex-sans">Shares Mint</span>

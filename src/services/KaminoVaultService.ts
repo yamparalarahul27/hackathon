@@ -1,405 +1,191 @@
 /**
- * Kamino Vault Service
+ * Kamino Vault Service — K-Vaults only (single-asset yield vaults).
  *
- * Integrates with Kamino's kliquidity-sdk to fetch real vault data,
- * user positions, share prices, and strategy details from mainnet.
+ * Backed entirely by Kamino's documented REST API (api.kamino.finance).
+ * No SDK dependency — aligned with kamino.com/docs.
  *
- * APY enriched via Kamino's free REST API (no key required):
- * GET https://api.kamino.finance/strategies/{address}/metrics?env=mainnet-beta
+ *   list:     GET  /kvaults/vaults
+ *   metrics:  GET  /kvaults/{addr}/metrics
+ *   user:     GET  /kvaults/users/{pubkey}/positions
+ *   deposit:  POST /ktx/kvault/deposit  (see KaminoDepositService)
  */
 
-import { Kamino, type KaminoPosition, type ShareDataWithAddress } from '@kamino-finance/kliquidity-sdk';
-import { createSolanaRpc } from '@solana/kit';
 import {
   KaminoVaultInfo,
   KaminoVaultPosition,
   LPPortfolioSummary,
   TokenInfo,
-  VaultStrategy,
 } from '../lib/lp-types';
 import { TokenPriceService } from './TokenPriceService';
 import { getTokenIcon } from '../lib/tokenIcons';
+import { KaminoApiClient, type KVaultMetrics, type KVaultRawState } from './KaminoApiClient';
 
-// Known token decimals + symbols. Logos resolved via getTokenIcon (CDN).
+// Known token metadata. Unknown tokens use a truncated mint as symbol.
 const TOKEN_META: Record<string, { symbol: string; decimals: number }> = {
-  'So11111111111111111111111111111111111111112':  { symbol: 'SOL',  decimals: 9 },
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', decimals: 6 },
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', decimals: 6 },
-  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol: 'ETH',  decimals: 8 },
-  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol: 'JUP',  decimals: 6 },
-  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL':  { symbol: 'JTO',  decimals: 9 },
-  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK', decimals: 5 },
+  'So11111111111111111111111111111111111111112':  { symbol: 'SOL',   decimals: 9 },
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC',  decimals: 6 },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT',  decimals: 6 },
+  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': { symbol: 'ETH',   decimals: 8 },
+  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN':  { symbol: 'JUP',   decimals: 6 },
+  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL':  { symbol: 'JTO',   decimals: 9 },
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK',  decimals: 5 },
+  'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3':  { symbol: 'GSOL',  decimals: 9 },
+  'MFRAGpsaMD4mXT4jNy81byZMtCHuhMp1fyUYDcwLx8a':  { symbol: 'MFRAG', decimals: 6 },
 };
 
+const CONCURRENCY = 10;
+
 export class KaminoVaultService {
-  private kamino: Kamino;
+  private api: KaminoApiClient;
   private priceService: TokenPriceService;
 
-  constructor(rpcUrl: string) {
-    const rpc = createSolanaRpc(rpcUrl);
-    // Type assertion needed: @solana/kit version mismatch between our deps and Kamino's bundled deps
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.kamino = new Kamino('mainnet-beta', rpc as any);
+  constructor() {
+    this.api = new KaminoApiClient();
     this.priceService = new TokenPriceService();
   }
 
-  /**
-   * Fetch all live Kamino vault strategies with share data.
-   */
+  /** All live K-Vaults enriched with real APY + TVL. */
   async getVaults(): Promise<KaminoVaultInfo[]> {
-    console.log('[KaminoVaultService] Fetching all live strategies...');
+    const raw = await this.api.listVaults();
+    console.log(`[KaminoVaultService] Listed ${raw.length} k-vaults`);
 
-    const shareDataList: ShareDataWithAddress[] = await this.kamino.getStrategyShareDataForStrategies({
-      strategyCreationStatus: 'LIVE',
-    });
-
-    console.log(`[KaminoVaultService] Found ${shareDataList.length} live strategies`);
-
-    // Collect all unique token mints to batch-fetch prices
-    const mints = new Set<string>();
-    for (const sd of shareDataList) {
-      const strategy = sd.strategy;
-      mints.add(strategy.tokenAMint.toString());
-      mints.add(strategy.tokenBMint.toString());
+    // Fetch metrics for every vault in bounded concurrency batches.
+    const metricsByAddress = new Map<string, KVaultMetrics>();
+    for (let i = 0; i < raw.length; i += CONCURRENCY) {
+      const batch = raw.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map((v) => this.api.getVaultMetrics(v.address))
+      );
+      batch.forEach((v, idx) => {
+        const m = results[idx];
+        if (m) metricsByAddress.set(v.address, m);
+      });
     }
 
-    const prices = await this.priceService.getPrices([...mints]);
+    // Fetch token prices as a fallback (when a vault has zero invested and
+    // the metrics endpoint lacks a reliable tokenPrice). One batched call.
+    const uniqueMints = Array.from(new Set(raw.map((r) => r.state.tokenMint)));
+    const priceMap = await this.priceService.getPrices(uniqueMints);
 
     const vaults: KaminoVaultInfo[] = [];
+    for (const v of raw) {
+      const m = metricsByAddress.get(v.address);
+      if (!m) continue; // drop vaults without metrics (test/empty vaults)
 
-    for (const sd of shareDataList) {
-      try {
-        const strategy = sd.strategy;
-        const address = sd.address.toString();
-        const tokenAMint = strategy.tokenAMint.toString();
-        const tokenBMint = strategy.tokenBMint.toString();
+      const tvl = parseFloat(m.tokensAvailableUsd ?? '0') + parseFloat(m.tokensInvestedUsd ?? '0');
+      // Require non-trivial TVL + at least one holder — filters out staging/test vaults.
+      if (tvl < 1 || m.numberOfHolders < 1) continue;
 
-        const tokenA = this.buildTokenInfo(tokenAMint, prices[tokenAMint] ?? 0);
-        const tokenB = this.buildTokenInfo(tokenBMint, prices[tokenBMint] ?? 0);
+      const tokenPriceUsd = parseFloat(m.tokenPrice ?? '0') || (priceMap[v.state.tokenMint] ?? 0);
+      const token = this.buildTokenInfo(v.state.tokenMint, tokenPriceUsd, v.state.tokenMintDecimals);
 
-        // Calculate TVL from share data
-        const tokenAAmount = sd.shareData.balance.tokenAAmounts;
-        const tokenBAmount = sd.shareData.balance.tokenBAmounts;
-
-        const tvl = tokenAAmount.mul(prices[tokenAMint] ?? 0)
-          .add(tokenBAmount.mul(prices[tokenBMint] ?? 0))
-          .toNumber();
-
-        // Determine strategy type from on-chain strategy metadata.
-        const strategyType = this.inferStrategy(strategy);
-        const feeRate = this.extractFeeRate(strategy);
-
-        vaults.push({
-          address,
-          name: `${tokenA.symbol}-${tokenB.symbol} ${this.strategyLabel(strategyType)}`,
-          strategy: strategyType,
-          tokenA,
-          tokenB,
-          tvl: Math.round(tvl),
-          apy: 0,       // enriched below from Kamino REST API
-          fees24h: 0,    // enriched below
-          volume24h: 0,  // enriched below
-          feeRate,
-          sharesMint: strategy.sharesMint.toString(),
-          status: 'active',
-        });
-      } catch (err) {
-        console.warn('[KaminoVaultService] Error processing strategy:', err);
-      }
-    }
-
-    // Enrich ALL vaults with real metrics from Kamino REST API
-    await this.enrichWithMetrics(vaults, vaults.length);
-
-    // Only return vaults that were successfully enriched with real API data.
-    // Vaults without API data still have broken on-chain TVL — don't show them.
-    const enriched = vaults.filter((v) => this.enrichedAddresses.has(v.address));
-
-    console.log(`[KaminoVaultService] Returning ${enriched.length} enriched vaults (${vaults.length - enriched.length} filtered out)`);
-
-    return enriched;
-  }
-
-  /**
-   * Fetch APY + metrics from Kamino's free REST API for vaults.
-   */
-  /** Set of vault addresses that were successfully enriched by the API. */
-  public enrichedAddresses = new Set<string>();
-
-  private async enrichWithMetrics(vaults: KaminoVaultInfo[], topN = 100): Promise<void> {
-    this.enrichedAddresses.clear();
-    const toEnrich = vaults.slice(0, topN);
-
-    const CONCURRENCY = 10;
-    interface MetricsResult {
-      apy: number;
-      tvl: number;
-      fees24h: number;
-      tokenASymbol: string | null;
-      tokenBSymbol: string | null;
-    }
-    const results = new Map<string, MetricsResult>();
-
-    for (let i = 0; i < toEnrich.length; i += CONCURRENCY) {
-      const batch = toEnrich.slice(i, i + CONCURRENCY);
-      const fetches = batch.map(async (vault) => {
-        try {
-          const res = await fetch(
-            `https://api.kamino.finance/strategies/${vault.address}/metrics?env=mainnet-beta`,
-            { signal: AbortSignal.timeout(8000) }
-          );
-          if (!res.ok) return;
-          const data = await res.json();
-
-          // Use 7-day APY (stable, matches kamino.finance UI)
-          // Kamino returns decimal: 0.5549 = 55.49%. Multiply by 100 for display.
-          const apy7d = parseFloat(data?.kaminoApy?.vault?.apy7d ?? '0');
-          const apyPercent = apy7d * 100;
-
-          // Use API's TVL (correctly computed) instead of our on-chain math
-          const apiTvl = parseFloat(data?.totalValueLocked ?? '0');
-
-          // Estimate 24h fees from feeApr and the corrected TVL
-          const feeApr = parseFloat(data?.apy?.vault?.feeApr ?? '0');
-          const fees24h = feeApr > 0 && apiTvl > 0 ? apiTvl * feeApr / 365 : 0;
-
-          results.set(vault.address, {
-            apy: apyPercent,
-            tvl: apiTvl,
-            fees24h,
-            tokenASymbol: data?.tokenA ?? null,
-            tokenBSymbol: data?.tokenB ?? null,
-          });
-        } catch {
-          // Silent — vault keeps defaults if fetch fails
-        }
+      vaults.push({
+        address: v.address,
+        name: v.state.name?.trim() || `${token.symbol} Vault`,
+        token,
+        tvl: Math.round(tvl),
+        apy: parseFloat((parseFloat(m.apy7d) * 100).toFixed(2)),
+        apy24h: parseFloat((parseFloat(m.apy24h) * 100).toFixed(2)),
+        apy30d: parseFloat((parseFloat(m.apy30d) * 100).toFixed(2)),
+        sharePriceUsd: parseFloat(m.sharePrice ?? '0'),
+        holders: m.numberOfHolders,
+        performanceFeeBps: v.state.performanceFeeBps ?? 0,
+        managementFeeBps: v.state.managementFeeBps ?? 0,
+        sharesMint: v.state.sharesMint,
+        status: 'active',
       });
-      await Promise.all(fetches);
     }
 
-    // Apply enrichment and track which vaults got real API data
-    for (const vault of vaults) {
-      const enriched = results.get(vault.address);
-      if (enriched) {
-        vault.apy = parseFloat(enriched.apy.toFixed(2));
-        vault.fees24h = Math.round(enriched.fees24h);
-        // Override TVL with API's correctly computed value
-        if (enriched.tvl > 0) vault.tvl = Math.round(enriched.tvl);
-        // Fix token symbols for tokens not in our hardcoded map
-        if (enriched.tokenASymbol && vault.tokenA.symbol === vault.tokenA.mint.slice(0, 6)) {
-          vault.tokenA.symbol = enriched.tokenASymbol;
-          vault.name = `${vault.tokenA.symbol}-${vault.tokenB.symbol} ${this.strategyLabel(vault.strategy)}`;
-        }
-        if (enriched.tokenBSymbol && vault.tokenB.symbol === vault.tokenB.mint.slice(0, 6)) {
-          vault.tokenB.symbol = enriched.tokenBSymbol;
-          vault.name = `${vault.tokenA.symbol}-${vault.tokenB.symbol} ${this.strategyLabel(vault.strategy)}`;
-        }
-        this.enrichedAddresses.add(vault.address);
-      }
-    }
-
-    console.log(`[KaminoVaultService] Enriched ${this.enrichedAddresses.size}/${vaults.length} vaults with real API data`);
+    console.log(`[KaminoVaultService] Returning ${vaults.length} active k-vaults`);
+    return vaults;
   }
 
-  /**
-   * Fetch user's Kamino vault positions.
-   */
+  /** Positions for a given wallet. */
   async getUserPositions(walletAddress: string): Promise<KaminoVaultPosition[]> {
-    console.log(`[KaminoVaultService] Fetching positions for ${walletAddress}...`);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const positions: KaminoPosition[] = await (this.kamino as any).getUserPositions(
-      walletAddress,
-      { strategyCreationStatus: 'LIVE' }
-    );
-
-    console.log(`[KaminoVaultService] Found ${positions.length} positions`);
+    const [positions, allVaults] = await Promise.all([
+      this.api.getUserPositions(walletAddress).catch(() => []),
+      this.getVaults(), // reuse cache later if needed; for now acceptable cost
+    ]);
 
     if (positions.length === 0) return [];
 
-    const positionSnapshots = await Promise.all(
-      positions.map(async (position) => {
-        try {
-          const [shareData, strategy] = await Promise.all([
-            this.kamino.getStrategyShareData(position.strategy),
-            this.kamino.getStrategyByAddress(position.strategy),
-          ]);
+    const byAddress = new Map(allVaults.map((v) => [v.address, v]));
 
-          if (!strategy) return null;
+    const results: KaminoVaultPosition[] = [];
+    for (const p of positions) {
+      const vault = byAddress.get(p.vaultAddress);
+      if (!vault) continue;
 
-          return { position, shareData, strategy };
-        } catch (err) {
-          console.warn('[KaminoVaultService] Error loading position snapshot:', position.strategy.toString(), err);
-          return null;
-        }
-      })
-    );
+      const totalShares = parseFloat(p.totalShares);
+      if (!Number.isFinite(totalShares) || totalShares <= 0) continue;
 
-    const validSnapshots = positionSnapshots.filter(
-      (snapshot): snapshot is NonNullable<typeof snapshot> => snapshot !== null
-    );
+      const currentValueUsd = totalShares * vault.sharePriceUsd;
 
-    const mintSet = new Set<string>();
-    for (const snapshot of validSnapshots) {
-      mintSet.add(snapshot.strategy.tokenAMint.toString());
-      mintSet.add(snapshot.strategy.tokenBMint.toString());
-    }
-    const prices = await this.priceService.getPrices([...mintSet]);
-
-    const positionResults = validSnapshots.map(({ position, shareData, strategy }) => {
-      const tokenAMint = strategy.tokenAMint.toString();
-      const tokenBMint = strategy.tokenBMint.toString();
-      const tokenA = this.buildTokenInfo(tokenAMint, prices[tokenAMint] ?? 0);
-      const tokenB = this.buildTokenInfo(tokenBMint, prices[tokenBMint] ?? 0);
-
-      const sharePriceUsd = shareData.price.toNumber();
-      const sharesOwned = position.sharesAmount.toNumber();
-      const currentValueUsd = sharesOwned * sharePriceUsd;
-      const strategyType = this.inferStrategy(strategy);
-
-      return {
-        id: `${position.strategy}-${position.shareMint}`,
-        vaultAddress: position.strategy.toString(),
-        vaultName: `${tokenA.symbol}-${tokenB.symbol} ${this.strategyLabel(strategyType)}`,
-        strategy: strategyType,
-        tokenA,
-        tokenB,
-        sharesOwned,
-        sharePrice: sharePriceUsd,
-        // Only real on-chain values — no fake deposit/yield/IL
-        depositValueUsd: 0,          // unknown without tx history
+      results.push({
+        id: `${p.vaultAddress}-${walletAddress}`,
+        vaultAddress: p.vaultAddress,
+        vaultName: vault.name,
+        token: vault.token,
+        sharesOwned: totalShares,
+        sharePriceUsd: vault.sharePriceUsd,
         currentValueUsd: parseFloat(currentValueUsd.toFixed(2)),
-        yieldEarnedUsd: 0,           // unknown without tx history
-        apy: 0,                      // enriched below
-        impermanentLoss: 0,          // unknown without historical prices
-        impermanentLossUsd: 0,
-        depositedAt: new Date(),     // unknown without tx history
+        apy: vault.apy,
+        depositedAt: new Date(), // unknown without tx history
         lastUpdated: new Date(),
-      };
-    });
-
-    // Enrich positions with real APY from Kamino REST API
-    const posVaults: KaminoVaultInfo[] = positionResults.map((p) => ({
-      address: p.vaultAddress, name: p.vaultName, strategy: p.strategy,
-      tokenA: p.tokenA, tokenB: p.tokenB, tvl: 0, apy: 0, fees24h: 0,
-      volume24h: 0, feeRate: 0, sharesMint: '', status: 'active',
-    }));
-    await this.enrichWithMetrics(posVaults, posVaults.length);
-    for (const pos of positionResults) {
-      const enriched = posVaults.find((v) => v.address === pos.vaultAddress);
-      if (enriched) pos.apy = enriched.apy;
+      });
     }
-
-    return positionResults;
+    return results;
   }
 
-  /**
-   * Calculate portfolio summary from positions.
-   */
   calculateSummary(positions: KaminoVaultPosition[]): LPPortfolioSummary {
     if (positions.length === 0) {
       return {
         totalPositions: 0,
-        totalDepositedUsd: 0,
         totalCurrentValueUsd: 0,
-        totalYieldEarnedUsd: 0,
-        totalImpermanentLossUsd: 0,
         weightedAvgApy: 0,
         bestPerformingVault: null,
         worstPerformingVault: null,
       };
     }
 
-    const totalDeposited = positions.reduce((s, p) => s + p.depositValueUsd, 0);
     const totalCurrent = positions.reduce((s, p) => s + p.currentValueUsd, 0);
-    const totalYield = positions.reduce((s, p) => s + p.yieldEarnedUsd, 0);
-    const totalIL = positions.reduce((s, p) => s + p.impermanentLossUsd, 0);
     const weightedApy = totalCurrent > 0
       ? positions.reduce((s, p) => s + p.apy * (p.currentValueUsd / totalCurrent), 0)
       : 0;
 
+    // Best / worst by APY (pure yield ranking, since we can't compute P&L).
     let bestVault: string | null = null;
     let worstVault: string | null = null;
-    let bestReturn = -Infinity;
-    let worstReturn = Infinity;
-
+    let bestApy = -Infinity;
+    let worstApy = Infinity;
     for (const p of positions) {
-      const ret = p.depositValueUsd > 0 ? (p.currentValueUsd - p.depositValueUsd) / p.depositValueUsd : 0;
-      if (ret > bestReturn) { bestReturn = ret; bestVault = p.vaultName; }
-      if (ret < worstReturn) { worstReturn = ret; worstVault = p.vaultName; }
+      if (p.apy > bestApy) { bestApy = p.apy; bestVault = p.vaultName; }
+      if (p.apy < worstApy) { worstApy = p.apy; worstVault = p.vaultName; }
     }
 
     return {
       totalPositions: positions.length,
-      totalDepositedUsd: parseFloat(totalDeposited.toFixed(2)),
       totalCurrentValueUsd: parseFloat(totalCurrent.toFixed(2)),
-      totalYieldEarnedUsd: parseFloat(totalYield.toFixed(2)),
-      totalImpermanentLossUsd: parseFloat(totalIL.toFixed(2)),
       weightedAvgApy: parseFloat(weightedApy.toFixed(2)),
       bestPerformingVault: bestVault,
       worstPerformingVault: worstVault,
     };
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────
 
-  private buildTokenInfo(mint: string, priceUsd: number): TokenInfo {
+  private buildTokenInfo(mint: string, priceUsd: number, decimals?: number): TokenInfo {
     const meta = TOKEN_META[mint];
     const symbol = meta?.symbol ?? mint.slice(0, 6);
     return {
       mint,
       symbol,
-      decimals: meta?.decimals ?? 9,
+      decimals: meta?.decimals ?? decimals ?? 9,
       logoUri: getTokenIcon(mint, symbol),
       priceUsd,
     };
   }
-
-  private extractFeeRate(strategy: unknown): number {
-    if (!strategy || typeof strategy !== 'object') return 0;
-
-    const feeBps = Reflect.get(strategy, 'feeBps');
-    if (typeof feeBps === 'number' && Number.isFinite(feeBps)) return feeBps;
-    if (typeof feeBps === 'bigint') return Number(feeBps);
-    return 0;
-  }
-
-  private inferStrategy(strategy: unknown): VaultStrategy {
-    if (!strategy || typeof strategy !== 'object') {
-      return 'concentrated-liquidity';
-    }
-
-    const strategyType = Reflect.get(strategy, 'strategyType');
-    if (strategyType) {
-      const typeStr = this.strategyTypeToString(strategyType);
-      if (typeStr.includes('lending')) return 'lending';
-      if (typeStr.includes('multiply') || typeStr.includes('leverage')) return 'multiply';
-    }
-    return 'concentrated-liquidity';
-  }
-
-  private strategyTypeToString(strategyType: unknown): string {
-    try {
-      if (typeof strategyType === 'string') return strategyType.toLowerCase();
-      if (typeof strategyType === 'bigint') return strategyType.toString();
-      if (strategyType && typeof strategyType === 'object') {
-        return JSON.stringify(
-          strategyType,
-          (_key, value) => (typeof value === 'bigint' ? value.toString() : value)
-        ).toLowerCase();
-      }
-      return String(strategyType).toLowerCase();
-    } catch {
-      return String(strategyType).toLowerCase();
-    }
-  }
-
-  private strategyLabel(strategy: VaultStrategy): string {
-    switch (strategy) {
-      case 'concentrated-liquidity': return 'CL Vault';
-      case 'lending': return 'Lending';
-      case 'multiply': return 'Multiply';
-      default: return 'Vault';
-    }
-  }
 }
+
+// Suppress unused type warning in strict mode — re-exported for consumers.
+export type { KVaultRawState };

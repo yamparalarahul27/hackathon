@@ -1,27 +1,27 @@
 /**
  * Service Factory
  *
- * Centralized factory that returns real or mock service instances
- * based on the RPC configuration. If a mainnet Helius RPC URL is
- * configured, real services are used. Otherwise falls back to mock.
+ * Centralized factory for the app's service instances. Deposits now hit
+ * Kamino's documented REST API and are real across all networks —
+ * there's no mock deposit path anymore.
  */
 
 import { JupiterSwapService, MockJupiterSwapService } from './JupiterSwapService';
-import { KaminoDepositService, MockKaminoDepositService } from './KaminoDepositService';
+import { KaminoDepositService } from './KaminoDepositService';
 import { HELIUS_RPC_URL } from '../lib/constants';
 
-// ── Types ──────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────
 
 export type NetworkMode = 'mainnet' | 'devnet' | 'mock';
 
 export interface ServiceInstances {
   swap: JupiterSwapService | MockJupiterSwapService;
-  deposit: KaminoDepositService | MockKaminoDepositService;
+  deposit: KaminoDepositService;
   network: NetworkMode;
   isLive: boolean;
 }
 
-// ── Detect network from RPC URL ────────────────────────────────
+// ── Detect network from RPC URL ────────────────────────────────────
 
 function detectNetwork(): NetworkMode {
   if (!HELIUS_RPC_URL) return 'mock';
@@ -30,30 +30,21 @@ function detectNetwork(): NetworkMode {
   return 'mock';
 }
 
-// ── Factory ────────────────────────────────────────────────────
+// ── Factory ────────────────────────────────────────────────────────
 
 export function createServices(network?: NetworkMode): ServiceInstances {
   const mode = network ?? detectNetwork();
   const isLive = mode === 'mainnet';
 
-  if (isLive) {
-    return {
-      swap: new JupiterSwapService(),
-      deposit: new KaminoDepositService(HELIUS_RPC_URL),
-      network: mode,
-      isLive: true,
-    };
-  }
-
   return {
-    swap: new MockJupiterSwapService(),
-    deposit: new MockKaminoDepositService(),
+    swap: isLive ? new JupiterSwapService() : new MockJupiterSwapService(),
+    deposit: new KaminoDepositService(HELIUS_RPC_URL),
     network: mode,
-    isLive: false,
+    isLive,
   };
 }
 
-// ── Singleton ──────────────────────────────────────────────────
+// ── Singleton ──────────────────────────────────────────────────────
 
 let _services: ServiceInstances | null = null;
 
