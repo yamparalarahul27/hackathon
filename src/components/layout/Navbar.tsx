@@ -68,11 +68,6 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
     };
   }, [settingsMenuOpen, walletMenuOpen]);
 
-  // Reset copied state when dropdown closes
-  useEffect(() => {
-    if (!walletMenuOpen) setAddressCopied(false);
-  }, [walletMenuOpen]);
-
   const handleCopyAddress = async () => {
     if (!walletAddress) return;
     try {
