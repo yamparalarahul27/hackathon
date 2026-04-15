@@ -1,12 +1,12 @@
 /**
- * DexPilot LP & Vault Type Definitions
+ * Kamino K-Vault Type Definitions
  *
- * Types for Kamino vault positions and LP analytics.
+ * Single-asset yield vaults — user deposits one token, vault allocates
+ * across lending reserves for yield. Backed by Kamino's documented REST
+ * API at https://api.kamino.finance/kvaults/*.
  */
 
-// ── Kamino Vault Types ──────────────────────────────────────────────
-
-export type VaultStrategy = 'concentrated-liquidity' | 'lending' | 'multiply' | 'custom';
+// ── Kamino K-Vault Types ────────────────────────────────────────────
 
 export interface TokenInfo {
   mint: string;
@@ -18,45 +18,36 @@ export interface TokenInfo {
 
 export interface KaminoVaultInfo {
   address: string;
-  name: string;
-  strategy: VaultStrategy;
-  tokenA: TokenInfo;
-  tokenB: TokenInfo;
-  tvl: number;
-  apy: number;
-  fees24h: number;
-  volume24h: number;
-  feeRate: number;       // basis points
+  name: string;             // vault display name from state.name
+  token: TokenInfo;         // single deposit token
+  tvl: number;              // USD, tokensAvailableUsd + tokensInvestedUsd
+  apy: number;              // percent (7-day APY)
+  apy24h?: number;
+  apy30d?: number;
+  sharePriceUsd: number;    // USD per share
+  holders: number;          // numberOfHolders from metrics
+  performanceFeeBps: number;
+  managementFeeBps: number;
   sharesMint: string;
-  curator?: string;
-  status: 'active' | 'paused' | 'deprecated';
+  status: 'active';
 }
 
 export interface KaminoVaultPosition {
   id: string;               // unique position identifier
   vaultAddress: string;
   vaultName: string;
-  strategy: VaultStrategy;
-  tokenA: TokenInfo;
-  tokenB: TokenInfo;
+  token: TokenInfo;
   sharesOwned: number;
-  sharePrice: number;       // current price per share in USD
-  depositValueUsd: number;  // value at time of deposit
-  currentValueUsd: number;  // current value of position
-  yieldEarnedUsd: number;   // total yield earned
-  apy: number;              // current vault APY
-  impermanentLoss: number;  // IL as percentage (negative = loss)
-  impermanentLossUsd: number;
+  sharePriceUsd: number;
+  currentValueUsd: number;
+  apy: number;
   depositedAt: Date;
   lastUpdated: Date;
 }
 
 export interface LPPortfolioSummary {
   totalPositions: number;
-  totalDepositedUsd: number;
   totalCurrentValueUsd: number;
-  totalYieldEarnedUsd: number;
-  totalImpermanentLossUsd: number;
   weightedAvgApy: number;
   bestPerformingVault: string | null;
   worstPerformingVault: string | null;
@@ -77,13 +68,4 @@ export interface YieldBreakdown {
   yieldUsd: number;
   yieldPercent: number;
   share: number;  // percentage of total portfolio yield
-}
-
-export interface VaultRiskMetrics {
-  ilExposure: number;       // 0-100
-  volatility: number;       // 0-100
-  tvlDepth: number;         // 0-100 (higher = safer)
-  strategyRisk: number;     // 0-100
-  concentration: number;    // 0-100 (higher = more concentrated)
-  timeInProfit: number;     // 0-100 (% of time position was profitable)
 }

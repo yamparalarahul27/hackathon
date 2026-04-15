@@ -33,23 +33,18 @@ export const VaultPosition = React.memo(function VaultPosition({ position, conne
     );
   }
 
-  const pnl = position.currentValueUsd - position.depositValueUsd;
-  const isPositive = pnl >= 0;
-
   const rows = [
-    { label: 'Deposited', value: formatUsd(position.depositValueUsd) },
     { label: 'Current Value', value: formatUsd(position.currentValueUsd), highlight: true },
-    { label: 'Yield Earned', value: `+${formatUsd(position.yieldEarnedUsd)}`, color: 'text-[#059669]' },
-    { label: 'Impermanent Loss', value: formatUsd(position.impermanentLossUsd), color: 'text-[#EF4444]' },
-    { label: 'Shares', value: position.sharesOwned.toFixed(2) },
-    { label: 'Net PnL', value: `${isPositive ? '+' : ''}${formatUsd(pnl)}`, color: isPositive ? 'text-[#059669]' : 'text-[#EF4444]', highlight: true },
+    { label: 'Shares Owned', value: position.sharesOwned.toFixed(4) },
+    { label: 'Share Price', value: `$${position.sharePriceUsd.toFixed(4)}` },
+    { label: 'APY (7d)', value: formatPercent(position.apy), color: 'text-[#059669]' },
   ];
 
   return (
     <div>
       <p className="label-section-light mb-3">Your Position</p>
       <Card className="p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {rows.map(r => (
             <div key={r.label} className={r.highlight ? 'bg-[#f8fafc] rounded-lg p-2.5' : 'p-2.5'}>
               <p className="text-[10px] text-[#94a3b8] font-ibm-plex-sans uppercase tracking-wider mb-0.5">{r.label}</p>

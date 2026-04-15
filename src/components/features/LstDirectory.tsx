@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Search, ExternalLink, Filter } from 'lucide-react';
+import { Search, ExternalLink, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Pill } from '@/components/ui/Pill';
 import { getAllLsts, type LST } from '@/services/SanctumLstService';
@@ -20,12 +20,15 @@ const POOL_LABELS: Record<string, string> = {
 
 const POOL_FILTERS = ['All', 'SanctumSpl', 'SanctumSplMulti', 'Spl', 'Marinade', 'Lido'] as const;
 
+const PAGE_SIZE = 10;
+
 export function LstDirectory() {
   const allLsts = useMemo(() => getAllLsts(), []);
   const [search, setSearch] = useState('');
   const [poolFilter, setPoolFilter] = useState<string>('All');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -58,7 +61,17 @@ export function LstDirectory() {
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(key); setSortDir('asc'); }
+    setPage(0);
   };
+
+  const onSearchChange = (value: string) => { setSearch(value); setPage(0); };
+  const onFilterChange = (value: string) => { setPoolFilter(value); setPage(0); };
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageStart = currentPage * PAGE_SIZE;
+  const pageEnd = pageStart + PAGE_SIZE;
+  const paginated = useMemo(() => filtered.slice(pageStart, pageEnd), [filtered, pageStart, pageEnd]);
 
   const poolCounts = useMemo(() => {
     const counts: Record<string, number> = { All: allLsts.length };
@@ -107,7 +120,7 @@ export function LstDirectory() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search by name, symbol, or mint…"
               className="w-full bg-white border border-[#cbd5e1] rounded-sm pl-9 pr-3 py-2 text-sm font-ibm-plex-sans text-[#11274d] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#3B7DDD]"
             />
@@ -115,7 +128,7 @@ export function LstDirectory() {
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <Filter size={12} className="text-[#94a3b8] shrink-0" />
             {POOL_FILTERS.map((f) => (
-              <Pill key={f} active={poolFilter === f} onClick={() => setPoolFilter(f)}>
+              <Pill key={f} active={poolFilter === f} onClick={() => onFilterChange(f)}>
                 {f === 'All' ? `All (${poolCounts.All})` : `${POOL_LABELS[f] ?? f} (${poolCounts[f] ?? 0})`}
               </Pill>
             ))}
@@ -124,7 +137,9 @@ export function LstDirectory() {
 
         {/* Results count */}
         <p className="text-xs text-[#6a7282] font-ibm-plex-sans">
-          {filtered.length} LST{filtered.length !== 1 ? 's' : ''} found
+          {filtered.length === 0
+            ? 'No LSTs found'
+            : `Showing ${pageStart + 1}–${Math.min(pageEnd, filtered.length)} of ${filtered.length} LST${filtered.length !== 1 ? 's' : ''}`}
         </p>
 
         {/* Desktop table */}
@@ -155,7 +170,7 @@ export function LstDirectory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((lst) => (
+              {paginated.map((lst) => (
                 <LstRow key={lst.mint} lst={lst} />
               ))}
             </tbody>
@@ -164,10 +179,35 @@ export function LstDirectory() {
 
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
-          {filtered.map((lst) => (
+          {paginated.map((lst) => (
             <LstCard key={lst.mint} lst={lst} />
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-sm border border-[#cbd5e1] bg-white text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#e2e8f0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={12} /> Prev
+            </button>
+            <span className="text-xs text-[#6a7282] font-ibm-plex-sans">
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-sm border border-[#cbd5e1] bg-white text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#e2e8f0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next <ChevronRight size={12} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

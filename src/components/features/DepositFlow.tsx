@@ -1,19 +1,17 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { Wallet, ArrowRight, CheckCircle, Loader2, Shield, Repeat, Route } from 'lucide-react';
-import { Connection } from '@solana/web3.js';
+import { useEffect, useMemo, useState } from 'react';
+import { Wallet, ArrowRight, CheckCircle, Loader2, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { TokenIcon } from '@/components/ui/TokenIcon';
 import type { KaminoVaultInfo } from '@/lib/lp-types';
 import { formatUsd, formatPercent } from '@/lib/utils';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
-import { JupiterSwapService, TOKEN_MINTS, type SwapQuote } from '@/services/JupiterSwapService';
+import { KaminoDepositService } from '@/services/KaminoDepositService';
 import { WALLET_CLUSTER_CONFIG, DEFAULT_WALLET_CLUSTER } from '@/lib/constants';
 
-type Step = 'select-vault' | 'enter-amount' | 'swap' | 'confirmation';
-
-const jupiterService = new JupiterSwapService();
+type Step = 'select-vault' | 'enter-amount' | 'confirmation';
 
 interface DepositFlowProps {
   preSelectedVaultAddress?: string | null;
@@ -29,117 +27,75 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
     canSignTransactions,
     hasInstalledWallets,
   } = useWalletConnection();
+
   const vaults = (vaultsProp ?? []).filter((vault) => vault.status === 'active');
   const rpcUrl = WALLET_CLUSTER_CONFIG[DEFAULT_WALLET_CLUSTER].rpcUrl;
-  const connection = useMemo(() => (rpcUrl ? new Connection(rpcUrl, 'confirmed') : null), [rpcUrl]);
+  const depositService = useMemo(() => (rpcUrl ? new KaminoDepositService(rpcUrl) : null), [rpcUrl]);
 
   const initialVault = preSelectedVaultAddress
-    ? vaults.find((vault) => vault.address === preSelectedVaultAddress) ?? null
+    ? vaults.find((v) => v.address === preSelectedVaultAddress) ?? null
     : null;
 
   const [step, setStep] = useState<Step>(initialVault ? 'enter-amount' : 'select-vault');
   const [selectedVault, setSelectedVault] = useState<KaminoVaultInfo | null>(initialVault);
   const [amount, setAmount] = useState('');
-  const [privateMode, setPrivateMode] = useState(false);
-  const [swapQuote, setSwapQuote] = useState<SwapQuote | null>(null);
-  const [swapLoading, setSwapLoading] = useState(false);
-  const [swapComplete, setSwapComplete] = useState(false);
-  const [swapError, setSwapError] = useState<string | null>(null);
-  const [swapSignature, setSwapSignature] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedVault && preSelectedVaultAddress) {
-      const matchedVault = vaults.find((vault) => vault.address === preSelectedVaultAddress);
-      if (matchedVault) {
-        setSelectedVault(matchedVault);
+      const match = vaults.find((v) => v.address === preSelectedVaultAddress);
+      if (match) {
+        setSelectedVault(match);
         setStep('enter-amount');
       }
     }
   }, [preSelectedVaultAddress, selectedVault, vaults]);
 
-  const estimatedUsdc = useMemo(() => parseFloat(amount) || 0, [amount]);
-
+  const tokenAmount = useMemo(() => parseFloat(amount) || 0, [amount]);
+  const estimatedUsd = useMemo(() => {
+    if (!selectedVault) return 0;
+    return tokenAmount * selectedVault.token.priceUsd;
+  }, [tokenAmount, selectedVault]);
   const estimatedYearlyYield = useMemo(() => {
     if (!selectedVault) return 0;
-    return estimatedUsdc * (selectedVault.apy / 100);
-  }, [estimatedUsdc, selectedVault]);
+    return estimatedUsd * (selectedVault.apy / 100);
+  }, [estimatedUsd, selectedVault]);
 
-  const swapTargetToken = useMemo(() => {
-    if (!selectedVault) return null;
-    if (selectedVault.tokenA.mint !== TOKEN_MINTS.USDC) return selectedVault.tokenA;
-    if (selectedVault.tokenB.mint !== TOKEN_MINTS.USDC) return selectedVault.tokenB;
-    return null;
-  }, [selectedVault]);
-
-  useEffect(() => {
-    if (step === 'swap' && swapTargetToken && estimatedUsdc > 0) {
-      setSwapLoading(true);
-      setSwapQuote(null);
-      setSwapError(null);
-      const halfUsdc = estimatedUsdc / 2;
-      jupiterService
-        .getQuoteForUsdAmount(swapTargetToken.mint, halfUsdc)
-        .then((quote) => setSwapQuote(quote))
-        .catch((error) => {
-          const message = error instanceof Error ? error.message : 'Failed to fetch quote';
-          setSwapError(message);
-        })
-        .finally(() => setSwapLoading(false));
-    }
-  }, [step, swapTargetToken, estimatedUsdc]);
-
-  const handleContinue = () => {
-    if (!connected) {
-      openWalletModal();
-      return;
-    }
-
-    if (swapTargetToken) {
-      setStep('swap');
-      return;
-    }
-
-    setStep('confirmation');
-  };
-
-  const handleSwapExecute = async () => {
+  const handleDeposit = async () => {
     if (!connected || !publicKey) {
       openWalletModal();
       return;
     }
     if (!signTransaction || !canSignTransactions) {
-      setSwapError('Connected wallet does not support transaction signing.');
+      setError('Connected wallet does not support transaction signing.');
       return;
     }
-    if (!connection || !swapTargetToken) {
-      setSwapError('No mainnet RPC endpoint configured for swap execution.');
+    if (!selectedVault || tokenAmount <= 0) return;
+    if (!depositService) {
+      setError('No mainnet RPC configured for deposit.');
       return;
     }
 
-    setSwapLoading(true);
-    setSwapError(null);
+    setSubmitting(true);
+    setError(null);
     try {
-      const halfUsdcBaseUnits = Math.floor((estimatedUsdc / 2) * 1e6);
-      const result = await jupiterService.executeSwap(
+      const result = await depositService.deposit(
         {
-          inputMint: TOKEN_MINTS.USDC,
-          outputMint: swapTargetToken.mint,
-          amount: halfUsdcBaseUnits,
-          slippageBps: 50,
+          vaultAddress: selectedVault.address,
+          userWallet: publicKey.toBase58(),
+          tokenAmount,
         },
-        publicKey.toBase58(),
-        signTransaction,
-        connection
+        signTransaction
       );
-
-      setSwapSignature(result.txSignature);
-      setSwapComplete(true);
-      setTimeout(() => setStep('confirmation'), 700);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Swap failed.';
-      setSwapError(message);
+      setTxSignature(result.txSignature);
+      setStep('confirmation');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Deposit failed.';
+      setError(message);
     } finally {
-      setSwapLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -147,34 +103,26 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
     setStep('select-vault');
     setSelectedVault(null);
     setAmount('');
-    setPrivateMode(false);
-    setSwapQuote(null);
-    setSwapComplete(false);
-    setSwapError(null);
-    setSwapSignature(null);
+    setTxSignature(null);
+    setError(null);
   };
 
-  const steps: Step[] = ['select-vault', 'enter-amount', 'swap', 'confirmation'];
+  const steps: Step[] = ['select-vault', 'enter-amount', 'confirmation'];
   const currentStepIndex = steps.indexOf(step);
-
-  const formatSwapOutput = (quote: SwapQuote) => {
-    const decimals = swapTargetToken?.decimals ?? 6;
-    return (Number(quote.outAmount) / (10 ** decimals)).toFixed(4);
-  };
 
   return (
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h2 className="font-display font-bold text-xl text-[#11274d]">Crypto Deposit</h2>
-          <p className="text-sm text-[#6a7282] mt-1">Deposit from your wallet into Kamino vaults.</p>
+          <h2 className="font-display font-bold text-xl text-[#11274d]">Deposit</h2>
+          <p className="text-sm text-[#6a7282] mt-1">Deposit a single token into a Kamino K-Vault to earn yield.</p>
         </div>
 
         {!connected && (
           <Card className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Wallet size={18} className="text-[#6B7280]" />
-              <p className="text-sm text-[#6B7280]">Connect wallet to continue with crypto deposits.</p>
+              <p className="text-sm text-[#6B7280]">Connect wallet to continue.</p>
             </div>
             <Button size="sm" onClick={openWalletModal}>Connect</Button>
           </Card>
@@ -182,15 +130,16 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
 
         {!connected && !hasInstalledWallets && (
           <p className="text-xs text-[#6B7280] text-center -mt-3">
-            No wallet detected. Install a Solana wallet extension or use a wallet in-app browser.
+            No wallet detected. Install a Solana wallet or use a wallet&apos;s in-app browser.
           </p>
         )}
 
+        {/* Progress indicator */}
         <div className="flex items-center gap-1">
-          {steps.map((currentStep, index) => {
-            const labels = ['Vault', 'Amount', 'Swap', 'Done'];
+          {steps.map((s, index) => {
+            const labels = ['Vault', 'Amount', 'Done'];
             return (
-              <div key={currentStep} className="flex items-center gap-1">
+              <div key={s} className="flex items-center gap-1">
                 <div className="flex flex-col items-center gap-1">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
                     index < currentStepIndex
@@ -209,88 +158,94 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
           })}
         </div>
 
+        {/* Step 1: select vault */}
         {step === 'select-vault' && (
           <div className="space-y-3">
             <p className="label-section-light">Choose a vault</p>
-            {vaults.map((vault) => (
-              <Card
-                key={vault.address}
-                hover
-                className="p-4"
-                onClick={() => {
-                  setSelectedVault(vault);
-                  setStep('enter-amount');
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-[#11274d]">{vault.name}</p>
-                    <p className="text-xs text-[#6B7280]">
-                      {vault.tokenA.symbol}/{vault.tokenB.symbol} · {vault.strategy.replace('-', ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="data-md text-[#059669]">{formatPercent(vault.apy)} APY</p>
-                    <p className="text-xs text-[#6B7280]">
-                      TVL: {vault.tvl >= 1e6 ? `$${(vault.tvl / 1e6).toFixed(1)}M` : `$${(vault.tvl / 1e3).toFixed(0)}K`}
-                    </p>
-                  </div>
-                </div>
+            {vaults.length === 0 ? (
+              <Card className="p-6 text-center">
+                <p className="text-sm text-[#6a7282]">No vaults available.</p>
               </Card>
-            ))}
+            ) : (
+              vaults.map((vault) => (
+                <Card
+                  key={vault.address}
+                  hover
+                  className="p-4"
+                  onClick={() => {
+                    setSelectedVault(vault);
+                    setStep('enter-amount');
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <TokenIcon mint={vault.token.mint} symbol={vault.token.symbol} size="md" />
+                      <div>
+                        <p className="text-sm font-semibold text-[#11274d]">{vault.name}</p>
+                        <p className="text-xs text-[#6B7280]">{vault.token.symbol} Earn</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="data-md text-[#059669]">{formatPercent(vault.apy)} APY</p>
+                      <p className="text-xs text-[#6B7280]">
+                        TVL: {vault.tvl >= 1e6 ? `$${(vault.tvl / 1e6).toFixed(1)}M` : `$${(vault.tvl / 1e3).toFixed(0)}K`}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
         )}
 
+        {/* Step 2: enter amount */}
         {step === 'enter-amount' && selectedVault && (
           <div className="space-y-4">
             <Card className="p-4">
-              <p className="text-xs text-[#6B7280] mb-1">Selected Vault</p>
-              <p className="text-sm font-semibold text-[#11274d]">{selectedVault.name}</p>
-              <p className="data-sm text-[#059669]">{formatPercent(selectedVault.apy)} APY</p>
+              <div className="flex items-center gap-3">
+                <TokenIcon mint={selectedVault.token.mint} symbol={selectedVault.token.symbol} size="md" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#11274d]">{selectedVault.name}</p>
+                  <p className="data-sm text-[#059669]">{formatPercent(selectedVault.apy)} APY</p>
+                </div>
+              </div>
             </Card>
 
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280] data-sm">$</span>
               <input
                 type="number"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                placeholder="USDC amount to deposit"
-                className="w-full pl-8 pr-4 py-4 bg-white border border-[#cbd5e1] rounded-lg text-xl data-md text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={`Amount in ${selectedVault.token.symbol}`}
+                className="w-full pl-4 pr-20 py-4 bg-white border border-[#cbd5e1] rounded-lg text-xl data-md text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
               />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 data-sm text-[#6B7280] uppercase">
+                {selectedVault.token.symbol}
+              </span>
             </div>
 
-            {parseFloat(amount) > 0 && (
+            {tokenAmount > 0 && (
               <Card className="space-y-2 p-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#6B7280]">Deposit value</span>
-                  <span className="data-md text-[#11274d]">{estimatedUsdc.toFixed(2)} USDC</span>
+                  <span className="data-md text-[#11274d]">{formatUsd(estimatedUsd)}</span>
                 </div>
-                {swapTargetToken && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Auto-swap via Jupiter</span>
-                    <span className="data-sm text-[#3B7DDD]">USDC → {swapTargetToken.symbol} + USDC</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-[#6B7280]">Estimated yearly yield</span>
                   <span className="data-md text-[#059669]">+{formatUsd(estimatedYearlyYield)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#6B7280]">Performance fee</span>
+                  <span className="data-sm text-[#6B7280]">{selectedVault.performanceFeeBps} bps</span>
+                </div>
               </Card>
             )}
 
-            <div className="flex items-center justify-between px-4 py-3 bg-white border border-[#cbd5e1] rounded-lg">
-              <div className="flex items-center gap-2">
-                <Shield size={14} className={privateMode ? 'text-[#0D9373]' : 'text-[#6B7280]'} />
-                <span className="text-sm text-[#6B7280]">Private transfer routing</span>
+            {error && (
+              <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
+                <p className="text-xs text-[#b91c1c]">{error}</p>
               </div>
-              <button
-                onClick={() => setPrivateMode((current) => !current)}
-                className={`w-10 h-5 rounded-full transition-colors ${privateMode ? 'bg-[#0D9373]' : 'bg-[#cbd5e1]'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${privateMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
-              </button>
-            </div>
+            )}
 
             <div className="flex gap-3">
               <Button variant="secondary" onClick={() => { setStep('select-vault'); setSelectedVault(null); }}>
@@ -298,124 +253,43 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
               </Button>
               <Button
                 className="flex-1"
-                disabled={!parseFloat(amount) || !connected}
-                onClick={handleContinue}
+                disabled={!tokenAmount || !connected || submitting}
+                onClick={handleDeposit}
               >
-                Continue
+                {submitting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  `Deposit ${tokenAmount || ''} ${selectedVault.token.symbol}`.trim()
+                )}
               </Button>
             </div>
           </div>
         )}
 
-        {step === 'swap' && selectedVault && swapTargetToken && (
-          <div className="space-y-4">
-            <Card className="space-y-4 p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#3B7DDD]/10 flex items-center justify-center">
-                  <Repeat size={20} className="text-[#3B7DDD]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#11274d]">Token Swap via Jupiter</p>
-                  <p className="text-xs text-[#6B7280]">Best route across Solana DEXes</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg">
-                <div className="text-center">
-                  <p className="text-xs text-[#6B7280] mb-1">From</p>
-                  <p className="data-md text-[#11274d]">{(estimatedUsdc / 2).toFixed(2)}</p>
-                  <p className="text-xs text-[#6B7280]">USDC</p>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Route size={16} className="text-[#3B7DDD]" />
-                  <span className="text-[10px] text-[#6B7280]">Jupiter</span>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-[#6B7280] mb-1">To</p>
-                  <p className="data-md text-[#11274d]">{swapQuote ? formatSwapOutput(swapQuote) : '—'}</p>
-                  <p className="text-xs text-[#6B7280]">{swapTargetToken.symbol}</p>
-                </div>
-              </div>
-
-              {swapLoading && (
-                <div className="flex items-center justify-center gap-2 py-3">
-                  <Loader2 size={14} className="text-[#3B7DDD] animate-spin" />
-                  <span className="text-sm text-[#6B7280]">Fetching best route...</span>
-                </div>
-              )}
-
-              {swapQuote && !swapLoading && (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-[#11274d] font-medium">Review before wallet signature</p>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Route</span>
-                    <span className="text-xs text-[#6B7280]">{swapQuote.routePlan.map((route) => route.swapInfo.label).join(' → ')}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Price impact</span>
-                    <span className="data-sm text-[#059669]">{swapQuote.priceImpactPct}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#6B7280]">Slippage tolerance</span>
-                    <span className="data-sm text-[#6B7280]">{swapQuote.slippageBps / 100}%</span>
-                  </div>
-                </div>
-              )}
-
-              {swapError && (
-                <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
-                  <p className="text-xs text-[#b91c1c]">{swapError}</p>
-                </div>
-              )}
-
-              {swapComplete ? (
-                <div className="flex items-center justify-center gap-2 py-3">
-                  <CheckCircle size={16} className="text-[#059669]" />
-                  <span className="text-sm text-[#059669]">Swap complete! Finalizing deposit...</span>
-                </div>
-              ) : (
-                <Button className="w-full" disabled={!swapQuote || swapLoading || !canSignTransactions} onClick={handleSwapExecute}>
-                  {swapLoading ? <Loader2 size={14} className="animate-spin" /> : <Repeat size={14} />}
-                  {swapLoading ? 'Swapping...' : `Swap USDC → ${swapTargetToken.symbol}`}
-                </Button>
-              )}
-            </Card>
-
-            <Button variant="secondary" onClick={() => setStep('enter-amount')}>Back</Button>
-          </div>
-        )}
-
+        {/* Step 3: confirmation */}
         {step === 'confirmation' && selectedVault && (
           <Card className="text-center py-8 space-y-4 px-4">
             <CheckCircle size={48} className="text-[#059669] mx-auto" />
-            <h3 className="font-display font-bold text-xl text-[#11274d]">Swap Completed!</h3>
+            <h3 className="font-display font-bold text-xl text-[#11274d]">Deposit Confirmed</h3>
             <div className="space-y-1">
-              <p className="text-sm text-[#6B7280]">Prepared {estimatedUsdc.toFixed(2)} USDC vault allocation for</p>
+              <p className="text-sm text-[#6B7280]">
+                Deposited {tokenAmount} {selectedVault.token.symbol} into
+              </p>
               <p className="text-sm font-semibold text-[#3B7DDD]">{selectedVault.name}</p>
-              <p className="data-md text-[#059669]">Target vault APY: {formatPercent(selectedVault.apy)}</p>
-              {swapTargetToken && (
-                <p className="text-xs text-[#6B7280] flex items-center justify-center gap-1">
-                  <Route size={12} /> Swapped via Jupiter for optimal routing
-                </p>
-              )}
-              {swapSignature && (
+              <p className="data-md text-[#059669]">Target APY: {formatPercent(selectedVault.apy)}</p>
+              {txSignature && (
                 <a
-                  href={`https://solscan.io/tx/${swapSignature}`}
+                  href={`https://solscan.io/tx/${txSignature}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[#3B7DDD] hover:underline inline-block"
+                  className="inline-flex items-center gap-1 text-xs text-[#3B7DDD] hover:underline"
                 >
-                  View swap transaction
+                  View transaction <ExternalLink size={10} />
                 </a>
               )}
-              {privateMode && (
-                <p className="text-xs text-[#0D9373] flex items-center justify-center gap-1">
-                  <Shield size={12} /> Private routing enabled
-                </p>
-              )}
-              <p className="text-[11px] text-[#6B7280]">
-                Vault deposit transaction execution is the next integration step in the flow.
-              </p>
             </div>
             <Button onClick={handleReset}>Make Another Deposit</Button>
           </Card>
