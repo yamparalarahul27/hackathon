@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/Button';
-import { Menu, Settings, Sliders, Plug } from 'lucide-react';
+import { Menu, Settings, Sliders, Plug, Copy, Check, ArrowLeftRight, LogOut, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,7 @@ interface NavbarProps {
   walletConnected?: boolean;
   walletAddress?: string;
   onConnectWallet?: () => void;
+  onDisconnectWallet?: () => void;
   onSettingsClick?: () => void;
 }
 
@@ -29,10 +30,13 @@ const NAV_ITEMS = [
 ];
 
 /** DeFi Cockpit header — 48px, transparent + blur */
-export function Navbar({ walletConnected, walletAddress, onConnectWallet, onSettingsClick }: NavbarProps) {
+export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisconnectWallet, onSettingsClick }: NavbarProps) {
   const pathname = usePathname();
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const walletRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -41,14 +45,20 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onSett
 
   // Close dropdown on outside click or Escape
   useEffect(() => {
-    if (!settingsMenuOpen) return;
+    if (!settingsMenuOpen && !walletMenuOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+      if (settingsMenuOpen && settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
         setSettingsMenuOpen(false);
+      }
+      if (walletMenuOpen && walletRef.current && !walletRef.current.contains(e.target as Node)) {
+        setWalletMenuOpen(false);
       }
     };
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSettingsMenuOpen(false);
+      if (e.key === 'Escape') {
+        setSettingsMenuOpen(false);
+        setWalletMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
@@ -56,7 +66,23 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onSett
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
     };
-  }, [settingsMenuOpen]);
+  }, [settingsMenuOpen, walletMenuOpen]);
+
+  const handleCopyAddress = async () => {
+    if (!walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 1500);
+    } catch {
+      // Clipboard API may fail in insecure contexts; silently ignore
+    }
+  };
+
+  const handleDisconnect = () => {
+    setWalletMenuOpen(false);
+    onDisconnectWallet?.();
+  };
 
   return (
     <header className="sticky top-0 z-20 bg-[#f1f5f9]/95 backdrop-blur-lg border-b border-[#cbd5e1]">
@@ -130,14 +156,68 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onSett
             </Show>
           */}
           {walletConnected && walletAddress ? (
-            <Link
-              href="/wallet"
-              className="flex items-center gap-2 h-7 px-3 bg-white border border-[#cbd5e1] rounded-sm text-xs text-[#11274d] font-ibm-plex-sans hover:bg-[#e2e8f0] transition-colors"
-              aria-label="Open wallet page"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0fa87a]" />
-              <span className="font-mono text-xs text-[#11274d]">{walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}</span>
-            </Link>
+            <div ref={walletRef} className="relative">
+              <button
+                onClick={() => setWalletMenuOpen((v) => !v)}
+                className="flex items-center gap-2 h-7 px-3 bg-white border border-[#cbd5e1] rounded-sm text-xs text-[#11274d] font-ibm-plex-sans hover:bg-[#e2e8f0] transition-colors"
+                aria-label="Wallet menu"
+                aria-haspopup="menu"
+                aria-expanded={walletMenuOpen}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0fa87a]" />
+                <span className="font-mono text-xs text-[#11274d]">{walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}</span>
+                <ChevronDown size={12} className={cn('text-[#6a7282] transition-transform', walletMenuOpen && 'rotate-180')} />
+              </button>
+              {walletMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-8 z-30 min-w-[240px] bg-white border border-[#cbd5e1] rounded-sm raised-frosted py-1"
+                >
+                  <div className="px-3 py-2 border-b border-[#e2e8f0]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0fa87a]" />
+                      <span className="text-[10px] uppercase tracking-wider font-ibm-plex-sans text-[#6a7282]">Connected</span>
+                    </div>
+                    <div className="font-mono text-[11px] text-[#11274d] break-all leading-snug">{walletAddress}</div>
+                  </div>
+                  <button
+                    role="menuitem"
+                    onClick={handleCopyAddress}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#f1f5f9] transition-colors"
+                  >
+                    {addressCopied ? (
+                      <>
+                        <Check size={12} className="text-[#0fa87a]" />
+                        <span className="text-[#0fa87a]">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} className="text-[#6a7282]" />
+                        Copy address
+                      </>
+                    )}
+                  </button>
+                  <button
+                    role="menuitem"
+                    disabled
+                    aria-disabled="true"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-ibm-plex-sans text-[#94a3b8] cursor-not-allowed"
+                  >
+                    <ArrowLeftRight size={12} className="text-[#94a3b8]" />
+                    <span>Switch wallet</span>
+                    <span className="ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-[#f1f5f9] text-[#6a7282] rounded-sm">Soon</span>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={handleDisconnect}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#f1f5f9] transition-colors"
+                  >
+                    <LogOut size={12} className="text-[#6a7282]" />
+                    Disconnect
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <Button variant="ghost-light" size="sm" className="border border-[#cbd5e1] bg-white hover:bg-[#e2e8f0]" onClick={onConnectWallet}>
               <span className="hidden md:inline">Connect Wallet</span>
