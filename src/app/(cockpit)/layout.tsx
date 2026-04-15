@@ -8,7 +8,7 @@ import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 
 export default function CockpitLayout({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { walletAddress, connected, openWalletModal } = useWalletConnection();
+  const { walletAddress, connected, openWalletModal, disconnect } = useWalletConnection();
 
   useEffect(() => { applyThemeSettings(); }, []);
 
@@ -18,6 +18,7 @@ export default function CockpitLayout({ children }: { children: React.ReactNode 
         walletConnected={connected}
         walletAddress={walletAddress ?? undefined}
         onConnectWallet={openWalletModal}
+        onDisconnectWallet={() => { void disconnect(); }}
         onSettingsClick={() => setSettingsOpen(true)}
       />
 
