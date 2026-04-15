@@ -68,13 +68,21 @@ export const KAMINO_KLIQUIDITY_PROGRAM = '6LtLpnUFNByNXLyCoK9wA2MykKAmQNZKBdY8s4
 
 // ── External APIs ────────────────────────────────────────────────────
 
-// Jupiter (docs: https://developers.jup.ag). All products live under api.jup.ag.
+// Jupiter (docs: https://dev.jup.ag). All products live under api.jup.ag.
 // Keyless throughput is 0.5 RPS; set JUPITER_API_KEY (portal.jup.ag) for 1+ RPS.
 export const JUPITER_API_BASE = 'https://api.jup.ag';
 export const JUPITER_PRICE_API = `${JUPITER_API_BASE}/price/v3`;
-export const JUPITER_SWAP_ORDER_API = `${JUPITER_API_BASE}/swap/v2/order`;
-export const JUPITER_SWAP_EXECUTE_API = `${JUPITER_API_BASE}/swap/v2/execute`;
-export const JUPITER_TOKENS_SEARCH_API = `${JUPITER_API_BASE}/tokens/v2/search`;
+
+// Ultra API — the current swap tier (MEV protection, Jupiter-landed tx, Shield,
+// holdings, token search). Replaces the legacy /swap/v2/* endpoints for swaps.
+export const JUPITER_ULTRA_BASE = `${JUPITER_API_BASE}/ultra/v1`;
+export const JUPITER_ULTRA_ORDER_API = `${JUPITER_ULTRA_BASE}/order`;
+export const JUPITER_ULTRA_EXECUTE_API = `${JUPITER_ULTRA_BASE}/execute`;
+export const JUPITER_ULTRA_SHIELD_API = `${JUPITER_ULTRA_BASE}/shield`;
+// Holdings supersedes the deprecated balances endpoint — richer per-account info.
+export const JUPITER_ULTRA_HOLDINGS_API = `${JUPITER_ULTRA_BASE}/holdings`;
+export const JUPITER_ULTRA_SEARCH_API = `${JUPITER_ULTRA_BASE}/search`;
+
 export const JUPITER_API_KEY = process.env.JUPITER_API_KEY ?? '';
 
 /** Extra headers for every Jupiter request (API key if set, Accept always). */
