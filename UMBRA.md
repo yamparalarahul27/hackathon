@@ -204,10 +204,12 @@ Note: `web-zk-prover@2.0.1` declares peer dep `@umbra-privacy/sdk@2.0.3` — ver
 
 ## Known Gotchas
 
-### 🚨 Blocker: Indexer / Relayer URLs
-SDK requires `indexerApiEndpoint`. README says `https://indexer.umbraprivacy.com`, type defs reference `https://indexer.umbra.finance`. **Neither resolves from external DNS.** The URL is Umbra-hosted infra — likely shared with hackathon integrators directly.
+### ✅ Resolved: Indexer URLs
+Official indexer endpoints (from sdk.umbraprivacy.com/indexer/overview):
+- **Devnet:** `https://utxo-indexer.api-devnet.umbraprivacy.com`
+- **Mainnet:** `https://utxo-indexer.api.umbraprivacy.com`
 
-**Action:** Get the real URL from Umbra team via Discord / Superteam track channel.
+Note: The indexer is primarily for UTXO/mixer operations (scanning, Merkle proofs). Encrypted balance operations (shield/unshield) may work without it.
 
 ### 🚨 Uses `@solana/kit` not `@solana/web3.js`
 Our codebase uses `@solana/web3.js`. Umbra SDK is built on the newer `@solana/kit ^6.0.1`. Mixing is possible but requires an adapter for signer/transaction types. The signer from `getInMemorySigner()` is for scripts; for the app we need a `signer` from the wallet adapter, converted to Kit-compatible format.

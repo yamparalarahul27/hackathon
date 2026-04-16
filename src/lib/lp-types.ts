@@ -69,3 +69,26 @@ export interface YieldBreakdown {
   yieldPercent: number;
   share: number;  // percentage of total portfolio yield
 }
+
+// ── Transaction Types (shared by deposit + withdraw) ───────────────
+
+import type { VersionedTransaction } from '@solana/web3.js';
+
+export type SignTransactionFn = (
+  tx: VersionedTransaction
+) => Promise<VersionedTransaction>;
+
+// ── Withdraw Types ─────────────────────────────────────────────────
+
+export interface WithdrawParams {
+  vaultAddress: string;
+  userWallet: string;
+  /** Shares to withdraw (decimal, NOT raw). */
+  shareAmount: number;
+}
+
+export interface WithdrawResult {
+  txSignature: string;
+  vaultAddress: string;
+  sharesWithdrawn: number;
+}

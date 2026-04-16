@@ -55,11 +55,20 @@ export default function VaultDetailPage({ params }: Props) {
         <VaultPosition position={position} connected={connected} />
         <VaultDetails vault={vault} />
 
-        <Link href={`/vault/${protocol}/deposit?vault=${vault.address}`} className="block">
-          <Button className="w-full py-3">
-            Deposit into this Vault
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link href={`/vault/${protocol}/deposit?vault=${vault.address}`} className="flex-1">
+            <Button className="w-full py-3">
+              Deposit
+            </Button>
+          </Link>
+          {position && (
+            <Link href={`/vault/${protocol}/withdraw?vault=${vault.address}`} className="flex-1">
+              <Button variant="secondary" className="w-full py-3">
+                Withdraw
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

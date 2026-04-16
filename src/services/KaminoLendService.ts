@@ -34,7 +34,7 @@ export class KaminoLendService {
 
     const market = await KaminoMarket.load(
       this.rpc,
-      marketAddress,
+      marketAddress as unknown as Parameters<typeof KaminoMarket.load>[1],
       SLOT_DURATION_MS,
       undefined, // default klend program ID
       true,      // withReserves

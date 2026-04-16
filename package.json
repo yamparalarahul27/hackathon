@@ -21,6 +21,7 @@
     "@kamino-finance/klend-sdk": "^7.3.22",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.103.0",
+    "@umbra-privacy/sdk": "^4.0.0",
     "agentation": "^3.0.2",
     "bs58": "^6.0.0",
     "class-variance-authority": "^0.7.1",

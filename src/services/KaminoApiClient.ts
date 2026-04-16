@@ -83,6 +83,11 @@ export interface KVaultDepositTxResponse {
   transaction: string; // base64-encoded serialized VersionedTransaction
 }
 
+/** Response from POST /ktx/kvault/withdraw */
+export interface KVaultWithdrawTxResponse {
+  transaction: string; // base64-encoded serialized VersionedTransaction
+}
+
 // ── Client ────────────────────────────────────────────────────────
 
 export class KaminoApiClient {
@@ -138,6 +143,22 @@ export class KaminoApiClient {
     amount: string; // decimal string, NOT lamports
   }): Promise<KVaultDepositTxResponse> {
     return this.fetchJson<KVaultDepositTxResponse>('/ktx/kvault/deposit', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  /**
+   * POST /ktx/kvault/withdraw — Kamino returns a base64-encoded transaction.
+   * Caller decodes, signs with the user's wallet, and sends via RPC.
+   * `amount` is the number of shares to redeem (decimal string).
+   */
+  buildWithdrawTx(params: {
+    wallet: string;
+    kvault: string;
+    amount: string; // shares as decimal string
+  }): Promise<KVaultWithdrawTxResponse> {
+    return this.fetchJson<KVaultWithdrawTxResponse>('/ktx/kvault/withdraw', {
       method: 'POST',
       body: JSON.stringify(params),
     });
