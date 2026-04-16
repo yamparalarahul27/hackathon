@@ -1,17 +1,16 @@
 /**
  * Token Price Service
  *
- * Wraps Jupiter Price API with reliability controls:
- * - request shaping (max ids + URL bytes)
- * - bounded concurrency
- * - retry with jitter for transient failures
- * - stale cache fallback semantics
+ * Thin wrapper over Jupiter Price API v3.
+ * Policy: real data only. If a price is unavailable, return `null`.
+ * No hardcoded fallbacks, no stale cache.
+ *
+ * Docs: https://dev.jup.ag
  */
 
 import { JUPITER_PRICE_API, jupiterHeaders } from '../lib/constants';
 
 // Price API v3 response — no `data` wrapper, price is `usdPrice` (number).
-// Docs: https://developers.jup.ag/docs/price-api
 type JupiterPriceResponse = Record<string, {
   usdPrice: number;
   liquidity?: number;
@@ -28,33 +27,23 @@ interface PriceCacheEntry {
 
 const priceCache: Map<string, PriceCacheEntry> = new Map();
 const FRESH_TTL_MS = 30_000;
-const STALE_TTL_MS = 150_000;
 const MAX_IDS_PER_REQUEST = 50;
 const MAX_URL_BYTES = 1800;
 const MAX_BATCH_CONCURRENCY = 3;
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 
-// Fallback prices for demo safety (if Jupiter API is unreachable)
-const FALLBACK_PRICES: Record<string, number> = {
-  'So11111111111111111111111111111111111111112': 178.50,    // SOL
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 1.00, // USDC
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 1.00,  // USDT
-  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs': 3420,  // ETH (Wormhole)
-  'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': 1.15,   // JUP
-  'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL': 4.20,   // JTO
-  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': 0.000035, // BONK
-};
-
 export class TokenPriceService {
   /**
-   * Get prices for multiple token mints in a single API call.
+   * Get prices for multiple token mints. Prices unavailable from Jupiter
+   * are returned as `null` — callers MUST handle this as "price unavailable"
+   * and not substitute a placeholder value.
    */
-  async getPrices(mints: string[]): Promise<Record<string, number>> {
+  async getPrices(mints: string[]): Promise<Record<string, number | null>> {
     const now = Date.now();
     const toFetch = new Set<string>();
-    const result: Record<string, number> = {};
+    const result: Record<string, number | null> = {};
 
-    // Check cache first
+    // Check fresh cache first
     for (const mint of mints) {
       const cached = priceCache.get(mint);
       if (cached && now - cached.fetchedAt < FRESH_TTL_MS) {
@@ -64,7 +53,6 @@ export class TokenPriceService {
       }
     }
 
-    // Fetch uncached/stale prices in bounded batches.
     if (toFetch.size > 0) {
       const unresolved = new Set<string>(toFetch);
       const batches = this.planBatches([...toFetch]);
@@ -84,38 +72,22 @@ export class TokenPriceService {
         }
       }
 
+      // Mints Jupiter couldn't price → null, no fallback.
       for (const mint of unresolved) {
-        const stale = priceCache.get(mint);
-        if (stale && now - stale.fetchedAt < STALE_TTL_MS) {
-          result[mint] = stale.price;
-          continue;
-        }
-
-        const fallback = FALLBACK_PRICES[mint];
-        if (typeof fallback === 'number') {
-          result[mint] = fallback;
-          priceCache.set(mint, { price: fallback, fetchedAt: now });
-          continue;
-        }
-
-        result[mint] = 0;
+        result[mint] = null;
       }
     }
 
     return result;
   }
 
-  /**
-   * Get price for a single token mint.
-   */
-  async getPrice(mint: string): Promise<number> {
+  /** Single-mint convenience. Returns `null` when unavailable. */
+  async getPrice(mint: string): Promise<number | null> {
     const prices = await this.getPrices([mint]);
-    return prices[mint] ?? 0;
+    return prices[mint] ?? null;
   }
 
-  /**
-   * Clear the price cache (useful for force-refresh).
-   */
+  /** Clear the in-memory fresh cache. */
   clearCache(): void {
     priceCache.clear();
   }
@@ -213,7 +185,7 @@ async function runWithConcurrency<T, R>(
       try {
         results.push(await fn(next));
       } catch {
-        // Errors are handled by caller through unresolved mint fallback logic.
+        // Errors surface as `null` prices to caller via unresolved-mint logic.
       }
     }
   });

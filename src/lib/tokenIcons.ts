@@ -16,8 +16,8 @@
  */
 
 // ── Known reliable icon URLs ───────────────────────────────────
-// These are verified working URLs from CoinGecko, Jupiter static, and official sources.
-// Covers the top tokens that appear in our mock data and most Kamino vaults.
+// Verified working URLs from CoinGecko, Jupiter static, and official sources.
+// Covers the top SPL tokens most Kamino vaults are denominated in.
 
 const KNOWN_ICONS: Record<string, string> = {
   // SOL

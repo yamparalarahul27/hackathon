@@ -3,6 +3,7 @@
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { NftGallery } from '@/components/features/NftGallery';
+import { WalletBalances } from '@/components/features/WalletBalances';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useNftHoldings } from '@/lib/hooks/useNftHoldings';
 
@@ -34,22 +35,25 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="max-w-[1400px] mx-auto space-y-8">
         {!connected ? (
           <Card className="p-8 text-center">
             <p className="text-sm text-[#11274d] font-ibm-plex-sans font-medium mb-2">
-              Connect your wallet to see NFT holdings
+              Connect your wallet to see your holdings
             </p>
             <p className="text-xs text-[#6a7282] font-ibm-plex-sans mb-4">
-              Your NFTs are fetched from Helius DAS — real on-chain data.
+              Balances via Jupiter Ultra. NFTs via Helius DAS. Real on-chain data.
             </p>
             <Button variant="primary" size="sm" onClick={openWalletModal}>
               Connect Wallet
             </Button>
           </Card>
-        ) : (
-          <NftGallery nfts={nfts} total={total} loading={loading} error={error} />
-        )}
+        ) : walletAddress ? (
+          <>
+            <WalletBalances walletAddress={walletAddress} />
+            <NftGallery nfts={nfts} total={total} loading={loading} error={error} />
+          </>
+        ) : null}
       </div>
     </div>
   );
