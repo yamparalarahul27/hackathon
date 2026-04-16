@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { NftGallery } from '@/components/features/NftGallery';
 import { WalletBalances } from '@/components/features/WalletBalances';
+import { ShieldedBalances } from '@/components/features/ShieldedBalances';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useNftHoldings } from '@/lib/hooks/useNftHoldings';
 
@@ -51,6 +52,7 @@ export default function WalletPage() {
         ) : walletAddress ? (
           <>
             <WalletBalances walletAddress={walletAddress} />
+            <ShieldedBalances walletAddress={walletAddress} publicMints={[]} />
             <NftGallery nfts={nfts} total={total} loading={loading} error={error} />
           </>
         ) : null}

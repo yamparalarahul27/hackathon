@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownUp, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowDownUp, Loader2, ShieldCheck, ShieldAlert, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TokenSearchCombobox } from '@/components/features/TokenSearchCombobox';
@@ -15,6 +15,7 @@ import {
   decodeBase64Transaction,
 } from '@/services/JupiterUltraService';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
+import { useUmbra } from '@/lib/hooks/useUmbra';
 import { cn } from '@/lib/utils';
 
 const ultra = new JupiterUltraService();
@@ -43,6 +44,8 @@ export default function SwapPage() {
   const [success, setSuccess] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shieldingOutput, setShieldingOutput] = useState(false);
+  const { available: umbraAvailable, shield: umbraShield } = useUmbra();
 
   // Seed default tokens on mount via /search (real data, no hardcoded metadata).
   useEffect(() => {
@@ -259,14 +262,37 @@ export default function SwapPage() {
             </div>
           )}
           {txSignature && (
-            <a
-              href={`https://solscan.io/tx/${txSignature}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center text-xs text-[#3B7DDD] hover:underline"
-            >
-              View transaction on Solscan
-            </a>
+            <div className="text-center space-y-2">
+              <a
+                href={`https://solscan.io/tx/${txSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-[#3B7DDD] hover:underline"
+              >
+                View transaction on Solscan
+              </a>
+              {umbraAvailable && outputToken && order && (
+                <button
+                  onClick={async () => {
+                    setShieldingOutput(true);
+                    try {
+                      await umbraShield(outputToken.id, BigInt(order.outAmount));
+                    } finally {
+                      setShieldingOutput(false);
+                    }
+                  }}
+                  disabled={shieldingOutput}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-[#11274d] bg-[#f1f5f9] hover:bg-[#e2e8f0] rounded-sm transition-colors disabled:opacity-40"
+                >
+                  {shieldingOutput ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : (
+                    <Lock size={10} />
+                  )}
+                  Shield output
+                </button>
+              )}
+            </div>
           )}
 
           {/* Error */}
