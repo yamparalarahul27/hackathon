@@ -92,7 +92,7 @@ const LOG: DayEntry[] = [
 
 export default function ProjectLogPage() {
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
+    <div className="flex-1 bg-[#f1f5f9] px-4 sm:px-6 lg:px-10 pt-6 pb-16 min-h-screen">
       <div
         className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20"
         style={{
@@ -100,7 +100,7 @@ export default function ProjectLogPage() {
           paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
             Project Log
           </h1>
