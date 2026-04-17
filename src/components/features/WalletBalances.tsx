@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Snowflake } from 'lucide-react';
+import { Loader2, Snowflake, Shield } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import {
   JupiterUltraService,
@@ -9,6 +9,7 @@ import {
   type UltraSearchToken,
 } from '@/services/JupiterUltraService';
 import { getTokenIcon } from '@/lib/tokenIcons';
+import { useUmbra } from '@/lib/hooks/useUmbra';
 
 const ultra = new JupiterUltraService();
 
@@ -150,8 +151,20 @@ export function WalletBalances({ walletAddress }: Props) {
 
 function BalanceRowItem({ row }: { row: BalanceRow }) {
   const [imgErr, setImgErr] = useState(false);
+  const [shielding, setShielding] = useState(false);
+  const { available, shield } = useUmbra();
   const icon = row.icon ?? getTokenIcon(row.mint);
   const usdValue = row.usdPrice != null ? row.uiAmount * row.usdPrice : null;
+
+  const handleShield = async () => {
+    if (!row.amount || shielding) return;
+    setShielding(true);
+    try {
+      await shield(row.mint, BigInt(row.amount));
+    } finally {
+      setShielding(false);
+    }
+  };
 
   return (
     <div className="flex items-center gap-3 px-3.5 py-2.5">
@@ -187,16 +200,33 @@ function BalanceRowItem({ row }: { row: BalanceRow }) {
           <p className="text-[10px] text-[#94a3b8] font-ibm-plex-sans truncate">{row.name}</p>
         )}
       </div>
-      <div className="text-right">
-        <p className="data-sm text-[#11274d]">
-          {row.uiAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}
-        </p>
-        {usdValue != null ? (
-          <p className="text-[11px] text-[#6a7282] font-ibm-plex-sans">
-            ${usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+      <div className="text-right flex items-center gap-2">
+        <div>
+          <p className="data-sm text-[#11274d]">
+            {row.uiAmount.toLocaleString('en-US', { maximumFractionDigits: 6 })}
           </p>
-        ) : (
-          <p className="text-[11px] text-[#94a3b8] font-ibm-plex-sans">Price unavailable</p>
+          {usdValue != null ? (
+            <p className="text-[11px] text-[#6a7282] font-ibm-plex-sans">
+              ${usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+            </p>
+          ) : (
+            <p className="text-[11px] text-[#94a3b8] font-ibm-plex-sans">Price unavailable</p>
+          )}
+        </div>
+        {available && !row.isFrozen && (
+          <button
+            onClick={handleShield}
+            disabled={shielding}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#6a7282] hover:text-[#3B7DDD] hover:bg-[#f1f5f9] rounded-sm transition-colors disabled:opacity-40"
+            title="Shield — encrypt this balance"
+          >
+            {shielding ? (
+              <Loader2 size={10} className="animate-spin" />
+            ) : (
+              <Shield size={10} />
+            )}
+            <span className="hidden sm:inline">Shield</span>
+          </button>
         )}
       </div>
     </div>

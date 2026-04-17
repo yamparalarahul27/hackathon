@@ -169,7 +169,7 @@ function ReserveRow({ reserve }: { reserve: LendingReserve }) {
   return (
     <tr className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
       <td className="py-3 px-4">
-        <Link href={`/token/${reserve.mint}`} className="flex items-center gap-2 hover:opacity-80">
+        <Link href={`/cockpit/token/${reserve.mint}`} className="flex items-center gap-2 hover:opacity-80">
           <TokenIcon mint={reserve.mint} symbol={reserve.symbol} size="sm" />
           <div>
             <p className="text-sm font-medium text-[#11274d]">{reserve.symbol}</p>
@@ -188,7 +188,7 @@ function ReserveRow({ reserve }: { reserve: LendingReserve }) {
 
 function ReserveCard({ reserve }: { reserve: LendingReserve }) {
   return (
-    <Link href={`/token/${reserve.mint}`}>
+    <Link href={`/cockpit/token/${reserve.mint}`}>
       <Card hover className="p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">

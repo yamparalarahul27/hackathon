@@ -94,3 +94,23 @@ export function jupiterHeaders(extra: Record<string, string> = {}): Record<strin
 
 export const BIRDEYE_API_BASE = 'https://public-api.birdeye.so';
 export const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY ?? '';
+
+// ── Umbra Privacy ────────────────────────────────────────────────────
+
+/** Umbra UTXO indexer — official endpoints from sdk.umbraprivacy.com/indexer/overview */
+const UMBRA_INDEXER_DEVNET = 'https://utxo-indexer.api-devnet.umbraprivacy.com';
+const UMBRA_INDEXER_MAINNET = 'https://utxo-indexer.api.umbraprivacy.com';
+
+export const UMBRA_INDEXER_URL =
+  process.env.NEXT_PUBLIC_UMBRA_INDEXER_URL ??
+  ((process.env.NEXT_PUBLIC_UMBRA_NETWORK ?? 'devnet') === 'mainnet'
+    ? UMBRA_INDEXER_MAINNET
+    : UMBRA_INDEXER_DEVNET);
+
+/** Umbra network — devnet for hackathon demo, mainnet for production. */
+export const UMBRA_NETWORK: 'devnet' | 'mainnet' | 'localnet' =
+  (process.env.NEXT_PUBLIC_UMBRA_NETWORK as 'devnet' | 'mainnet' | 'localnet') ?? 'devnet';
+
+/** WSS RPC URL required by Umbra client for subscription support. */
+export const UMBRA_WSS_RPC_URL =
+  process.env.NEXT_PUBLIC_UMBRA_WSS_RPC ?? (QUICKNODE_WSS_URL || RPCFAST_WSS_URL);

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { PrivacyPanel } from '@/components/features/PrivacyPanel';
 
 // ── Preset Options ─────────────────────────────────────────────
 
@@ -159,6 +160,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               ))}
             </div>
           </div>
+
+          {/* Privacy & Compliance */}
+          <PrivacyPanel />
 
           {/* Preview */}
           <div>

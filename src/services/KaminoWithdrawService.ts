@@ -1,11 +1,11 @@
 /**
- * Kamino Deposit Service — real K-Vault deposits via Kamino's Tx API.
+ * Kamino Withdraw Service — real K-Vault withdrawals via Kamino's Tx API.
  *
- * POST /ktx/kvault/deposit returns a base64-encoded, ready-to-sign
+ * POST /ktx/kvault/withdraw returns a base64-encoded, ready-to-sign
  * VersionedTransaction. We decode, hand it to the wallet adapter to
  * sign, and submit via the app's RPC connection.
  *
- * Only K-Vaults are supported by this endpoint (aligns with /kvaults/*).
+ * Mirrors KaminoDepositService exactly — same 4-step flow.
  */
 
 import {
@@ -13,26 +13,11 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { KaminoApiClient } from './KaminoApiClient';
-import type { SignTransactionFn } from '@/lib/lp-types';
-
-// ── Types ──────────────────────────────────────────────────────────
-
-export interface DepositParams {
-  vaultAddress: string;
-  userWallet: string;
-  /** Decimal amount of the vault's deposit token, NOT lamports. */
-  tokenAmount: number;
-}
-
-export interface DepositResult {
-  txSignature: string;
-  vaultAddress: string;
-  amountDeposited: number;
-}
+import type { WithdrawParams, WithdrawResult, SignTransactionFn } from '@/lib/lp-types';
 
 // ── Service ────────────────────────────────────────────────────────
 
-export class KaminoDepositService {
+export class KaminoWithdrawService {
   private connection: Connection;
   private api: KaminoApiClient;
 
@@ -42,25 +27,25 @@ export class KaminoDepositService {
   }
 
   /**
-   * Execute a K-Vault deposit end-to-end:
+   * Execute a K-Vault withdrawal end-to-end:
    *   1. Ask Kamino to build the tx
    *   2. Decode base64 → VersionedTransaction
    *   3. User signs via wallet adapter
    *   4. Send + confirm via RPC
    */
-  async deposit(
-    params: DepositParams,
+  async withdraw(
+    params: WithdrawParams,
     signTransaction: SignTransactionFn
-  ): Promise<DepositResult> {
-    if (!Number.isFinite(params.tokenAmount) || params.tokenAmount <= 0) {
-      throw new Error('Deposit amount must be a positive number.');
+  ): Promise<WithdrawResult> {
+    if (!Number.isFinite(params.shareAmount) || params.shareAmount <= 0) {
+      throw new Error('Withdraw amount must be a positive number.');
     }
 
     // 1. Build tx via Kamino API
-    const { transaction } = await this.api.buildDepositTx({
+    const { transaction } = await this.api.buildWithdrawTx({
       wallet: params.userWallet,
       kvault: params.vaultAddress,
-      amount: params.tokenAmount.toString(),
+      amount: params.shareAmount.toString(),
     });
 
     // 2. Decode
@@ -80,7 +65,7 @@ export class KaminoDepositService {
     return {
       txSignature: sig,
       vaultAddress: params.vaultAddress,
-      amountDeposited: params.tokenAmount,
+      sharesWithdrawn: params.shareAmount,
     };
   }
 }
