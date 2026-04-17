@@ -11,6 +11,48 @@ interface DayEntry {
 
 const LOG: DayEntry[] = [
   {
+    date: '2026-04-17',
+    added: 'Public landing page with "Interested" counter (Supabase-backed) and "View Log" CTA. Route restructure: cockpit moves under /cockpit, landing at /.',
+    fixed: 'Project Log page reversed to show latest day first. Unified all side-track research (Umbra, Torque, LI.FI) into single TRACKS.md.',
+    learned: 'Build in public works best when the landing page is a funnel, not a gate — judges and testers still need direct access to the cockpit.',
+  },
+  {
+    date: '2026-04-16',
+    added: 'Jupiter Ultra upgrade — swap page now uses /ultra/v1 (order/execute/shield/search/holdings). Live SPL token search combobox. Wallet balances section via Ultra holdings. Side track research: Umbra Privacy, Torque MCP, LI.FI.',
+    fixed: 'Purged all mocks: deleted MockJupiterSwapService, ServiceFactory, useServices (dead code), FALLBACK_PRICES, stale cache. Prices return null when unavailable — UI shows "Price unavailable" instead of fake numbers.',
+    learned: 'Jupiter Ultra\'s /shield endpoint detects scam tokens before swap execution — free safety layer. Umbra SDK uses @solana/kit (not web3.js) — adapter needed. Torque MCP is an AI-agent tool, not a traditional SDK.',
+  },
+  {
+    date: '2026-04-15',
+    added: 'Rich NFT view — attributes, creators, royalty, ownership, cNFT compression, collection filter pills, detail modal with Magic Eden/Tensor/Solscan links. Wallet chip dropdown (copy/disconnect/switch-soon).',
+    fixed: 'Migrated Kamino + Jupiter + Deriverse services to current official docs. HeliusNftService expanded from 8 to 20+ parsed DAS fields. Pagination fix: 50 → 1000 NFT cap.',
+    learned: 'Helius DAS response already contains all the NFT richness (attributes, creators, royalties) — we were just throwing it away in the parser. No new API needed.',
+  },
+  {
+    date: '2026-04-14',
+    added: 'Sprint 1+2: DexScreener pairs, Sanctum LST Directory, NFT Holdings gallery, Trending tokens rail. Deriverse DEX devnet trade analytics with real on-chain parsing.',
+    fixed: 'Vault APY/TVL/symbols now match kamino.finance exactly. RPC Fast + round-robin rotation across 3 providers eliminated single-point RPC failures.',
+    learned: 'Pre-push hooks (lockfile sync + lint + typecheck + build + audit gate) catch issues before they reach CI — saves 10 min per push cycle.',
+  },
+  {
+    date: '2026-04-13',
+    added: 'Market page with live CoinGecko token list. Kamino Lending product integration. Multi-source token chart service (Binance → Birdeye → GeckoTerminal).',
+    fixed: 'Removed fiat/Dodo deposit flow — enforced crypto-only deposits. Optimized build by removing 4 unused deps, externalizing Solana SDKs, lazy-loading Recharts.',
+    learned: 'Agentation must be stripped from main on every merge — added a checklist in CLAUDE.md. Vault data split (general every 1hr, positions on wallet connect) cut RPC calls by 60%.',
+  },
+  {
+    date: '2026-04-12',
+    added: 'Pivoted to DeFi Cockpit. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
+    fixed: 'Removed ALL hardcoded mock data — real Kamino SDK data or error banner, nothing fake. Liveline chart rendering fixed with explicit pixel height.',
+    learned: 'Experience-first design wins hackathons — real data flowing through a stunning UI that people screenshot is more compelling than a half-working deposit pipeline.',
+  },
+  {
+    date: '2026-04-11',
+    added: 'Logo, live SOL price in bottom bar, clickable vault cards linking to detail view. Devnet vault strategy documented using SPL Token PDAs.',
+    fixed: 'ETH token icon was wrong Wormhole-wrapped asset. Green text contrast on light background improved for accessibility.',
+    learned: 'Kamino vault deposits are mainnet-only — can\'t demo without real money. This constraint drove the pivot to read-only cockpit.',
+  },
+  {
     date: '2026-04-10',
     added: 'Jupiter Swap wired into deposit flow — 5-step user story complete. Asgard UI design system (frost/hela/loki tokens) applied across all components.',
     fixed: 'Scalable token icons using Solana CDN replaced local images. Mobile 320px responsive pass on all cards and grids.',
@@ -85,16 +127,14 @@ export default function ProjectLogPage() {
                 {/* Dot */}
                 <div className={
                   'absolute left-1.5 sm:left-2.5 top-4 w-3 h-3 rounded-full border-2 border-white ' +
-                  (i === LOG.length - 1
-                    ? 'bg-[#19549b]'
-                    : 'bg-[#cbd5e1]')
+                  (i === 0 ? 'bg-[#19549b]' : 'bg-[#cbd5e1]')
                 } />
 
                 <Card className="p-4 sm:p-5">
                   <div className="flex items-center justify-between mb-3">
                     <time className="font-mono text-xs text-[#6a7282]">{formatDate(day.date)}</time>
                     <span className="text-[10px] uppercase tracking-wider text-[#94a3b8] font-ibm-plex-sans">
-                      Day {i + 1}
+                      Day {LOG.length - i}
                     </span>
                   </div>
 

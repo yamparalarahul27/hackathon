@@ -19,14 +19,14 @@ interface NavbarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/' },
-  { label: 'Market', href: '/market' },
-  { label: 'DEX', href: '/dex/deriverse' },
-  { label: 'Lend', href: '/lend/kamino' },
-  { label: 'Vaults', href: '/vault/kamino' },
-  { label: 'LSTs', href: '/lst' },
-  { label: 'Swap', href: '/swap' },
-  { label: 'Wallet', href: '/wallet' },
+  { label: 'Cockpit', href: '/cockpit' },
+  { label: 'Market', href: '/cockpit/market' },
+  { label: 'DEX', href: '/cockpit/dex/deriverse' },
+  { label: 'Lend', href: '/cockpit/lend/kamino' },
+  { label: 'Vaults', href: '/cockpit/vault/kamino' },
+  { label: 'LSTs', href: '/cockpit/lst' },
+  { label: 'Swap', href: '/cockpit/swap' },
+  { label: 'Wallet', href: '/cockpit/wallet' },
 ];
 
 /** DeFi Cockpit header — 48px, transparent + blur */
@@ -39,7 +39,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
   const walletRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
+    if (href === '/cockpit') return pathname === '/cockpit';
     return pathname.startsWith(href);
   };
 
@@ -88,7 +88,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
     <header className="sticky top-0 z-20 bg-[#f1f5f9]/95 backdrop-blur-lg border-b border-[#cbd5e1]">
       <div className="flex items-center justify-between h-12 px-4 lg:px-6 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/cockpit" className="flex items-center gap-2">
             <Image src="/logo.svg" alt="DeFi Cockpit" width={24} height={24} />
             <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Cockpit</span>
           </Link>
@@ -136,7 +136,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
                 </button>
                 <Link
                   role="menuitem"
-                  href="/integration"
+                  href="/cockpit/integration"
                   onClick={() => setSettingsMenuOpen(false)}
                   className="w-full flex items-center gap-2 px-3 py-2 text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#f1f5f9] transition-colors"
                 >

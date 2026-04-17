@@ -68,19 +68,19 @@ const QUICK_ACTIONS = [
   {
     label: 'Explore Vaults',
     description: 'Browse Kamino vaults, compare APY and TVL',
-    href: '/vault/kamino/explore',
+    href: '/cockpit/vault/kamino/explore',
     icon: Vault,
   },
   {
     label: 'DEX Analytics',
     description: 'Trade journal, PnL breakdown, fills history',
-    href: '/dex/deriverse',
+    href: '/cockpit/dex/deriverse',
     icon: BarChart3,
   },
   {
     label: 'Swap Tokens',
     description: 'Jupiter-powered swaps with best routing',
-    href: '/swap',
+    href: '/cockpit/swap',
     icon: ArrowLeftRight,
   },
 ];
@@ -219,7 +219,7 @@ export function ProjectOverview({
                   );
 
                   return mint
-                    ? <Link key={t.symbol} href={`/token/${mint}`}>{cardContent}</Link>
+                    ? <Link key={t.symbol} href={`/cockpit/token/${mint}`}>{cardContent}</Link>
                     : <div key={t.symbol}>{cardContent}</div>;
                 })}
           </div>
@@ -236,7 +236,7 @@ export function ProjectOverview({
                 </span>
               )}
             </div>
-            <Link href="/vault/kamino/explore" className="font-ibm-plex-sans text-xs text-[#19549b] hover:text-[#143f78] flex items-center gap-1">
+            <Link href="/cockpit/vault/kamino/explore" className="font-ibm-plex-sans text-xs text-[#19549b] hover:text-[#143f78] flex items-center gap-1">
               View all <ArrowRight size={12} />
             </Link>
           </div>
@@ -308,7 +308,7 @@ export function ProjectOverview({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="label-section-light">Your Positions</h2>
-              <Link href="/vault/kamino" className="font-ibm-plex-sans text-xs text-[#19549b] hover:text-[#143f78] flex items-center gap-1">
+              <Link href="/cockpit/vault/kamino" className="font-ibm-plex-sans text-xs text-[#19549b] hover:text-[#143f78] flex items-center gap-1">
                 View all <ArrowRight size={12} />
               </Link>
             </div>
@@ -344,7 +344,7 @@ export function ProjectOverview({
             ) : (
               <Card className="p-8 text-center">
                 <p className="text-sm text-[#6a7282] mb-3">No active positions yet.</p>
-                <Link href="/vault/kamino/explore">
+                <Link href="/cockpit/vault/kamino/explore">
                   <Button variant="primary" size="sm">Explore Vaults</Button>
                 </Link>
               </Card>

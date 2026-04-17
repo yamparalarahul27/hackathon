@@ -46,7 +46,7 @@ export const TokenVaults = React.memo(function TokenVaults({ mint, symbol, allVa
                   ${vault.tvl >= 1e6 ? `${(vault.tvl / 1e6).toFixed(1)}M` : `${(vault.tvl / 1e3).toFixed(0)}K`} TVL
                 </span>
               </div>
-              <Link href={`/vault/kamino/deposit?vault=${vault.address}`}>
+              <Link href={`/cockpit/vault/kamino/deposit?vault=${vault.address}`}>
                 <Button variant="execute" size="sm" className="w-full mt-1">Deposit</Button>
               </Link>
             </div>
