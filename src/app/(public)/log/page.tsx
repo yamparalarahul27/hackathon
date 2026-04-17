@@ -88,12 +88,6 @@ const LOG: DayEntry[] = [
     fixed: 'Migrated Kamino + Jupiter + Deriverse services to current official docs. HeliusNftService expanded from 8 to 20+ parsed DAS fields. Pagination fix: 50 → 1000 NFT cap.',
     learned: 'Helius DAS response already contains all the NFT richness (attributes, creators, royalties) — we were just throwing it away in the parser. No new API needed.',
   },
-  {
-    date: '2026-04-16',
-    added: 'Jupiter Ultra upgrade — swap page now uses /ultra/v1 (order/execute/shield/search/holdings). Live SPL token search combobox. Wallet balances section via Ultra holdings. Side track research: Umbra Privacy, Torque MCP, LI.FI.',
-    fixed: 'Purged all mocks: deleted MockJupiterSwapService, ServiceFactory, useServices (dead code), FALLBACK_PRICES, stale cache. Prices return null when unavailable — UI shows "Price unavailable" instead of fake numbers.',
-    learned: 'Jupiter Ultra\'s /shield endpoint detects scam tokens before swap execution — free safety layer. Umbra SDK uses @solana/kit (not web3.js) — adapter needed. Torque MCP is an AI-agent tool, not a traditional SDK.',
-  },
 ];
 
 export default function ProjectLogPage() {
