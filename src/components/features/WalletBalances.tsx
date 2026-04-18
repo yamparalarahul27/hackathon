@@ -15,6 +15,7 @@ const ultra = new JupiterUltraService();
 
 interface Props {
   walletAddress: string;
+  onMintsLoaded?: (mints: string[]) => void;
 }
 
 interface BalanceRow extends UltraHolding {
@@ -24,7 +25,7 @@ interface BalanceRow extends UltraHolding {
   usdPrice: number | null;
 }
 
-export function WalletBalances({ walletAddress }: Props) {
+export function WalletBalances({ walletAddress, onMintsLoaded }: Props) {
   const [holdings, setHoldings] = useState<UltraHolding[]>([]);
   const [meta, setMeta] = useState<Record<string, UltraSearchToken>>({});
   const [loading, setLoading] = useState(true);
@@ -41,6 +42,7 @@ export function WalletBalances({ walletAddress }: Props) {
         if (cancelled) return;
         const nonZero = fetched.filter((h) => h.uiAmount > 0);
         setHoldings(nonZero);
+        onMintsLoaded?.(nonZero.map((h) => h.mint));
 
         // Enrich with symbol/name/price via a single /search call per mint.
         // The /search endpoint supports comma-separated mints (up to 100).

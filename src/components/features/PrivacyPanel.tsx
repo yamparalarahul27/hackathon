@@ -23,6 +23,8 @@ export function PrivacyPanel() {
   const [auditorAddress, setAuditorAddress] = useState('');
   const [revokeAddress, setRevokeAddress] = useState('');
   const [recoverMint, setRecoverMint] = useState('');
+  const [recoverAmount, setRecoverAmount] = useState('');
+  const [recoverDest, setRecoverDest] = useState('');
   const [actionResult, setActionResult] = useState<string | null>(null);
 
   if (!available) {
@@ -155,24 +157,40 @@ export function PrivacyPanel() {
           Recover tokens stuck from failed MPC callbacks during shield/unshield operations.
         </p>
 
-        <p className="text-[10px] text-[#94a3b8] font-ibm-plex-sans">
-          Enter the token mint, amount (raw), and destination wallet to recover stuck funds.
-        </p>
-        <div className="flex gap-2">
+        <div className="space-y-2">
           <input
             type="text"
             value={recoverMint}
             onChange={(e) => setRecoverMint(e.target.value)}
             placeholder="Token mint address"
-            className="flex-1 min-w-0 px-3 py-2 text-xs bg-white border border-[#cbd5e1] rounded-sm font-ibm-plex-sans text-[#11274d] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#19549b]"
+            className="w-full px-3 py-2 text-xs bg-white border border-[#cbd5e1] rounded-sm font-ibm-plex-sans text-[#11274d] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#19549b]"
           />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={recoverAmount}
+              onChange={(e) => setRecoverAmount(e.target.value)}
+              placeholder="Amount (raw base units)"
+              className="flex-1 min-w-0 px-3 py-2 text-xs bg-white border border-[#cbd5e1] rounded-sm font-ibm-plex-sans text-[#11274d] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#19549b]"
+            />
+            <input
+              type="text"
+              value={recoverDest}
+              onChange={(e) => setRecoverDest(e.target.value)}
+              placeholder="Destination wallet"
+              className="flex-1 min-w-0 px-3 py-2 text-xs bg-white border border-[#cbd5e1] rounded-sm font-ibm-plex-sans text-[#11274d] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#19549b]"
+            />
+          </div>
           <Button
             size="sm"
             variant="secondary"
-            disabled={!recoverMint || loading}
-            onClick={() => handleAction('Recovery', () => recoverStagedSpl(recoverMint, BigInt(0), ''))}
+            className="w-full"
+            disabled={!recoverMint || !recoverAmount || !recoverDest || loading}
+            onClick={() => handleAction('Recovery', () =>
+              recoverStagedSpl(recoverMint, BigInt(recoverAmount), recoverDest)
+            )}
           >
-            <KeyRound size={10} /> Recover
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <><KeyRound size={10} /> Recover Staged SPL</>}
           </Button>
         </div>
       </div>
