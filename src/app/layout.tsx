@@ -5,8 +5,8 @@ import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DeFi Cockpit — Real-Time DeFi Intelligence",
-  description: "Real-time DeFi intelligence powered by Solana. Live vault data, token prices, and portfolio analytics.",
+  title: "DeFi Triangle — Real-Time DeFi Intelligence",
+  description: "Real-time Solana DeFi intelligence. Vaults, swaps, analytics, and privacy — powered by real on-chain data.",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",

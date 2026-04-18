@@ -1,4 +1,4 @@
-# Y-Vault — Unified Research & Strategy
+# DeFi Triangle — Unified Research & Strategy
 
 > Last updated: 2026-04-17
 > Deadline: **May 12, 2026** (Colosseum Frontier Hackathon)
@@ -7,7 +7,7 @@
 
 ## Product Vision
 
-**Y-Vault** is a **DeFi Cockpit** for Solana — real-time yield intelligence, vaults, swaps, analytics, and privacy. Powered by real on-chain data, not mocks.
+**DeFi Triangle** is a real-time DeFi intelligence platform for Solana — real-time yield intelligence, vaults, swaps, analytics, and privacy. Powered by real on-chain data, not mocks.
 
 **Pivot (April 2026):** Original vision was fiat→vault deposit pipeline, but Kamino deposits are mainnet-only and can't be demoed without real money. Pivoted to experience-first DeFi cockpit — real data flowing through a stunning UI.
 

@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Y-Vault — Claude Code Project Instructions
+# DeFi Triangle — Claude Code Project Instructions
 
 ## STRICT RULES (apply to every session, every agent)
 
@@ -56,7 +56,7 @@ Follow `DESIGN.md` strictly. Do NOT deviate from the Asgard-based design system.
 
 ## Project Overview
 
-**Y-Vault** is a **DeFi Cockpit** for the Colosseum Frontier Hackathon (deadline: May 12, 2026).
+**DeFi Triangle** is a real-time Solana DeFi intelligence platform for the Colosseum Frontier Hackathon (deadline: May 12, 2026).
 
 **Pivot (April 2026):** Original vision was fiat→vault deposit pipeline, but Kamino deposits are mainnet-only and can't be demoed without real money. Pivoted to **experience-first DeFi cockpit** — real on-chain data, beautiful visualization, zero mocks.
 

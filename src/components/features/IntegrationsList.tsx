@@ -237,7 +237,7 @@ export function IntegrationsList() {
             Integrations
           </h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">
-            Every live data source powering DeFi Cockpit — real APIs, SDKs, and on-chain reads.
+            Every live data source powering DeFi Triangle — real APIs, SDKs, and on-chain reads.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {[

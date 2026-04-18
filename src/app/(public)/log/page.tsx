@@ -42,7 +42,7 @@ const LOG: DayEntry[] = [
   },
   {
     date: '2026-04-12',
-    added: 'Pivoted to DeFi Cockpit. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
+    added: 'Pivoted to DeFi Triangle. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
     fixed: 'Removed ALL hardcoded mock data — real Kamino SDK data or error banner, nothing fake. Liveline chart rendering fixed with explicit pixel height.',
     learned: 'Experience-first design wins hackathons — real data flowing through a stunning UI that people screenshot is more compelling than a half-working deposit pipeline.',
   },
@@ -66,7 +66,7 @@ const LOG: DayEntry[] = [
   },
   {
     date: '2026-04-12',
-    added: 'Pivoted to DeFi Cockpit. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
+    added: 'Pivoted to DeFi Triangle. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
     fixed: 'Removed ALL hardcoded mock data — real Kamino SDK data or error banner, nothing fake. Liveline chart rendering fixed with explicit pixel height.',
     learned: 'Experience-first design wins hackathons — real data flowing through a stunning UI that people screenshot is more compelling than a half-working deposit pipeline.',
   },
@@ -105,7 +105,7 @@ export default function ProjectLogPage() {
             Project Log
           </h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70">
-            Day-by-day evolution of DeFi Cockpit — what was added, what was fixed, what we learned.
+            Day-by-day evolution of DeFi Triangle — what was added, what was fixed, what we learned.
           </p>
         </div>
       </div>

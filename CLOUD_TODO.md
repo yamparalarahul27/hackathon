@@ -53,16 +53,16 @@ When deploying to Vercel, set these env vars:
 | `NEXT_PUBLIC_SUPABASE_URL` | Already have | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Already have | Yes |
 | `BIRDEYE_API_KEY` | Step 2 above | Recommended |
-| `NEXT_PUBLIC_APP_URL` | `https://vault.hirahul.xyz` | Yes |
-| `ALLOWED_ORIGINS` | `https://vault.hirahul.xyz` | Yes |
+| `NEXT_PUBLIC_APP_URL` | `https://defitriangle.xyz` | Yes |
+| `ALLOWED_ORIGINS` | `https://defitriangle.xyz` | Yes |
 
 ---
 
-## 4. DNS: vault.hirahul.xyz
+## 4. DNS: defitriangle.xyz
 
-Point `vault.hirahul.xyz` to your Vercel deployment:
+Point `defitriangle.xyz` to your Vercel deployment:
 - In Cloudflare (or your DNS): add a CNAME record → `cname.vercel-dns.com`
-- In Vercel: add `vault.hirahul.xyz` as a custom domain
+- In Vercel: add `defitriangle.xyz` as a custom domain
 
 ---
 

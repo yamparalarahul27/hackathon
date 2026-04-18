@@ -1,4 +1,4 @@
-# Test Cases — Y-Vault DeFi Cockpit
+# Test Cases — DeFi Triangle
 
 > Covers all integrations. Each section has **Best Case** (happy path) and **Worst Case** (failure + edge cases).
 
@@ -335,7 +335,7 @@
 ## 18. Dashboard / Project Overview (`/cockpit`)
 
 ### Best Case
-- [ ] Hero: "DeFi Cockpit" with portfolio stats (if wallet connected) or connect prompt
+- [ ] Hero: "DeFi Triangle" with portfolio stats (if wallet connected) or connect prompt
 - [ ] Quick Actions: 3 cards linking to Explore Vaults, DEX Analytics, Swap
 - [ ] Market Pulse: SOL/BTC/ETH prices from Binance (30s refresh)
 - [ ] Top 5 Vaults by APY: sortable mini-table with deposit buttons
