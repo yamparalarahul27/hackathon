@@ -26,8 +26,8 @@ const CTA_COLORS = [
 
 // ── Storage Keys ───────────────────────────────────────────────
 
-const STORAGE_KEY_GRADIENT = 'defi-cockpit.card-gradient';
-const STORAGE_KEY_CTA = 'defi-cockpit.cta-color';
+const STORAGE_KEY_GRADIENT = 'defi-triangle.card-gradient';
+const STORAGE_KEY_CTA = 'defi-triangle.cta-color';
 
 // ── Exports for consuming components ───────────────────────────
 

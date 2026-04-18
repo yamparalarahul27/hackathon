@@ -8,7 +8,7 @@ import Image from 'next/image';
 export default function LandingPage() {
   const [count, setCount] = useState<number | null>(null);
   const [clicked, setClicked] = useState(() =>
-    typeof window !== 'undefined' && localStorage.getItem('y-vault-interested') === '1'
+    typeof window !== 'undefined' && localStorage.getItem('defi-triangle-interested') === '1'
   );
   const [animating, setAnimating] = useState(false);
 
@@ -23,7 +23,7 @@ export default function LandingPage() {
     if (clicked) return;
     setClicked(true);
     setAnimating(true);
-    localStorage.setItem('y-vault-interested', '1');
+    localStorage.setItem('defi-triangle-interested', '1');
     setTimeout(() => setAnimating(false), 600);
 
     try {
@@ -42,11 +42,11 @@ export default function LandingPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-20 gradient-frost-hero relative overflow-hidden">
         <div className="max-w-2xl mx-auto text-center space-y-6 relative z-10">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Image src="/logo.svg" alt="Y-Vault" width={40} height={40} />
+            <Image src="/logo.svg" alt="DeFi Triangle" width={40} height={40} />
           </div>
 
           <h1 className="font-satoshi font-light text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight">
-            DeFi Cockpit
+            DeFi Triangle
           </h1>
 
           <p className="font-ibm-plex-sans text-sm sm:text-base lg:text-lg text-white/75 max-w-lg mx-auto leading-relaxed">

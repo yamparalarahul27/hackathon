@@ -61,7 +61,7 @@ export default function Providers({ children }: PropsWithChildren) {
         autoConnect: false,
         theme: 'dark',
         metadata: {
-            name: 'DeFi Cockpit',
+            name: 'DeFi Triangle',
             description: 'Real-time DeFi intelligence powered by Solana',
             url: APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
             iconUrls: ['/logo.svg']

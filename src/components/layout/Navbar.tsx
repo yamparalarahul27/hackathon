@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { label: 'Wallet', href: '/cockpit/wallet' },
 ];
 
-/** DeFi Cockpit header — 48px, transparent + blur */
+/** DeFi Triangle header — 48px, transparent + blur */
 export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisconnectWallet, onSettingsClick }: NavbarProps) {
   const pathname = usePathname();
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
@@ -89,8 +89,8 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
       <div className="flex items-center justify-between h-12 px-4 lg:px-6 max-w-[1400px] mx-auto">
         <div className="flex items-center gap-6">
           <Link href="/cockpit" className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="DeFi Cockpit" width={24} height={24} />
-            <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Cockpit</span>
+            <Image src="/logo.svg" alt="DeFi Triangle" width={24} height={24} />
+            <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Triangle</span>
           </Link>
           <nav className="hidden lg:flex items-center gap-6">
             {NAV_ITEMS.map(item => (

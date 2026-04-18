@@ -123,7 +123,7 @@ export function ProjectOverview({
       >
         <div className="max-w-[1400px] mx-auto">
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-1">
-            DeFi Cockpit
+            DeFi Triangle
           </h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">
             Real-time Solana yield intelligence — Kamino vaults, DEX analytics, and swaps in one view.

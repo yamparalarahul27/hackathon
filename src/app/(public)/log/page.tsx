@@ -42,7 +42,7 @@ const LOG: DayEntry[] = [
   },
   {
     date: '2026-04-12',
-    added: 'Pivoted to DeFi Cockpit. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
+    added: 'Pivoted to DeFi Triangle. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
     fixed: 'Removed ALL hardcoded mock data — real Kamino SDK data or error banner, nothing fake. Liveline chart rendering fixed with explicit pixel height.',
     learned: 'Experience-first design wins hackathons — real data flowing through a stunning UI that people screenshot is more compelling than a half-working deposit pipeline.',
   },
@@ -66,7 +66,7 @@ const LOG: DayEntry[] = [
   },
   {
     date: '2026-04-12',
-    added: 'Pivoted to DeFi Cockpit. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
+    added: 'Pivoted to DeFi Triangle. Built route architecture (10 pages), protocol-agnostic DEX analytics, token detail with multi-source oracles, vault detail page, Project Overview dashboard.',
     fixed: 'Removed ALL hardcoded mock data — real Kamino SDK data or error banner, nothing fake. Liveline chart rendering fixed with explicit pixel height.',
     learned: 'Experience-first design wins hackathons — real data flowing through a stunning UI that people screenshot is more compelling than a half-working deposit pipeline.',
   },
@@ -88,17 +88,11 @@ const LOG: DayEntry[] = [
     fixed: 'Migrated Kamino + Jupiter + Deriverse services to current official docs. HeliusNftService expanded from 8 to 20+ parsed DAS fields. Pagination fix: 50 → 1000 NFT cap.',
     learned: 'Helius DAS response already contains all the NFT richness (attributes, creators, royalties) — we were just throwing it away in the parser. No new API needed.',
   },
-  {
-    date: '2026-04-16',
-    added: 'Jupiter Ultra upgrade — swap page now uses /ultra/v1 (order/execute/shield/search/holdings). Live SPL token search combobox. Wallet balances section via Ultra holdings. Side track research: Umbra Privacy, Torque MCP, LI.FI.',
-    fixed: 'Purged all mocks: deleted MockJupiterSwapService, ServiceFactory, useServices (dead code), FALLBACK_PRICES, stale cache. Prices return null when unavailable — UI shows "Price unavailable" instead of fake numbers.',
-    learned: 'Jupiter Ultra\'s /shield endpoint detects scam tokens before swap execution — free safety layer. Umbra SDK uses @solana/kit (not web3.js) — adapter needed. Torque MCP is an AI-agent tool, not a traditional SDK.',
-  },
 ];
 
 export default function ProjectLogPage() {
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
+    <div className="flex-1 bg-[#f1f5f9] px-4 sm:px-6 lg:px-10 pt-6 pb-16 min-h-screen">
       <div
         className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20"
         style={{
@@ -106,12 +100,12 @@ export default function ProjectLogPage() {
           paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
             Project Log
           </h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70">
-            Day-by-day evolution of DeFi Cockpit — what was added, what was fixed, what we learned.
+            Day-by-day evolution of DeFi Triangle — what was added, what was fixed, what we learned.
           </p>
         </div>
       </div>

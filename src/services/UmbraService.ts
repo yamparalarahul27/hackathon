@@ -118,6 +118,7 @@ export class UmbraService {
         rpcUrl: this.config.rpcUrl,
         rpcSubscriptionsUrl: this.config.wssUrl,
         indexerApiEndpoint: this.config.indexerUrl,
+        deferMasterSeedSignature: true,
       });
     })();
 
@@ -129,7 +130,7 @@ export class UmbraService {
     this.assertInit();
     const { getUserRegistrationFunction } = await import('@umbra-privacy/sdk');
     const register = (getUserRegistrationFunction as any)({ client: this.client });
-    await register({ confidential: true });
+    await register({ confidential: true, anonymous: false });
   }
 
   /** Shield tokens: public wallet → encrypted on-chain balance. */

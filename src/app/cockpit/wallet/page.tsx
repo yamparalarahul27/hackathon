@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { NftGallery } from '@/components/features/NftGallery';
@@ -11,6 +12,7 @@ import { useNftHoldings } from '@/lib/hooks/useNftHoldings';
 export default function WalletPage() {
   const { walletAddress, shortAddress, connected, openWalletModal } = useWalletConnection();
   const { nfts, total, loading, error } = useNftHoldings(walletAddress);
+  const [publicMints, setPublicMints] = useState<string[]>([]);
 
   return (
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
@@ -51,8 +53,8 @@ export default function WalletPage() {
           </Card>
         ) : walletAddress ? (
           <>
-            <WalletBalances walletAddress={walletAddress} />
-            <ShieldedBalances walletAddress={walletAddress} publicMints={[]} />
+            <WalletBalances walletAddress={walletAddress} onMintsLoaded={setPublicMints} />
+            <ShieldedBalances walletAddress={walletAddress} publicMints={publicMints} />
             <NftGallery nfts={nfts} total={total} loading={loading} error={error} />
           </>
         ) : null}
