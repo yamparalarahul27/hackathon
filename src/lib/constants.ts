@@ -102,6 +102,10 @@ export const TORQUE_INGEST_URL = process.env.TORQUE_INGEST_URL ?? 'https://inges
 export const TORQUE_API_TOKEN = process.env.TORQUE_API_TOKEN ?? '';
 export const TORQUE_API_KEY = process.env.TORQUE_API_KEY ?? '';
 
+// ── Palm USD (PUSD) — non-freezable stablecoin ──────────────────────
+
+export const PUSD_MINT = 'xw55DHH17bGxWsazvKJyaSvPEhpTb9puxbwCazejZPT';
+
 // ── Umbra Privacy ────────────────────────────────────────────────────
 
 /** Umbra UTXO indexer — official endpoints from sdk.umbraprivacy.com/indexer/overview */

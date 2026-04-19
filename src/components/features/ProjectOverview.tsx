@@ -7,6 +7,7 @@ import { Card, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TokenIcon } from '@/components/ui/TokenIcon';
 import { RpcErrorBanner } from '@/components/ui/RpcErrorBanner';
+import { FreedomSwapCard } from '@/components/features/FreedomSwapCard';
 import { KaminoVaultInfo, KaminoVaultPosition, LPPortfolioSummary } from '@/lib/lp-types';
 import { formatUsd, formatPercent, formatCompact } from '@/lib/utils';
 
@@ -351,6 +352,11 @@ export function ProjectOverview({
             )}
           </section>
         )}
+
+        {/* ── Freedom Swap (Palm USD) ──────────────────────────── */}
+        <section className="max-w-md">
+          <FreedomSwapCard />
+        </section>
 
         {/* ── Protocol Stats ────────────────────────────────────── */}
         {vaults.length > 0 && (
