@@ -103,8 +103,10 @@ export const TORQUE_API_TOKEN = process.env.TORQUE_API_TOKEN ?? '';
 export const TORQUE_API_KEY = process.env.TORQUE_API_KEY ?? '';
 
 // ── Palm USD (PUSD) — non-freezable stablecoin ──────────────────────
-
-export const PUSD_MINT = 'xw55DHH17bGxWsazvKJyaSvPEhpTb9puxbwCazejZPT';
+// Currently confirmed on Ethereum only (0xfaf0cee6b20e2aaa4b80748a6af4cd89609a3d78).
+// Solana SPL mint TBD — awaiting confirmation from Palm USD team.
+// Once confirmed, update this value and the Freedom Swap card goes live.
+export const PUSD_MINT = '';
 
 // ── Umbra Privacy ────────────────────────────────────────────────────
 

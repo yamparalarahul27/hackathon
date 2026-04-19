@@ -10,6 +10,8 @@ import { PUSD_MINT } from '@/lib/constants';
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export function FreedomSwapCard() {
+  if (!PUSD_MINT) return null;
+
   return (
     <Card className="overflow-hidden p-0">
       <div className="bg-gradient-to-r from-[#0d2137] to-[#19549b] px-5 py-4">

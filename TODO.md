@@ -43,11 +43,11 @@
 - [ ] **Test on devnet:** connect Phantom (devnet mode) → fund with devnet SOL → go to `/cockpit/wallet` → click "Enable Privacy" → try shield/unshield
 - [ ] **Report results** to Claude — what worked, what errored
 
-### Palm USD
+### Palm USD (BLOCKED — awaiting Solana mint)
 
-- [ ] **Find PUSD mint address on Solana** — check their docs or token list
-- [ ] **Verify PUSD has Jupiter liquidity** — search "PUSD" in our swap combobox; if it shows up, liquidity exists
-- [ ] **Give Claude the mint address** → Claude builds Freedom Swap card + PUSD integration
+- [ ] **⚠️ Get PUSD Solana SPL mint address from Palm USD team** — currently only confirmed on Ethereum (`0xfaf0cee6b20e2aaa4b80748a6af4cd89609a3d78`). You've contacted the team — awaiting reply.
+- [ ] **When you get the Solana mint → give it to Claude** → Claude updates `PUSD_MINT` in constants, Freedom Swap card goes live automatically
+- [ ] **Verify PUSD has Jupiter liquidity** — search "PUSD" in swap combobox
 - [ ] **Create 5-min pitch deck** (max 12 slides) — for Palm USD track submission
 - [ ] **Record demo video** — for Palm USD + all other track submissions
 
