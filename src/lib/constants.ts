@@ -95,6 +95,13 @@ export function jupiterHeaders(extra: Record<string, string> = {}): Record<strin
 export const BIRDEYE_API_BASE = 'https://public-api.birdeye.so';
 export const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY ?? '';
 
+// ── Torque (incentive platform — rewards, leaderboards) ─────────────
+
+export const TORQUE_API_URL = process.env.TORQUE_API_URL ?? 'https://server.torque.so';
+export const TORQUE_INGEST_URL = process.env.TORQUE_INGEST_URL ?? 'https://ingest.torque.so';
+export const TORQUE_API_TOKEN = process.env.TORQUE_API_TOKEN ?? '';
+export const TORQUE_API_KEY = process.env.TORQUE_API_KEY ?? '';
+
 // ── Umbra Privacy ────────────────────────────────────────────────────
 
 /** Umbra UTXO indexer — official endpoints from sdk.umbraprivacy.com/indexer/overview */

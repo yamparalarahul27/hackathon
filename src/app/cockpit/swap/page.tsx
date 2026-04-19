@@ -16,6 +16,7 @@ import {
 } from '@/services/JupiterUltraService';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useUmbra } from '@/lib/hooks/useUmbra';
+import { trackSwapEvent } from '@/services/TorqueService';
 import { cn } from '@/lib/utils';
 
 const ultra = new JupiterUltraService();
@@ -148,6 +149,16 @@ export default function SwapPage() {
       const signed = await signTransaction(tx);
       const result = await ultra.executeOrder(signed, order.requestId);
       setTxSignature(result.signature);
+      if (publicKey && inputToken && outputToken) {
+        trackSwapEvent(
+          publicKey.toBase58(),
+          inputToken.id,
+          outputToken.id,
+          order.inAmount,
+          order.outAmount,
+          result.signature
+        );
+      }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setOrder(null);
