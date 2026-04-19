@@ -10,6 +10,7 @@ import { TokenPriceSources } from '@/components/features/token/TokenPriceSources
 import { TokenVaults } from '@/components/features/token/TokenVaults';
 import { TokenDexPairs } from '@/components/features/token/TokenDexPairs';
 import { TokenInfo } from '@/components/features/token/TokenInfo';
+import { TokenSafetyScore } from '@/components/features/token/TokenSafetyScore';
 import {
   getTokenMetadata,
   fetchCoinGeckoMarketData,
@@ -91,6 +92,9 @@ export default function TokenDetailPage({ params }: Props) {
 
         {/* Market Stats (horizontal scroll on mobile) */}
         <TokenMarketStats data={marketData} symbol={metadata.symbol} />
+
+        {/* Safety Score (Birdeye) */}
+        <TokenSafetyScore mint={mint} />
 
         {/* Price Oracle Comparison */}
         <TokenPriceSources sources={priceSources} loading={loading} />
