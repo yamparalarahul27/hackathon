@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownUp, Loader2, ShieldCheck, ShieldAlert, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +26,14 @@ const DEFAULT_INPUT_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // US
 const DEFAULT_OUTPUT_MINT = 'So11111111111111111111111111111111111111112'; // SOL
 
 export default function SwapPage() {
+  return (
+    <Suspense>
+      <SwapPageInner />
+    </Suspense>
+  );
+}
+
+function SwapPageInner() {
   const searchParams = useSearchParams();
   const seedInputMint = searchParams.get('inputMint') || DEFAULT_INPUT_MINT;
   const seedOutputMint = searchParams.get('outputMint') || DEFAULT_OUTPUT_MINT;
