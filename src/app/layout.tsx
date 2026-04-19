@@ -6,10 +6,23 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DeFi Triangle — Real-Time DeFi Intelligence",
-  description: "Real-time Solana DeFi intelligence. Vaults, swaps, analytics, and privacy — powered by real on-chain data.",
+  description: "Your DeFi execution and exposure app. Vaults, swaps, analytics, and privacy — powered by real on-chain data on Solana.",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",
+  },
+  openGraph: {
+    title: "DeFi Triangle",
+    description: "Your DeFi execution and exposure app.",
+    siteName: "DeFi Triangle",
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "DeFi Triangle" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DeFi Triangle",
+    description: "Your DeFi execution and exposure app.",
+    images: ["/api/og"],
   },
 };
 

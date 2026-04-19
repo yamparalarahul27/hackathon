@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Wallet, ArrowRight, CheckCircle, Loader2, ExternalLink } from 'lucide-react';
+import { trackDepositEvent } from '@/services/TorqueService';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TokenIcon } from '@/components/ui/TokenIcon';
@@ -90,6 +91,14 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
         signTransaction
       );
       setTxSignature(result.txSignature);
+      if (publicKey && selectedVault) {
+        trackDepositEvent(
+          publicKey.toBase58(),
+          selectedVault.address,
+          String(tokenAmount),
+          result.txSignature
+        );
+      }
       setStep('confirmation');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Deposit failed.';

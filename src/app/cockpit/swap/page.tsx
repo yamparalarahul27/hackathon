@@ -16,15 +16,19 @@ import {
 } from '@/services/JupiterUltraService';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { useUmbra } from '@/lib/hooks/useUmbra';
+import { trackSwapEvent } from '@/services/TorqueService';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
 
 const ultra = new JupiterUltraService();
 
-// Seed defaults use live mints; Ultra /search will fetch full metadata on first render.
-const SEED_INPUT_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // USDC
-const SEED_OUTPUT_MINT = 'So11111111111111111111111111111111111111112'; // SOL
+const DEFAULT_INPUT_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // USDC
+const DEFAULT_OUTPUT_MINT = 'So11111111111111111111111111111111111111112'; // SOL
 
 export default function SwapPage() {
+  const searchParams = useSearchParams();
+  const seedInputMint = searchParams.get('inputMint') || DEFAULT_INPUT_MINT;
+  const seedOutputMint = searchParams.get('outputMint') || DEFAULT_OUTPUT_MINT;
   const {
     connected,
     openWalletModal,
@@ -47,14 +51,14 @@ export default function SwapPage() {
   const [shieldingOutput, setShieldingOutput] = useState(false);
   const { available: umbraAvailable, shield: umbraShield } = useUmbra();
 
-  // Seed default tokens on mount via /search (real data, no hardcoded metadata).
+  // Seed tokens on mount via /search — supports URL params for deep-linking.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const [inputResults, outputResults] = await Promise.all([
-          ultra.searchTokens(SEED_INPUT_MINT),
-          ultra.searchTokens(SEED_OUTPUT_MINT),
+          ultra.searchTokens(seedInputMint),
+          ultra.searchTokens(seedOutputMint),
         ]);
         if (cancelled) return;
         if (inputResults[0]) setInputToken(inputResults[0]);
@@ -64,7 +68,7 @@ export default function SwapPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [seedInputMint, seedOutputMint]);
 
   const outputShieldSeverity: ShieldSeverity | null = useMemo(
     () => maxShieldSeverity(outputShield),
@@ -148,6 +152,16 @@ export default function SwapPage() {
       const signed = await signTransaction(tx);
       const result = await ultra.executeOrder(signed, order.requestId);
       setTxSignature(result.signature);
+      if (publicKey && inputToken && outputToken) {
+        trackSwapEvent(
+          publicKey.toBase58(),
+          inputToken.id,
+          outputToken.id,
+          order.inAmount,
+          order.outAmount,
+          result.signature
+        );
+      }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       setOrder(null);
