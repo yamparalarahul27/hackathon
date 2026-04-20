@@ -14,15 +14,44 @@
 
 const BIRDEYE_PROXY_BASE = '/api/birdeye';
 
+/**
+ * Error thrown when the upstream Birdeye API returns a non-OK status.
+ * Exposes the upstream status code + a short body preview so the UI can
+ * render meaningful fallbacks without parsing the raw proxy envelope.
+ */
+export class BirdeyeUpstreamError extends Error {
+  constructor(
+    public readonly upstreamStatus: number,
+    public readonly path: string,
+    public readonly bodyPreview: string,
+    public readonly hint?: string
+  ) {
+    super(
+      `Birdeye ${upstreamStatus} on ${path}${hint ? ` — ${hint}` : ''}`
+    );
+    this.name = 'BirdeyeUpstreamError';
+  }
+}
+
 async function birdeyeFetch<T>(path: string): Promise<T> {
   const url = `${BIRDEYE_PROXY_BASE}${path}`;
   const res = await fetch(url, {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(10000),
   });
+
   if (!res.ok) {
-    throw new Error(`Birdeye ${res.status}: ${path}`);
+    // Proxy returns a structured JSON envelope on upstream failure.
+    let envelope: { upstreamStatus?: number; upstreamBodyPreview?: string; hint?: string } = {};
+    try { envelope = await res.json(); } catch { /* non-JSON body is fine */ }
+    throw new BirdeyeUpstreamError(
+      envelope.upstreamStatus ?? res.status,
+      path,
+      envelope.upstreamBodyPreview ?? '',
+      envelope.hint
+    );
   }
+
   const json = await res.json();
   if (!json.success && json.message) {
     throw new Error(`Birdeye: ${json.message}`);
