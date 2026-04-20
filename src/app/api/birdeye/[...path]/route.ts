@@ -96,7 +96,7 @@ export async function GET(
           path: joinedPath,
           hint:
             upstream.status === 401 || upstream.status === 403
-              ? 'BIRDEYE_API_KEY is likely invalid, revoked, or the endpoint requires a higher plan. Visit /api/birdeye/_health to diagnose.'
+              ? 'BIRDEYE_API_KEY is likely invalid, revoked, or the endpoint requires a higher plan. Visit /api/birdeye/health to diagnose.'
               : undefined,
         },
         {
