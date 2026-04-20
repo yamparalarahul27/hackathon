@@ -4,12 +4,17 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/birdeye/_health
+ * GET /api/birdeye/health
  *
  * Diagnostic-only endpoint. Reports the configured state of the Birdeye
  * integration without leaking the API key, and pings a cheap upstream
  * endpoint so we can tell at a glance whether the key is valid and
  * whether the plan allows the endpoints we use.
+ *
+ * Do NOT rename back to `_health` — Next.js App Router treats any
+ * folder prefixed with `_` as private and excludes it from routing,
+ * so the request would fall through to the [...path] catch-all proxy
+ * and return `{"error":"Path not allowed"}`.
  *
  * Response shape:
  * {
