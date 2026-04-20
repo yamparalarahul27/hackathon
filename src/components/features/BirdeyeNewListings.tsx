@@ -8,7 +8,6 @@ import {
   fetchNewListings,
   fetchTokenSecurity,
   scoreTokenSecurity,
-  isConfigured,
   type NewListingToken,
   type SecurityLevel,
 } from '@/services/BirdeyeService';
@@ -21,12 +20,10 @@ interface ListingWithSafety extends NewListingToken {
 
 export function BirdeyeNewListings() {
   const [tokens, setTokens] = useState<ListingWithSafety[]>([]);
-  const [loading, setLoading] = useState(() => isConfigured());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isConfigured()) return;
-
     let cancelled = false;
     (async () => {
       try {
@@ -63,7 +60,7 @@ export function BirdeyeNewListings() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!isConfigured()) return null;
+  if (!loading && (error || tokens.length === 0)) return null;
 
   return (
     <section>

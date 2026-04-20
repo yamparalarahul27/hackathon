@@ -92,8 +92,9 @@ export function jupiterHeaders(extra: Record<string, string> = {}): Record<strin
   return headers;
 }
 
-export const BIRDEYE_API_BASE = 'https://public-api.birdeye.so';
-export const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY ?? '';
+// Birdeye is proxied via /api/birdeye — the raw key stays server-only and
+// must not be imported into client bundles. Server code that needs direct
+// upstream access should read process.env.BIRDEYE_API_KEY inline.
 
 // ── Torque (incentive platform — rewards, leaderboards) ─────────────
 
