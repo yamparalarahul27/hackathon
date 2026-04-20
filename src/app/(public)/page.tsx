@@ -58,7 +58,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="font-ibm-plex-sans text-sm sm:text-base lg:text-lg text-white/75 max-w-lg mx-auto leading-relaxed">
-            Real-time Solana yield intelligence. Vaults, swaps, analytics, and privacy — powered by real on-chain data, not mocks.
+            Your DeFi execution and exposure layer.
           </p>
 
           <p className="font-ibm-plex-sans text-xs text-white/50">
