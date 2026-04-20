@@ -23,4 +23,7 @@ npm run build
 echo "[pre-push] Running runtime advisory gate"
 npm run audit:gate
 
+echo "[pre-push] Scanning client bundle for secret leaks"
+npm run audit:bundle
+
 echo "[pre-push] All checks passed"

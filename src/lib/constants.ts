@@ -68,9 +68,17 @@ export const KAMINO_KLIQUIDITY_PROGRAM = '6LtLpnUFNByNXLyCoK9wA2MykKAmQNZKBdY8s4
 
 // ── External APIs ────────────────────────────────────────────────────
 
-// Jupiter (docs: https://dev.jup.ag). All products live under api.jup.ag.
-// Keyless throughput is 0.5 RPS; set JUPITER_API_KEY (portal.jup.ag) for 1+ RPS.
-export const JUPITER_API_BASE = 'https://api.jup.ag';
+// Jupiter base URL resolves at runtime:
+//   - In the browser, use '/api/jupiter' → our proxy attaches JUPITER_API_KEY
+//     server-side. The client never sees the key (non-public env vars
+//     resolve to undefined in the browser anyway, so attaching client-side
+//     was a no-op).
+//   - On the server (route handlers, server components), call upstream
+//     directly at https://api.jup.ag — jupiterHeaders() below adds the
+//     key inline from process.env.
+// Keyless tier = 0.5 RPS; with key = 1+ RPS (portal.jup.ag).
+const IS_BROWSER = typeof window !== 'undefined';
+export const JUPITER_API_BASE = IS_BROWSER ? '/api/jupiter' : 'https://api.jup.ag';
 export const JUPITER_PRICE_API = `${JUPITER_API_BASE}/price/v3`;
 
 // Ultra API — the current swap tier (MEV protection, Jupiter-landed tx, Shield,
@@ -83,12 +91,22 @@ export const JUPITER_ULTRA_SHIELD_API = `${JUPITER_ULTRA_BASE}/shield`;
 export const JUPITER_ULTRA_HOLDINGS_API = `${JUPITER_ULTRA_BASE}/holdings`;
 export const JUPITER_ULTRA_SEARCH_API = `${JUPITER_ULTRA_BASE}/search`;
 
-export const JUPITER_API_KEY = process.env.JUPITER_API_KEY ?? '';
-
-/** Extra headers for every Jupiter request (API key if set, Accept always). */
+/**
+ * Headers for a Jupiter request.
+ *
+ * On the client, we go through our /api/jupiter proxy which attaches
+ * x-api-key server-side, so we only need Accept here.
+ *
+ * On the server, we hit Jupiter upstream directly — read the key from
+ * process.env inline so it never flows through any module-level
+ * constant that could be inlined into a client bundle.
+ */
 export function jupiterHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { Accept: 'application/json', ...extra };
-  if (JUPITER_API_KEY) headers['x-api-key'] = JUPITER_API_KEY;
+  if (!IS_BROWSER) {
+    const key = process.env.JUPITER_API_KEY;
+    if (key) headers['x-api-key'] = key;
+  }
   return headers;
 }
 

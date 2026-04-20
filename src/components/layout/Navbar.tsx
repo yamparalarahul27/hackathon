@@ -7,8 +7,6 @@ import { Menu, Settings, Sliders, Plug, Copy, Check, ArrowLeftRight, LogOut, Che
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-// Clerk disabled — restore the avatar/UserButton block below when re-enabling.
-// import { Show, UserButton } from '@clerk/nextjs';
 
 interface NavbarProps {
   walletConnected?: boolean;
@@ -146,15 +144,6 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
               </div>
             )}
           </div>
-          {/* Clerk UserButton disabled — restore when re-enabling Clerk:
-            <Show when="signed-in">
-              <UserButton
-                appearance={{
-                  elements: { avatarBox: 'h-7 w-7 border border-[#cbd5e1] rounded-sm' },
-                }}
-              />
-            </Show>
-          */}
           {walletConnected && walletAddress ? (
             <div ref={walletRef} className="relative">
               <button
