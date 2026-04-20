@@ -53,7 +53,7 @@ export default function LandingPage() {
             <Image src="/logo.svg" alt="DeFi Triangle" width={40} height={40} />
           </div>
 
-          <h1 className="font-satoshi font-light text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight font-light" style={{ fontFamily: "'Geist Pixel Square', 'Geist Mono', monospace" }}>
             DeFi Triangle
           </h1>
 
