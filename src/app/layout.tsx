@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-// Clerk disabled — keep import commented for easy re-enable later.
-// import { ClerkProvider } from "@clerk/nextjs";
 import Providers from "./providers";
 import "./globals.css";
 

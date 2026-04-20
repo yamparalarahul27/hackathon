@@ -10,11 +10,11 @@
     "typecheck": "tsc --noEmit",
     "audit:high": "npm audit --omit=dev --audit-level=high",
     "audit:gate": "node ./scripts/audit-gate.mjs",
+    "audit:bundle": "node ./scripts/audit-bundle-secrets.mjs",
     "prepush:check": "bash ./scripts/prepush-checks.sh",
-    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push scripts/prepush-checks.sh scripts/audit-gate.mjs"
+    "hooks:install": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push scripts/prepush-checks.sh scripts/audit-gate.mjs scripts/audit-bundle-secrets.mjs"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.2.0",
     "@deriverse/kit": "^1.0.39",
     "@glamsystems/sanctum-lst-list": "^0.2.54",
     "@jup-ag/wallet-adapter": "^0.2.6",

@@ -118,20 +118,6 @@ curl "https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=1h&limit=100
 curl "https://hermes.pyth.network/v2/updates/price/latest?ids[]=0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d"
 ```
 
-## Colosseum Copilot
-
-Env vars in `.env.local`. API reference:
-```bash
-export COLOSSEUM_COPILOT_API_BASE="$COLOSSEUM_COPILOT_API_BASE"
-export COLOSSEUM_COPILOT_PAT="$COLOSSEUM_COPILOT_PAT"
-
-# Search projects
-curl -s -X POST "$COLOSSEUM_COPILOT_API_BASE/search/projects" \
-  -H "Authorization: Bearer $COLOSSEUM_COPILOT_PAT" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "your query", "limit": 10}'
-```
-
 ## Tech Stack
 
 Next.js 16, React 19, TypeScript, Tailwind CSS v4, Recharts, Framer Motion
