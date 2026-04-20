@@ -222,7 +222,7 @@ export function MarketTokenList() {
                   const change = token.price_change_percentage_24h ?? 0;
                   const positive = change >= 0;
                   const mint = GECKO_TO_MINT[token.id];
-                  const href = mint ? `/token/${mint}` : undefined;
+                  const href = mint ? `/cockpit/token/${mint}` : undefined;
 
                   return (
                     <tr
