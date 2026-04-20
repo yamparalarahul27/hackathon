@@ -1,34 +1,23 @@
 /**
- * Birdeye Data Service
+ * Birdeye Data Service (client)
  *
- * Wraps Birdeye's public API for:
+ * Calls our internal /api/birdeye proxy so the BIRDEYE_API_KEY stays
+ * server-side. The proxy forwards to https://public-api.birdeye.so and
+ * enforces an allow-list of supported paths.
+ *
  *   - Token security scoring (/defi/token_security)
  *   - Trending tokens (/defi/token_trending)
  *   - New token listings (/v2/tokens/new_listing)
  *
- * All endpoints require X-API-KEY header.
  * Free tier: 50 req/min. Docs: https://docs.birdeye.so
- *
- * Used for Birdeye BIP Sprint 1 competition.
  */
 
-import { BIRDEYE_API_BASE, BIRDEYE_API_KEY } from '../lib/constants';
-
-const CHAIN = 'solana';
-
-function birdeyeHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'x-chain': CHAIN,
-  };
-  if (BIRDEYE_API_KEY) headers['X-API-KEY'] = BIRDEYE_API_KEY;
-  return headers;
-}
+const BIRDEYE_PROXY_BASE = '/api/birdeye';
 
 async function birdeyeFetch<T>(path: string): Promise<T> {
-  const url = `${BIRDEYE_API_BASE}${path}`;
+  const url = `${BIRDEYE_PROXY_BASE}${path}`;
   const res = await fetch(url, {
-    headers: birdeyeHeaders(),
+    headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) {
@@ -168,10 +157,6 @@ export function scoreTokenSecurity(sec: TokenSecurity): SecurityScore {
     score >= 80 ? 'safe' : score >= 50 ? 'caution' : 'danger';
 
   return { level, score, checks };
-}
-
-export function isConfigured(): boolean {
-  return Boolean(BIRDEYE_API_KEY);
 }
 
 function short(addr: string): string {

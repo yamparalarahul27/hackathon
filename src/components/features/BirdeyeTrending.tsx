@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Flame, Loader2, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
-import { fetchTrendingTokens, isConfigured, type TrendingToken } from '@/services/BirdeyeService';
+import { fetchTrendingTokens, type TrendingToken } from '@/services/BirdeyeService';
 import { getTokenIcon } from '@/lib/tokenIcons';
 
 interface Props {
@@ -13,12 +13,10 @@ interface Props {
 
 export function BirdeyeTrending({ limit = 12 }: Props) {
   const [tokens, setTokens] = useState<TrendingToken[]>([]);
-  const [loading, setLoading] = useState(() => isConfigured());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isConfigured()) return;
-
     let cancelled = false;
     (async () => {
       try {
@@ -33,7 +31,8 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
     return () => { cancelled = true; };
   }, [limit]);
 
-  if (!isConfigured()) return null;
+  // Hide the section entirely if the proxy is unavailable or returned no data.
+  if (!loading && (error || tokens.length === 0)) return null;
 
   return (
     <section>

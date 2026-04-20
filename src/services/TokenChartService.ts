@@ -10,7 +10,9 @@
  * All sources normalize to `TokenChartPoint[]` (unix seconds + USD value).
  */
 
-import { BIRDEYE_API_BASE, BIRDEYE_API_KEY } from '../lib/constants';
+// Birdeye is called through /api/birdeye (server-side key). No client import
+// of the raw API key — the proxy handles auth and returns 503 if unset.
+const BIRDEYE_PROXY_BASE = '/api/birdeye';
 
 export interface TokenChartPoint {
   time: number; // unix seconds
@@ -83,17 +85,12 @@ interface BirdeyeResponse {
 }
 
 async function fromBirdeye(mint: string, days: number): Promise<TokenChartPoint[]> {
-  if (!BIRDEYE_API_KEY) throw new Error('Birdeye: BIRDEYE_API_KEY not set');
   const now = Math.floor(Date.now() / 1000);
   const from = now - days * 86400;
   const type = birdeyeType(days);
-  const url = `${BIRDEYE_API_BASE}/defi/history_price?address=${mint}&address_type=token&type=${type}&time_from=${from}&time_to=${now}`;
+  const url = `${BIRDEYE_PROXY_BASE}/defi/history_price?address=${mint}&address_type=token&type=${type}&time_from=${from}&time_to=${now}`;
   const res = await fetch(url, {
-    headers: {
-      'X-API-KEY': BIRDEYE_API_KEY,
-      'x-chain': 'solana',
-      Accept: 'application/json',
-    },
+    headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) throw new Error(`Birdeye ${res.status}`);
@@ -164,15 +161,13 @@ export async function fetchTokenChart(mint: string, days: number): Promise<Fetch
     }
   }
 
-  // 2. Birdeye (any SPL with key)
-  if (BIRDEYE_API_KEY) {
-    try {
-      const points = await fromBirdeye(mint, days);
-      if (points.length > 0) return { source: 'birdeye', points };
-      errors.push('Birdeye: empty');
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err));
-    }
+  // 2. Birdeye (any SPL; proxy returns 503 if key unset → falls through)
+  try {
+    const points = await fromBirdeye(mint, days);
+    if (points.length > 0) return { source: 'birdeye', points };
+    errors.push('Birdeye: empty');
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : String(err));
   }
 
   // 3. GeckoTerminal (fallback, free)

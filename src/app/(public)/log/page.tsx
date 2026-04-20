@@ -11,6 +11,24 @@ interface DayEntry {
 
 const LOG: DayEntry[] = [
   {
+    date: '2026-04-20',
+    added: 'Birdeye BIP Sprint 1 integration — token safety score on token detail pages, trending tokens rail, new listings radar with safety badges. Torque MCP event tracking (swap, deposit, wallet connect) + leaderboard component. Palm USD Freedom Swap card (pending Solana mint).',
+    fixed: 'Resolved all 23 lint errors/warnings (0 remaining). Regenerated package-lock.json for clean npm ci. API middleware: origin check + rate limit + CORS on all /api/* routes.',
+    learned: 'Birdeye token_security endpoint gives freeze authority, mint authority, top holder concentration — free safety layer complementing Jupiter Shield. Torque event ingestion requires custom events to be registered first via MCP before incentive queries work.',
+  },
+  {
+    date: '2026-04-19',
+    added: 'OG image (edge-rendered 1200x630 frost gradient) + social meta tags (openGraph + twitter card). Dynamic favicon via Next.js icon.tsx replacing default Vercel triangle. ALARM.md research doc — PagerDuty for DeFi concept.',
+    fixed: 'Swap page Suspense boundary for useSearchParams (build was failing on Vercel prerender). Stale branch cleanup (4 deleted). Interested counter storing user rank in localStorage.',
+    learned: 'Next.js 16 requires Suspense around useSearchParams for static prerendering — without it the build fails silently. SVG favicons work in modern browsers but some platforms (Slack, Discord) still need ICO or dynamic PNG.',
+  },
+  {
+    date: '2026-04-18',
+    added: 'Rebranded to DeFi Triangle (15 files, 0 old Y-Vault/DeFi Cockpit refs). TESTS.md with 22 sections covering best/worst cases for every integration. Consolidated 4 research docs into unified RESEARCH.md (1532 → 277 lines).',
+    fixed: 'Umbra SDK: added deferMasterSeedSignature + explicit anonymous:false (from reference implementation). PublicMints propagation to ShieldedBalances. Recovery form completed with amount + destination inputs.',
+    learned: 'Reference implementation (crypto-pay-umbra) showed deferMasterSeedSignature prevents unexpected wallet popup on client init. anonymous:true requires a ZK Prover not bundled in SDK v4 — must be explicitly false.',
+  },
+  {
     date: '2026-04-17',
     added: 'Public landing page with "Interested" counter (Supabase-backed) and "View Log" CTA. Route restructure: cockpit moves under /cockpit, landing at /.',
     fixed: 'Project Log page reversed to show latest day first. Unified all side-track research (Umbra, Torque, LI.FI) into single TRACKS.md.',
@@ -100,7 +118,7 @@ export default function ProjectLogPage() {
           paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 text-center">
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
             Project Log
           </h1>

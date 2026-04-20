@@ -7,6 +7,12 @@ import Image from 'next/image';
 
 export default function LandingPage() {
   const [count, setCount] = useState<number | null>(null);
+  const [myRank, setMyRank] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem('defi-triangle-rank');
+    const n = stored ? parseInt(stored, 10) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
   const [clicked, setClicked] = useState(() =>
     typeof window !== 'undefined' && localStorage.getItem('defi-triangle-interested') === '1'
   );
@@ -26,8 +32,13 @@ export default function LandingPage() {
     try {
       const res = await fetch('/api/interested', { method: 'POST' });
       const data = await res.json();
-      if (typeof data.count === 'number') setCount(data.count);
-      else setCount((prev) => (prev != null ? prev + 1 : 1));
+      if (typeof data.count === 'number') {
+        setCount(data.count);
+        setMyRank(data.count);
+        localStorage.setItem('defi-triangle-rank', String(data.count));
+      } else {
+        setCount((prev) => (prev != null ? prev + 1 : 1));
+      }
     } catch {
       setCount((prev) => (prev != null ? prev + 1 : 1));
     }
@@ -42,12 +53,12 @@ export default function LandingPage() {
             <Image src="/logo.svg" alt="DeFi Triangle" width={40} height={40} />
           </div>
 
-          <h1 className="font-satoshi font-light text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight font-light" style={{ fontFamily: "'Geist Pixel Square', 'Geist Mono', monospace" }}>
             DeFi Triangle
           </h1>
 
           <p className="font-ibm-plex-sans text-sm sm:text-base lg:text-lg text-white/75 max-w-lg mx-auto leading-relaxed">
-            Real-time Solana yield intelligence. Vaults, swaps, analytics, and privacy — powered by real on-chain data, not mocks.
+            Your DeFi execution and exposure layer.
           </p>
 
           <p className="font-ibm-plex-sans text-xs text-white/50">
@@ -85,7 +96,11 @@ export default function LandingPage() {
                 <div className="bg-white/10 border border-white/20 rounded-sm px-5 py-3 max-w-sm text-center">
                   <p className="font-ibm-plex-sans text-sm text-white/85">
                     <Sparkles size={14} className="inline mr-1.5 text-[#7ee5c6]" />
-                    Thanks! You are <span className="font-mono font-semibold text-white">#{count?.toLocaleString() ?? '...'}</span> to show interest.
+                    {myRank != null ? (
+                      <>Thanks! You are <span className="font-mono font-semibold text-white">#{myRank.toLocaleString()}</span> to show interest.</>
+                    ) : (
+                      <>Thanks for showing interest!</>
+                    )}
                   </p>
                 </div>
                 <Link
