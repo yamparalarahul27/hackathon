@@ -84,12 +84,17 @@ export async function GET(
       responseCache.set(key, { expiresAt: now + ttl, status: upstream.status, body });
     }
 
+    if (!upstream.ok) {
+      console.warn('[api/birdeye] upstream non-OK', joinedPath, upstream.status, body.slice(0, 300));
+    }
+
     return new NextResponse(body, {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('content-type') ?? 'application/json',
         'Cache-Control': 'private, max-age=30, stale-while-revalidate=120',
         'X-Birdeye-Cache': 'MISS',
+        'X-Birdeye-Upstream-Status': String(upstream.status),
       },
     });
   } catch (err) {

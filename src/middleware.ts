@@ -21,25 +21,29 @@ export default function middleware(request: NextRequest) {
 
   if (!pathname.startsWith('/api/')) return NextResponse.next();
 
-  // --- Origin check: block requests from unknown origins ---
+  const method = request.method.toUpperCase();
+  const isMutation = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+
+  // --- Origin check: only for mutating requests ---
+  // GET /api/* is public, read-only, no cookies/auth → no CSRF surface.
+  // Mutations (POST/PUT/DELETE/PATCH) must come from an allowed or same
+  // origin to prevent browser-side CSRF from other sites.
   const origin = request.headers.get('origin')?.toLowerCase();
   const referer = request.headers.get('referer')?.toLowerCase();
   const host = request.headers.get('host')?.toLowerCase();
 
-  // Same-origin: the frontend calling its own /api/* route is never CSRF.
-  // This covers apex + www + stagev.vercel.app + preview URLs + custom
-  // domains without per-deployment env updates.
   const isSameOrigin = Boolean(
     host &&
-      ((origin && new URL(origin).host === host) ||
-        (referer && new URL(referer).host === host))
+      ((origin && safeUrlHost(origin) === host) ||
+        (referer && safeUrlHost(referer) === host))
   );
 
   const isServerSide = !origin && !referer;
   const originAllowed = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o));
   const refererAllowed = referer && ALLOWED_ORIGINS.some((o) => referer.startsWith(o));
+  const originOk = isServerSide || isSameOrigin || originAllowed || refererAllowed;
 
-  if (!isServerSide && !isSameOrigin && !originAllowed && !refererAllowed) {
+  if (isMutation && !originOk) {
     return NextResponse.json(
       { error: 'Forbidden' },
       { status: 403, headers: { 'X-Deny-Reason': 'origin_not_allowed' } }
@@ -65,7 +69,7 @@ export default function middleware(request: NextRequest) {
     );
   }
 
-  // --- CORS headers for allowed origins ---
+  // --- CORS headers ---
   const response = NextResponse.next();
   if (origin && (originAllowed || isSameOrigin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
@@ -74,6 +78,14 @@ export default function middleware(request: NextRequest) {
   }
 
   return response;
+}
+
+function safeUrlHost(value: string): string | null {
+  try {
+    return new URL(value).host;
+  } catch {
+    return null;
+  }
 }
 
 export const config = {
