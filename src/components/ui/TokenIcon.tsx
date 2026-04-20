@@ -19,6 +19,7 @@ const sizes = {
 /** Scalable token icon — loads from Solana token-list CDN, fallback to avatar */
 export function TokenIcon({ mint, symbol, size = 'md', className }: TokenIconProps) {
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- dynamic CDN URL with runtime error fallback
     <img
       src={getTokenIcon(mint, symbol)}
       alt={symbol}

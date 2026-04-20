@@ -30,7 +30,7 @@ export function LendingMarketTable({ snapshot, loading, error }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('totalSupplyUsd');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const reserves = snapshot?.reserves ?? [];
+  const reserves = useMemo(() => snapshot?.reserves ?? [], [snapshot?.reserves]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

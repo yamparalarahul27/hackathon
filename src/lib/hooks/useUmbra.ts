@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWalletConnection } from './useWalletConnection';
 import {
   UmbraService,
@@ -52,15 +52,17 @@ export function useUmbra(): UseUmbraReturn {
 
   const service = useMemo(() => {
     if (!available) return null;
-    const svc = new UmbraService({
+    return new UmbraService({
       rpcUrl: RPC_HTTP,
       wssUrl: UMBRA_WSS_RPC_URL,
       indexerUrl: UMBRA_INDEXER_URL,
       network: UMBRA_NETWORK,
     });
-    serviceRef.current = svc;
-    return svc;
   }, [available]);
+
+  useEffect(() => {
+    serviceRef.current = service;
+  }, [service]);
 
   const getWalletSigner = useCallback((): WalletAdapterSigner | null => {
     if (!connected || !walletAddress || !signTransaction) return null;

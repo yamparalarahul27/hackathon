@@ -44,10 +44,12 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Sync pre-selected vault when vaults load asynchronously
   useEffect(() => {
     if (!selectedVault && preSelectedVaultAddress) {
       const match = vaults.find((v) => v.address === preSelectedVaultAddress);
       if (match) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync props→state on async vault load
         setSelectedVault(match);
         setStep('enter-amount');
       }

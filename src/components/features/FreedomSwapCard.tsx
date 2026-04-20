@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
+import { Shield, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';

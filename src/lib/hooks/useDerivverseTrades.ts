@@ -55,6 +55,7 @@ export function useDerivverseTrades(walletAddress: string | null): UseDeriverseT
     }
   }, [walletAddress]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount triggers state updates via refresh
   useEffect(() => { void refresh(); }, [refresh]);
 
   return useMemo(

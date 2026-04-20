@@ -14,6 +14,7 @@ interface Props {
   publicMints: string[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- walletAddress reserved for future shielded-balance queries
 export function ShieldedBalances({ walletAddress, publicMints }: Props) {
   const {
     available,

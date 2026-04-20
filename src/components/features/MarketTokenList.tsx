@@ -235,6 +235,7 @@ export function MarketTokenList() {
                       </td>
                       <td className="py-3.5 pr-4">
                         <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- external CoinGecko icon with dynamic fallback */}
                           <img
                             src={token.image}
                             alt={token.symbol}

@@ -40,6 +40,7 @@ export const VaultDetailHeader = React.memo(function VaultDetailHeader({ vault }
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-[#11274d] hover:text-[#3B7DDD] transition-colors"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element -- external favicon, Next Image not practical */}
               <img
                 src="https://app.kamino.finance/favicon.ico"
                 alt="Kamino"

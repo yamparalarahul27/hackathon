@@ -33,6 +33,7 @@ export function WalletBalances({ walletAddress, onMintsLoaded }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag must reset on each fetch cycle
     setLoading(true);
     setError(null);
 
@@ -70,7 +71,7 @@ export function WalletBalances({ walletAddress, onMintsLoaded }: Props) {
     })();
 
     return () => { cancelled = true; };
-  }, [walletAddress]);
+  }, [walletAddress, onMintsLoaded]);
 
   const rows: BalanceRow[] = useMemo(() => {
     return holdings.map((h) => {

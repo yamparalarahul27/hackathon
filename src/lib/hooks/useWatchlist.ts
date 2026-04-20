@@ -37,6 +37,7 @@ export function useWatchlist(walletAddress: string | null): UseWatchlistReturn {
     }
   }, [walletAddress]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount
   useEffect(() => { void refresh(); }, [refresh]);
 
   const add = useCallback(async (mint: string, symbol?: string) => {

@@ -10,7 +10,6 @@ export default function LandingPage() {
   const [clicked, setClicked] = useState(() =>
     typeof window !== 'undefined' && localStorage.getItem('defi-triangle-interested') === '1'
   );
-  const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     fetch('/api/interested')
@@ -22,9 +21,7 @@ export default function LandingPage() {
   const handleInterested = useCallback(async () => {
     if (clicked) return;
     setClicked(true);
-    setAnimating(true);
     localStorage.setItem('defi-triangle-interested', '1');
-    setTimeout(() => setAnimating(false), 600);
 
     try {
       const res = await fetch('/api/interested', { method: 'POST' });

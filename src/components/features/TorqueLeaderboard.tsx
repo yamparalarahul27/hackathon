@@ -23,12 +23,12 @@ export function TorqueLeaderboard({
   limit = 10,
 }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => isTorqueConfigured());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isTorqueConfigured()) {
-      setLoading(false);
+      // loading already initializes as false when Torque is not configured
       return;
     }
 

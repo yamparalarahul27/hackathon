@@ -37,6 +37,7 @@ export function useLinkedWallets(ownerAddress: string | null): UseLinkedWalletsR
     }
   }, [ownerAddress]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount
   useEffect(() => { void refresh(); }, [refresh]);
 
   const link = useCallback(async (walletAddress: string, label?: string) => {

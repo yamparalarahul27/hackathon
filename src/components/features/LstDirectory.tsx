@@ -220,6 +220,7 @@ function LstRow({ lst }: { lst: LST }) {
       <td className="py-3 px-4">
         <div className="flex items-center gap-2.5">
           {lst.logoUri ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- external CDN icon, Next Image not practical */
             <img
               src={lst.logoUri}
               alt={lst.symbol}
@@ -262,6 +263,7 @@ function LstCard({ lst }: { lst: LST }) {
       <Card hover className="p-3">
         <div className="flex items-center gap-3">
           {lst.logoUri ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- external CDN icon, Next Image not practical */
             <img
               src={lst.logoUri}
               alt={lst.symbol}
