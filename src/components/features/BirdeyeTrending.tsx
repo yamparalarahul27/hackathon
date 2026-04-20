@@ -31,8 +31,9 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
     return () => { cancelled = true; };
   }, [limit]);
 
-  // Hide the section entirely if the proxy is unavailable or returned no data.
-  if (!loading && (error || tokens.length === 0)) return null;
+  // Silent hide only when there's genuinely nothing to render and no error
+  // worth reporting. A visible error banner is better than a phantom section.
+  if (!loading && !error && tokens.length === 0) return null;
 
   return (
     <section>
@@ -49,8 +50,12 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
         </div>
       )}
 
-      {error && (
-        <p className="text-xs text-[#991b1b] font-ibm-plex-sans py-2">{error}</p>
+      {error && !loading && (
+        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
+          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
+            Trending unavailable — {error}
+          </p>
+        </Card>
       )}
 
       {!loading && !error && tokens.length > 0 && (

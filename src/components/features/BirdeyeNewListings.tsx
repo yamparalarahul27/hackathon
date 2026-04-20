@@ -60,7 +60,7 @@ export function BirdeyeNewListings() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!loading && (error || tokens.length === 0)) return null;
+  if (!loading && !error && tokens.length === 0) return null;
 
   return (
     <section>
@@ -77,8 +77,12 @@ export function BirdeyeNewListings() {
         </div>
       )}
 
-      {error && (
-        <p className="text-xs text-[#991b1b] font-ibm-plex-sans py-2">{error}</p>
+      {error && !loading && (
+        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
+          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
+            New listings unavailable — {error}
+          </p>
+        </Card>
       )}
 
       {!loading && !error && tokens.length === 0 && (

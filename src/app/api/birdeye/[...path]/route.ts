@@ -86,6 +86,27 @@ export async function GET(
 
     if (!upstream.ok) {
       console.warn('[api/birdeye] upstream non-OK', joinedPath, upstream.status, body.slice(0, 300));
+      // Return a JSON envelope so the client can distinguish upstream
+      // failures from our own issues without parsing Birdeye's body.
+      return NextResponse.json(
+        {
+          error: 'Birdeye upstream returned non-OK status.',
+          upstreamStatus: upstream.status,
+          upstreamBodyPreview: body.slice(0, 300),
+          path: joinedPath,
+          hint:
+            upstream.status === 401 || upstream.status === 403
+              ? 'BIRDEYE_API_KEY is likely invalid, revoked, or the endpoint requires a higher plan. Visit /api/birdeye/_health to diagnose.'
+              : undefined,
+        },
+        {
+          status: upstream.status,
+          headers: {
+            'X-Birdeye-Cache': 'MISS',
+            'X-Birdeye-Upstream-Status': String(upstream.status),
+          },
+        }
+      );
     }
 
     return new NextResponse(body, {

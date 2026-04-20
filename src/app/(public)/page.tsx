@@ -1,49 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function LandingPage() {
-  const [count, setCount] = useState<number | null>(null);
-  const [myRank, setMyRank] = useState<number | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem('defi-triangle-rank');
-    const n = stored ? parseInt(stored, 10) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : null;
-  });
-  const [clicked, setClicked] = useState(() =>
-    typeof window !== 'undefined' && localStorage.getItem('defi-triangle-interested') === '1'
-  );
-
-  useEffect(() => {
-    fetch('/api/interested')
-      .then((r) => r.json())
-      .then((d) => setCount(d.count ?? 0))
-      .catch(() => setCount(0));
-  }, []);
-
-  const handleInterested = useCallback(async () => {
-    if (clicked) return;
-    setClicked(true);
-    localStorage.setItem('defi-triangle-interested', '1');
-
-    try {
-      const res = await fetch('/api/interested', { method: 'POST' });
-      const data = await res.json();
-      if (typeof data.count === 'number') {
-        setCount(data.count);
-        setMyRank(data.count);
-        localStorage.setItem('defi-triangle-rank', String(data.count));
-      } else {
-        setCount((prev) => (prev != null ? prev + 1 : 1));
-      }
-    } catch {
-      setCount((prev) => (prev != null ? prev + 1 : 1));
-    }
-  }, [clicked]);
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero */}
@@ -67,51 +28,22 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="flex flex-col items-center justify-center gap-3 pt-4">
-            {!clicked ? (
-              <>
-                <div className="flex flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={handleInterested}
-                    className="group relative flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
-                  >
-                    <Sparkles size={14} />
-                    Interested?
-                  </button>
-                  <Link
-                    href="/log"
-                    className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
-                  >
-                    <BookOpen size={14} />
-                    View Log
-                  </Link>
-                </div>
-                {count != null && count > 0 && (
-                  <p className="font-ibm-plex-sans text-xs text-white/50">
-                    {count.toLocaleString()} {count === 1 ? 'person has' : 'people have'} already shown interest
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="bg-white/10 border border-white/20 rounded-sm px-5 py-3 max-w-sm text-center">
-                  <p className="font-ibm-plex-sans text-sm text-white/85">
-                    <Sparkles size={14} className="inline mr-1.5 text-[#7ee5c6]" />
-                    {myRank != null ? (
-                      <>Thanks! You are <span className="font-mono font-semibold text-white">#{myRank.toLocaleString()}</span> to show interest.</>
-                    ) : (
-                      <>Thanks for showing interest!</>
-                    )}
-                  </p>
-                </div>
-                <Link
-                  href="/log"
-                  className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
-                >
-                  <BookOpen size={14} />
-                  View Log
-                </Link>
-              </>
-            )}
+            <div className="flex flex-row items-center justify-center gap-3">
+              <Link
+                href="/cockpit/market"
+                className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
+              >
+                <LayoutDashboard size={14} />
+                Launch Cockpit
+              </Link>
+              <Link
+                href="/log"
+                className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
+              >
+                <BookOpen size={14} />
+                View Log
+              </Link>
+            </div>
           </div>
         </div>
 
