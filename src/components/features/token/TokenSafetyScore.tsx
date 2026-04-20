@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/Card';
 import {
   fetchTokenSecurity,
   scoreTokenSecurity,
-  isConfigured,
   type SecurityScore,
   type SecurityLevel,
 } from '@/services/BirdeyeService';
@@ -27,11 +26,6 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isConfigured()) {
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -52,7 +46,9 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
     return () => { cancelled = true; };
   }, [mint]);
 
-  if (!isConfigured()) return null;
+  // When the proxy returns a non-OK (e.g. 503 no key configured), hide the card
+  // rather than showing a scary error on a public page.
+  if (error) return null;
 
   if (loading) {
     return (
@@ -62,15 +58,6 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
           <Loader2 size={14} className="animate-spin" />
           <span className="text-xs font-ibm-plex-sans">Analyzing via Birdeye…</span>
         </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="p-4">
-        <p className="label-section-light mb-2">Safety Score</p>
-        <p className="text-xs text-[#94a3b8] font-ibm-plex-sans">{error}</p>
       </Card>
     );
   }
