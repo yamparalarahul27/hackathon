@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000')
-  .split(',')
-  .map((o) => o.trim().toLowerCase());
+// Vercel sets VERCEL_URL on every deployment (e.g. "stagev.vercel.app" on stage,
+// or the preview-specific hash on PR previews). Auto-allowing it means stage +
+// preview deploys work without a manual ALLOWED_ORIGINS update per URL.
+const vercelOrigin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+
+const ALLOWED_ORIGINS = [
+  ...(process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(','),
+  ...(vercelOrigin ? [vercelOrigin] : []),
+]
+  .map((o) => o.trim().toLowerCase())
+  .filter(Boolean);
 
 const API_RATE_LIMIT = 60;
 const API_RATE_WINDOW_MS = 60_000;

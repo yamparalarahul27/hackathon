@@ -69,6 +69,12 @@ const TOKEN_MAP: Record<string, { geckoId: string; binanceSymbol: string; name: 
 
 // ── Fetch Functions ────────────────────────────────────────────
 
+/**
+ * Synchronous metadata lookup for the six curated tokens we ship with
+ * hand-written descriptions. Returns null for anything else — callers
+ * should use {@link fetchTokenMetadata} to cover the long tail via
+ * Jupiter's token search.
+ */
 export function getTokenMetadata(mint: string): TokenMetadata | null {
   const info = TOKEN_MAP[mint];
   if (!info) return null;
@@ -80,6 +86,38 @@ export function getTokenMetadata(mint: string): TokenMetadata | null {
     logoUri: `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${mint}/logo.png`,
     description: info.description,
   };
+}
+
+/**
+ * Resolve metadata for any SPL mint. Starts from the curated TOKEN_MAP so
+ * the six majors keep their rich descriptions; for everything else it
+ * falls back to Jupiter's /search (handles name, symbol, icon, decimals).
+ * Returns null only when Jupiter has no record either — i.e. the mint is
+ * probably invalid or not indexed yet.
+ */
+export async function fetchTokenMetadata(mint: string): Promise<TokenMetadata | null> {
+  const curated = getTokenMetadata(mint);
+  if (curated) return curated;
+
+  try {
+    const { JupiterUltraService } = await import('./JupiterUltraService');
+    const svc = new JupiterUltraService();
+    const results = await svc.searchTokens(mint);
+    const match = results.find((t) => t.id === mint) ?? results[0];
+    if (!match) return null;
+    return {
+      name: match.name || match.symbol || 'Unknown Token',
+      symbol: match.symbol || mint.slice(0, 4).toUpperCase(),
+      mint,
+      decimals: match.decimals,
+      logoUri:
+        match.icon ??
+        `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${mint}/logo.png`,
+      description: '',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchJupiterPrice(mint: string): Promise<number | null> {

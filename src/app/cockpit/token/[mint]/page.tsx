@@ -12,10 +12,11 @@ import { TokenDexPairs } from '@/components/features/token/TokenDexPairs';
 import { TokenInfo } from '@/components/features/token/TokenInfo';
 import { TokenSafetyScore } from '@/components/features/token/TokenSafetyScore';
 import {
-  getTokenMetadata,
+  fetchTokenMetadata,
   fetchCoinGeckoMarketData,
   fetchAllPriceSources,
   type TokenMarketData,
+  type TokenMetadata,
   type TokenPriceSource,
 } from '@/services/TokenDataService';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
@@ -27,10 +28,11 @@ interface Props {
 
 export default function TokenDetailPage({ params }: Props) {
   const { mint } = use(params);
-  const metadata = getTokenMetadata(mint);
 
   const { walletAddress } = useWalletConnection();
   const { vaults } = useKaminoVaults(walletAddress);
+  const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
+  const [metadataResolved, setMetadataResolved] = useState(false);
   const [marketData, setMarketData] = useState<TokenMarketData | null>(null);
   const [priceSources, setPriceSources] = useState<TokenPriceSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,36 +40,55 @@ export default function TokenDetailPage({ params }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.resolve().then(async () => {
+    (async () => {
       if (cancelled) return;
+      setMetadataResolved(false);
       setLoading(true);
-
       try {
-        const [market, sources] = await Promise.all([
+        const [meta, market, sources] = await Promise.all([
+          fetchTokenMetadata(mint),
           fetchCoinGeckoMarketData(mint),
           fetchAllPriceSources(mint),
         ]);
         if (cancelled) return;
+        setMetadata(meta);
         setMarketData(market);
         setPriceSources(sources);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setMetadataResolved(true);
+        }
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
     };
   }, [mint]);
 
-  // Unknown token fallback
-  if (!metadata) {
+  // Truly unknown token — Jupiter returned nothing either. Show fallback only
+  // after the async lookup has actually resolved, otherwise the page flashes
+  // "not found" before the metadata arrives.
+  if (metadataResolved && !metadata) {
     return (
       <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
         <div className="max-w-[1400px] mx-auto text-center py-20">
           <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Token not found</p>
           <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">Mint: {mint}</p>
-          <Link href="/vault/kamino" className="text-sm text-[#3B7DDD] hover:underline">← Back to Vaults</Link>
+          <Link href="/cockpit/market" className="text-sm text-[#3B7DDD] hover:underline">← Back to Market</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!metadata) {
+    return (
+      <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
+        <div className="max-w-[1400px] mx-auto space-y-4">
+          <div className="h-8 w-40 bg-[#e2e8f0] rounded-sm animate-pulse" />
+          <div className="h-20 bg-[#e2e8f0] rounded-sm animate-pulse" />
+          <div className="h-64 bg-[#e2e8f0] rounded-sm animate-pulse" />
         </div>
       </div>
     );
@@ -77,8 +98,8 @@ export default function TokenDetailPage({ params }: Props) {
     <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Back Link */}
-        <Link href="/vault/kamino" className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans">
-          <ArrowLeft size={12} /> Back
+        <Link href="/cockpit/market" className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans">
+          <ArrowLeft size={12} /> Back to Market
         </Link>
 
         {/* Header: Name, Price, Change */}
