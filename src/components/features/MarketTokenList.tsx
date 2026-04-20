@@ -5,19 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Search, TrendingUp, ArrowUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { formatUsd, formatCompact } from '@/lib/utils';
-import { fetchTokenList, type TokenListItem } from '@/services/BirdeyeService';
+import { fetchTopTokens, type MarketToken } from '@/services/JupiterTokenListService';
 import { getTokenIcon } from '@/lib/tokenIcons';
 
-type SortField = 'rank' | 'price' | 'priceChange24hPercent' | 'mc' | 'v24hUSD';
+type SortField = 'rank' | 'price' | 'priceChange24h' | 'mcap' | 'volume24h';
 type SortDir = 'asc' | 'desc';
-
-interface RankedToken extends TokenListItem {
-  rank: number;
-}
 
 export function MarketTokenList() {
   const router = useRouter();
-  const [tokens, setTokens] = useState<RankedToken[]>([]);
+  const [tokens, setTokens] = useState<MarketToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -29,10 +25,9 @@ export function MarketTokenList() {
 
     async function load() {
       try {
-        const raw = await fetchTokenList(50, 'mc');
+        const data = await fetchTopTokens('toptraded', '24h');
         if (cancelled) return;
-        const ranked: RankedToken[] = raw.map((t, i) => ({ ...t, rank: i + 1 }));
-        setTokens(ranked);
+        setTokens(data);
         setError(null);
       } catch (err) {
         if (!cancelled) {
@@ -74,10 +69,10 @@ export function MarketTokenList() {
   }, [tokens, search, sortField, sortDir]);
 
   // Headline stats
-  const totalMarketCap = tokens.reduce((s, t) => s + (t.mc ?? 0), 0);
-  const totalVolume = tokens.reduce((s, t) => s + (t.v24hUSD ?? 0), 0);
+  const totalMarketCap = tokens.reduce((s, t) => s + (t.mcap ?? 0), 0);
+  const totalVolume = tokens.reduce((s, t) => s + (t.volume24h ?? 0), 0);
   const avgChange = tokens.length > 0
-    ? tokens.reduce((s, t) => s + (t.priceChange24hPercent ?? 0), 0) / tokens.length
+    ? tokens.reduce((s, t) => s + (t.priceChange24h ?? 0), 0) / tokens.length
     : 0;
 
   const renderSortHead = (field: SortField, label: string) => (
@@ -106,7 +101,7 @@ export function MarketTokenList() {
             Market Overview
           </h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">
-            Top Solana tokens by market cap — powered by Birdeye.
+            Top Solana tokens by 24h volume — powered by Jupiter.
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
@@ -168,22 +163,22 @@ export function MarketTokenList() {
                     {renderSortHead('price', 'Price')}
                   </th>
                   <th className="text-right py-3 px-3">
-                    {renderSortHead('priceChange24hPercent', '24h %')}
+                    {renderSortHead('priceChange24h', '24h %')}
                   </th>
                   <th className="text-right py-3 px-3 hidden md:table-cell">
-                    {renderSortHead('mc', 'Mkt Cap')}
+                    {renderSortHead('mcap', 'Mkt Cap')}
                   </th>
                   <th className="text-right py-3 pl-3 pr-4 hidden md:table-cell">
-                    {renderSortHead('v24hUSD', 'Volume')}
+                    {renderSortHead('volume24h', 'Volume')}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((token) => {
-                  const change = token.priceChange24hPercent ?? 0;
+                  const change = token.priceChange24h ?? 0;
                   const positive = change >= 0;
                   const href = `/cockpit/token/${token.address}`;
-                  const icon = token.logoURI ?? getTokenIcon(token.address, token.symbol);
+                  const icon = token.icon ?? getTokenIcon(token.address, token.symbol);
 
                   return (
                     <tr
@@ -226,10 +221,10 @@ export function MarketTokenList() {
                         </span>
                       </td>
                       <td className="text-right py-3.5 px-3 hidden md:table-cell">
-                        <span className="data-sm text-[#11274d]">{formatCompact(token.mc)}</span>
+                        <span className="data-sm text-[#11274d]">{formatCompact(token.mcap)}</span>
                       </td>
                       <td className="text-right py-3.5 pl-3 pr-4 hidden md:table-cell">
-                        <span className="data-sm text-[#6B7280]">{formatCompact(token.v24hUSD)}</span>
+                        <span className="data-sm text-[#6B7280]">{formatCompact(token.volume24h)}</span>
                       </td>
                     </tr>
                   );

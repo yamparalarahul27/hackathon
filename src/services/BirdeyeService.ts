@@ -92,22 +92,6 @@ export interface NewListingToken {
   openTimestamp: number;
 }
 
-// Ranked Solana token list (powers /cockpit/market).
-export interface TokenListItem {
-  address: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  logoURI: string | null;
-  price: number;
-  priceChange24hPercent: number;
-  // Birdeye returns market cap as `mc` and 24h USD volume as `v24hUSD`; we
-  // keep their names so the raw API shape is easy to reason about.
-  mc: number;
-  v24hUSD: number;
-  liquidity: number;
-}
-
 // ── API Functions ────────────────────────────────────────────────
 
 export async function fetchTokenSecurity(mint: string): Promise<TokenSecurity> {
@@ -124,17 +108,6 @@ export async function fetchTrendingTokens(
     `/defi/token_trending?sort_by=rank&sort_type=asc&offset=${offset}&limit=${limit}`
   );
   return data?.tokens ?? (Array.isArray(data) ? data as unknown as TrendingToken[] : []);
-}
-
-export async function fetchTokenList(
-  limit = 50,
-  sortBy: 'mc' | 'v24hUSD' | 'liquidity' = 'mc',
-  offset = 0
-): Promise<TokenListItem[]> {
-  const data = await birdeyeFetch<{ tokens: TokenListItem[] }>(
-    `/defi/tokenlist?sort_by=${sortBy}&sort_type=desc&offset=${offset}&limit=${limit}`
-  );
-  return data?.tokens ?? (Array.isArray(data) ? data as unknown as TokenListItem[] : []);
 }
 
 export async function fetchNewListings(
