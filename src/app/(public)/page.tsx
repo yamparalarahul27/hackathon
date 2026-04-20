@@ -58,28 +58,28 @@ export default function LandingPage() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <button
-              onClick={handleInterested}
-              disabled={clicked}
-              className={
-                'group relative flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium transition-all duration-200 ' +
-                (clicked
-                  ? 'bg-white/20 text-white border border-white/30 cursor-default'
-                  : 'bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97]')
-              }
-            >
-              <Sparkles size={14} className={animating ? 'animate-bounce' : ''} />
-              {clicked ? 'Interested' : "I'm Interested"}
-              {count != null && (
-                <span className={
-                  'font-mono text-xs px-1.5 py-0.5 rounded-sm ml-1 ' +
-                  (clicked ? 'bg-white/15 text-white/80' : 'bg-[#f1f5f9] text-[#6a7282]')
-                }>
-                  {count.toLocaleString()}
-                </span>
-              )}
-            </button>
+          <div className="flex flex-col items-center justify-center gap-3 pt-4">
+            {!clicked ? (
+              <button
+                onClick={handleInterested}
+                className="group relative flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
+              >
+                <Sparkles size={14} className={animating ? 'animate-bounce' : ''} />
+                I&apos;m Interested
+                {count != null && (
+                  <span className="font-mono text-xs px-1.5 py-0.5 rounded-sm ml-1 bg-[#f1f5f9] text-[#6a7282]">
+                    {count.toLocaleString()}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <p className="font-ibm-plex-sans text-sm text-white/80 bg-white/10 border border-white/20 rounded-sm px-5 py-3 max-w-sm text-center">
+                <Sparkles size={14} className="inline mr-1.5 text-[#7ee5c6]" />
+                Thanks for showing interest! With you, there {count === 1 ? 'is' : 'are'}{' '}
+                <span className="font-mono font-semibold text-white">{count?.toLocaleString() ?? '...'}</span>{' '}
+                {count === 1 ? 'person' : 'people'} excited for this.
+              </p>
+            )}
 
             <Link
               href="/log"
