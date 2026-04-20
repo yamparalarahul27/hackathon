@@ -24,12 +24,22 @@ export default function middleware(request: NextRequest) {
   // --- Origin check: block requests from unknown origins ---
   const origin = request.headers.get('origin')?.toLowerCase();
   const referer = request.headers.get('referer')?.toLowerCase();
+  const host = request.headers.get('host')?.toLowerCase();
+
+  // Same-origin: the frontend calling its own /api/* route is never CSRF.
+  // This covers apex + www + stagev.vercel.app + preview URLs + custom
+  // domains without per-deployment env updates.
+  const isSameOrigin = Boolean(
+    host &&
+      ((origin && new URL(origin).host === host) ||
+        (referer && new URL(referer).host === host))
+  );
 
   const isServerSide = !origin && !referer;
   const originAllowed = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o));
   const refererAllowed = referer && ALLOWED_ORIGINS.some((o) => referer.startsWith(o));
 
-  if (!isServerSide && !originAllowed && !refererAllowed) {
+  if (!isServerSide && !isSameOrigin && !originAllowed && !refererAllowed) {
     return NextResponse.json(
       { error: 'Forbidden' },
       { status: 403, headers: { 'X-Deny-Reason': 'origin_not_allowed' } }
@@ -57,7 +67,7 @@ export default function middleware(request: NextRequest) {
 
   // --- CORS headers for allowed origins ---
   const response = NextResponse.next();
-  if (origin && originAllowed) {
+  if (origin && (originAllowed || isSameOrigin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
