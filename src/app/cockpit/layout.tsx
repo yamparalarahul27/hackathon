@@ -27,8 +27,8 @@ export default function CockpitLayout({ children }: { children: React.ReactNode 
         onSettingsClick={() => setSettingsOpen(true)}
       />
 
-      <main className="flex-1 flex flex-col bg-[#f1f5f9]">
-        <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex-1 bg-[#f1f5f9]">
+      <main className="flex-1 flex flex-col bg-[#f1f5f9] pb-20">
+        <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 flex-1">
           {children}
         </div>
       </main>

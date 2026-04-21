@@ -20,7 +20,7 @@ export const TokenHeader = React.memo(function TokenHeader({ metadata, marketDat
       <div className="flex items-center gap-3">
         <TokenIcon mint={metadata.mint} symbol={metadata.symbol} size="lg" />
         <div>
-          <h1 className="font-display font-bold text-xl text-[#11274d]">{metadata.name}</h1>
+          <h1 className="font-satoshi font-bold text-xl text-[#11274d]">{metadata.name}</h1>
           <span className="text-sm text-[#6a7282] font-ibm-plex-sans">{metadata.symbol}</span>
         </div>
       </div>

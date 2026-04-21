@@ -46,7 +46,7 @@ export const VaultPosition = React.memo(function VaultPosition({ position, conne
       <Card className="p-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {rows.map(r => (
-            <div key={r.label} className={r.highlight ? 'bg-[#f8fafc] rounded-lg p-2.5' : 'p-2.5'}>
+            <div key={r.label} className={r.highlight ? 'bg-[#f8fafc] rounded-sm p-2.5' : 'p-2.5'}>
               <p className="text-[10px] text-[#94a3b8] font-ibm-plex-sans uppercase tracking-wider mb-0.5">{r.label}</p>
               <p className={`data-sm ${r.color ?? 'text-[#11274d]'}`}>{r.value}</p>
             </div>

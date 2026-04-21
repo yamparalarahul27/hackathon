@@ -100,7 +100,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <h2 className="font-ibm-plex-sans font-semibold text-lg text-[#11274d]">Settings</h2>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[#f1f5f9] transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-sm hover:bg-[#f1f5f9] transition-colors"
           >
             <X size={16} className="text-[#6a7282]" />
           </button>
@@ -115,7 +115,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <button
                   key={g.id}
                   onClick={() => handleGradientChange(g.id)}
-                  className={`relative h-16 rounded-lg overflow-hidden transition-all duration-200 ${
+                  className={`relative h-16 rounded-sm overflow-hidden transition-all duration-200 ${
                     selectedGradient === g.id
                       ? 'ring-2 ring-[var(--cta-color,#3B7DDD)] ring-offset-2 ring-offset-white scale-[1.02]'
                       : 'hover:scale-[1.02] border border-[#e2e8f0]'
@@ -143,7 +143,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <button
                   key={c.id}
                   onClick={() => handleCtaChange(c.id)}
-                  className={`relative flex flex-col items-center gap-1.5 py-2 rounded-lg transition-all duration-200 ${
+                  className={`relative flex flex-col items-center gap-1.5 py-2 rounded-sm transition-all duration-200 ${
                     selectedCta === c.id
                       ? 'bg-[#f1f5f9] ring-1 ring-[#cbd5e1]'
                       : 'hover:bg-[#f8fafc]'
@@ -168,7 +168,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div>
             <p className="label-section-light mb-3">Preview</p>
             <div
-              className="rounded-lg p-4 flex items-center justify-between"
+              className="rounded-sm p-4 flex items-center justify-between"
               style={{ background: activeGradient.preview }}
             >
               <div>
@@ -176,7 +176,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <p className="data-lg text-white mt-1">$12,345.67</p>
               </div>
               <button
-                className="px-4 py-2 rounded-lg text-white text-xs font-ibm-plex-sans font-semibold transition-colors"
+                className="px-4 py-2 rounded-sm text-white text-xs font-ibm-plex-sans font-semibold transition-colors"
                 style={{ background: activeCta.hex }}
               >
                 Execute

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import {
   fetchNewListings,
   fetchTokenSecurity,
@@ -18,17 +19,35 @@ interface ListingWithSafety extends NewListingToken {
   safetyScore: number | null;
 }
 
-export function BirdeyeNewListings() {
+interface Props {
+  refreshToken?: number;
+  onSuccessfulFetch?: (at: Date) => void;
+}
+
+export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Props) {
   const [tokens, setTokens] = useState<ListingWithSafety[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const hasTokensRef = useRef(false);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         const listings = await fetchNewListings(20, '24h');
         if (cancelled) return;
+        const at = new Date();
+        onSuccessfulFetch?.(at);
+        setLastUpdated(at);
+        setShowStale(false);
 
         const withSafety: ListingWithSafety[] = listings.map((t) => ({
           ...t,
@@ -36,67 +55,116 @@ export function BirdeyeNewListings() {
           safetyScore: null,
         }));
         setTokens(withSafety);
+        setError(null);
         setLoading(false);
 
         // Enrich with safety scores (best-effort, non-blocking)
         const enriched = [...withSafety];
-        const batch = enriched.slice(0, 10);
-        for (let i = 0; i < batch.length; i++) {
+        const batch = enriched.slice(0, 6).map((token, index) => ({ token, index }));
+        for (let i = 0; i < batch.length; i += 3) {
           if (cancelled) return;
-          try {
-            const sec = await fetchTokenSecurity(batch[i].address);
-            const score = scoreTokenSecurity(sec);
-            enriched[i] = { ...enriched[i], safetyLevel: score.level, safetyScore: score.score };
-          } catch {
-            // Skip tokens where security check fails
+          const chunk = batch.slice(i, i + 3);
+          const settled = await Promise.allSettled(
+            chunk.map(async ({ token, index }) => {
+              const sec = await fetchTokenSecurity(token.address);
+              const score = scoreTokenSecurity(sec);
+              return { index, score };
+            })
+          );
+          for (const result of settled) {
+            if (result.status === 'fulfilled') {
+              const { index, score } = result.value;
+              enriched[index] = { ...enriched[index], safetyLevel: score.level, safetyScore: score.score };
+            }
           }
         }
         if (!cancelled) setTokens([...enriched]);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load new listings');
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load new listings');
+          setShowStale(hasTokensRef.current);
+          setLoading(false);
+        }
       }
     })();
-    return () => { cancelled = true; };
-  }, []);
 
-  if (!loading && !error && tokens.length === 0) return null;
+    return () => { cancelled = true; };
+  }, [manualRefreshToken, onSuccessfulFetch, refreshToken]);
+
+  function handleRefresh() {
+    if (!hasTokensRef.current) setLoading(true);
+    setManualRefreshToken((value) => value + 1);
+  }
 
   return (
     <section>
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={14} className="text-[#8b5cf6]" />
-        <h2 className="label-section-light">New on Solana</h2>
+        <h2 className="label-section-light">New Listings (24h)</h2>
         <span className="text-[9px] text-[#94a3b8] font-ibm-plex-sans">via Birdeye · last 24h</span>
       </div>
 
       {loading && (
-        <div className="flex items-center gap-2 text-[#94a3b8] py-4">
-          <Loader2 size={14} className="animate-spin" />
-          <span className="text-xs font-ibm-plex-sans">Scanning new listings…</span>
+        <div className="py-1">
+          <StateNotice severity="info" message="Loading new listings..." />
         </div>
       )}
 
-      {error && !loading && (
-        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
-          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
-            New listings unavailable — {error}
-          </p>
-        </Card>
+      {!loading && showStale && tokens.length > 0 && (
+        <div className="mb-3">
+          <StateNotice
+            severity="warning"
+            message="Showing cached new listings while live data refreshes."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+            showStaleBadge
+          />
+        </div>
+      )}
+
+      {!loading && !showStale && error && (
+        <div className="py-1">
+          <StateNotice
+            severity={isRateLimited(error) ? 'warning' : 'error'}
+            message={
+              isRateLimited(error)
+                ? 'Rate limit reached (429). Please wait a moment and try again.'
+                : 'New listings are temporarily unavailable. Please try again.'
+            }
+            actionLabel="Retry"
+            onAction={handleRefresh}
+          />
+        </div>
       )}
 
       {!loading && !error && tokens.length === 0 && (
-        <p className="text-xs text-[#94a3b8] font-ibm-plex-sans py-2">No new listings found.</p>
+        <div className="py-1">
+          <StateNotice
+            severity="info"
+            message="No new listings found right now."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+          />
+        </div>
       )}
 
       {!loading && tokens.length > 0 && (
-        <Card className="overflow-hidden p-0">
-          <div className="divide-y divide-[#e2e8f0]">
-            {tokens.slice(0, 10).map((t) => (
-              <NewListingRow key={t.address} token={t} />
-            ))}
+        <>
+          <Card className="overflow-hidden p-0">
+            <div className="divide-y divide-[#e2e8f0]">
+              {tokens.slice(0, 10).map((t) => (
+                <NewListingRow key={t.address} token={t} />
+              ))}
+            </div>
+          </Card>
+          <div className="pt-2">
+            <a href="#market-table" className="text-xs font-ibm-plex-sans text-[#19549b] hover:text-[#143f78]">
+              View all in table
+            </a>
           </div>
-        </Card>
+        </>
       )}
     </section>
   );
@@ -133,9 +201,7 @@ function NewListingRow({ token }: { token: ListingWithSafety }) {
           <span className="text-sm font-medium text-[#11274d] font-ibm-plex-sans truncate">
             {token.symbol || short(token.address)}
           </span>
-          {token.safetyLevel && (
-            <SafetyBadge level={token.safetyLevel} score={token.safetyScore} />
-          )}
+          <SafetyBadge level={token.safetyLevel} />
         </div>
         <div className="flex items-center gap-2 text-[10px] text-[#94a3b8] font-ibm-plex-sans">
           {token.name && <span className="truncate">{token.name}</span>}
@@ -162,16 +228,26 @@ function NewListingRow({ token }: { token: ListingWithSafety }) {
   );
 }
 
-function SafetyBadge({ level, score }: { level: SecurityLevel; score: number | null }) {
+function SafetyBadge({ level }: { level: SecurityLevel | null }) {
+  if (!level) {
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[8px] uppercase tracking-wider font-ibm-plex-sans border bg-[#f8fafc] text-[#64748b] border-[#dbe3ef]">
+        N/A
+      </span>
+    );
+  }
+
   const config = {
     safe: 'bg-[#ecfdf5] text-[#059669] border-[#a7f3d0]',
     caution: 'bg-[#fffbeb] text-[#d97706] border-[#fde68a]',
     danger: 'bg-[#fef2f2] text-[#dc2626] border-[#fecaca]',
   }[level];
 
+  const label = level === 'danger' ? 'RISK' : level === 'safe' ? 'SAFE' : 'CAUTION';
+
   return (
     <span className={`inline-flex items-center px-1 py-0.5 rounded-sm text-[8px] uppercase tracking-wider font-ibm-plex-sans border ${config}`}>
-      {score != null ? `${score}` : level}
+      {label}
     </span>
   );
 }
@@ -199,4 +275,8 @@ function timeSince(ts: number): string {
 function short(addr: string): string {
   if (addr.length <= 12) return addr;
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+}
+
+function isRateLimited(rawError: string): boolean {
+  return /\b429\b/.test(rawError);
 }

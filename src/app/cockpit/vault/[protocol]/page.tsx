@@ -17,7 +17,7 @@ export default function VaultPositionsPage({ params }: Props) {
   const { positions, summary, error } = useKaminoVaults(walletAddress);
 
   const handleVaultSelect = (vaultAddress: string) => {
-    router.push(`/vault/${protocol}/${vaultAddress}`);
+    router.push(`/cockpit/vault/${protocol}/${vaultAddress}`);
   };
 
   return (

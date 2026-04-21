@@ -32,7 +32,7 @@ export const VaultDetailHeader = React.memo(function VaultDetailHeader({ vault }
       <div className="flex items-center gap-3">
         <TokenIcon mint={vault.token.mint} symbol={vault.token.symbol} size="lg" />
         <div>
-          <h1 className="font-display font-bold text-lg text-[#11274d]">{vault.name}</h1>
+          <h1 className="font-satoshi font-bold text-lg text-[#11274d]">{vault.name}</h1>
           <div className="flex items-center gap-2 text-xs text-[#6a7282] font-ibm-plex-sans flex-wrap">
             <a
               href={`https://app.kamino.finance/earn/${vault.address}`}
@@ -60,7 +60,7 @@ export const VaultDetailHeader = React.memo(function VaultDetailHeader({ vault }
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {stats.map(s => (
-          <div key={s.label} className="bg-[#f8fafc] rounded-lg p-3">
+          <div key={s.label} className="bg-[#f8fafc] rounded-sm p-3">
             <p className="label-section-light mb-1">{s.label}</p>
             <p className={`data-md ${s.color}`}>{s.value}</p>
           </div>

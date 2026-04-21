@@ -56,11 +56,10 @@ export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
   );
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
-          <h2 className="font-display font-bold text-xl text-[#11274d]">Vault Explorer</h2>
+          <h2 className="font-satoshi font-bold text-xl text-[#11274d]">Vault Explorer</h2>
           <p className="text-sm text-[#6a7282] mt-1">Browse every live Kamino K-Vault — single-asset yield.</p>
         </div>
 
@@ -73,7 +72,7 @@ export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
               placeholder="Search by vault name, token, or address…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#cbd5e1] rounded-lg text-sm text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#cbd5e1] rounded-sm text-sm text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
             />
           </div>
           <div className="flex gap-2 flex-wrap overflow-x-auto scrollbar-hide">
@@ -127,7 +126,6 @@ export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
           </table>
           {filtered.length === 0 && <p className="py-12 text-center text-[#6B7280] text-sm">No vaults found.</p>}
         </div>
-      </div>
     </div>
   );
 }

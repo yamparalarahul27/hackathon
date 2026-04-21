@@ -49,6 +49,7 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
     if (!selectedPosition && preSelectedVaultAddress) {
       const match = positions.find((p) => p.vaultAddress === preSelectedVaultAddress);
       if (match) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- prop arrives after positions fetch; sync is intentional
         setSelectedPosition(match);
         setStep('enter-amount');
       }
@@ -125,10 +126,9 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
   const currentStepIndex = steps.indexOf(step);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h2 className="font-display font-bold text-xl text-[#11274d]">Withdraw</h2>
+          <h2 className="font-satoshi font-bold text-xl text-[#11274d]">Withdraw</h2>
           <p className="text-sm text-[#6a7282] mt-1">Redeem vault shares to withdraw your tokens from a Kamino K-Vault.</p>
         </div>
 
@@ -236,7 +236,7 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Number of shares"
-                className="w-full pl-4 pr-24 py-4 bg-white border border-[#cbd5e1] rounded-lg text-xl data-md text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
+                className="w-full pl-4 pr-24 py-4 bg-white border border-[#cbd5e1] rounded-sm text-xl data-md text-[#11274d] placeholder:text-[#6B7280] focus:outline-none focus:border-[#19549b]"
               />
               <button
                 type="button"
@@ -267,7 +267,7 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
             )}
 
             {error && (
-              <div className="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
+              <div className="rounded-sm border border-[#fecaca] bg-[#fef2f2] px-3 py-2">
                 <p className="text-xs text-[#b91c1c]">{error}</p>
               </div>
             )}
@@ -298,7 +298,7 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
         {step === 'confirmation' && selectedPosition && (
           <Card className="text-center py-8 space-y-4 px-4">
             <CheckCircle size={48} className="text-[#059669] mx-auto" />
-            <h3 className="font-display font-bold text-xl text-[#11274d]">Withdrawal Confirmed</h3>
+            <h3 className="font-satoshi font-bold text-xl text-[#11274d]">Withdrawal Confirmed</h3>
             <div className="space-y-1">
               <p className="text-sm text-[#6B7280]">
                 Redeemed {shareAmount.toFixed(4)} shares from
@@ -323,7 +323,6 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
             <Button onClick={handleReset}>Make Another Withdrawal</Button>
           </Card>
         )}
-      </div>
     </div>
   );
 }

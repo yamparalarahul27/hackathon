@@ -1,24 +1,51 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, TrendingUp, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import Link from 'next/link';
+import { Search, TrendingUp, ArrowDownUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import { formatUsd, formatCompact } from '@/lib/utils';
 import { fetchTopTokens, type MarketToken } from '@/services/JupiterTokenListService';
+import {
+  fetchNewListings,
+  fetchTokenSecurity,
+  fetchTrendingTokens,
+  scoreTokenSecurity,
+  type SecurityLevel,
+} from '@/services/BirdeyeService';
 import { getTokenIcon } from '@/lib/tokenIcons';
 
 type SortField = 'rank' | 'price' | 'priceChange24h' | 'mcap' | 'volume24h';
 type SortDir = 'asc' | 'desc';
+type SourceFilter = 'all' | 'trending' | 'new';
+type SafetyFilter = 'all' | SecurityLevel | 'na';
 
-export function MarketTokenList() {
-  const router = useRouter();
+interface Props {
+  refreshToken?: number;
+  onSuccessfulFetch?: (at: Date) => void;
+}
+
+export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) {
   const [tokens, setTokens] = useState<MarketToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [sortField, setSortField] = useState<SortField>('rank');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortField, setSortField] = useState<SortField>('volume24h');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [safetyFilter, setSafetyFilter] = useState<SafetyFilter>('all');
+  const [trendingSet, setTrendingSet] = useState<Set<string>>(new Set());
+  const [newSet, setNewSet] = useState<Set<string>>(new Set());
+  const [safetyByMint, setSafetyByMint] = useState<Record<string, SecurityLevel | 'na'>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const hasTokensRef = useRef(false);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,9 +56,14 @@ export function MarketTokenList() {
         if (cancelled) return;
         setTokens(data);
         setError(null);
+        const at = new Date();
+        setLastUpdated(at);
+        setShowStale(false);
+        onSuccessfulFetch?.(at);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to fetch market data');
+          setShowStale(hasTokensRef.current);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -44,83 +76,102 @@ export function MarketTokenList() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [manualRefreshToken, onSuccessfulFetch, refreshToken]);
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
-    else { setSortField(field); setSortDir('desc'); }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [trending, listings] = await Promise.all([
+          fetchTrendingTokens(60, 0),
+          fetchNewListings(60, '24h'),
+        ]);
+        if (cancelled) return;
+        setTrendingSet(new Set(trending.map((t) => t.address)));
+        setNewSet(new Set(listings.map((t) => t.address)));
+      } catch {
+        // Keep page usable even if one of these lists fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (tokens.length === 0) return;
+
+    const base: Record<string, SecurityLevel | 'na'> = {};
+    for (const token of tokens) base[token.address] = 'na';
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed placeholder map synchronously before streaming Birdeye safety scores
+    setSafetyByMint(base);
+
+    (async () => {
+      const sample = tokens.slice(0, 12);
+      const next = { ...base };
+
+      for (let i = 0; i < sample.length; i += 4) {
+        if (cancelled) return;
+        const chunk = sample.slice(i, i + 4);
+        const settled = await Promise.allSettled(
+          chunk.map(async (token) => {
+            const sec = await fetchTokenSecurity(token.address);
+            const score = scoreTokenSecurity(sec);
+            return { mint: token.address, level: score.level };
+          })
+        );
+        for (const result of settled) {
+          if (result.status === 'fulfilled') {
+            next[result.value.mint] = result.value.level;
+          }
+        }
+      }
+      if (!cancelled) setSafetyByMint(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tokens]);
 
   const filtered = useMemo(() => {
     let list = tokens;
+
+    if (sourceFilter === 'trending') {
+      list = list.filter((t) => trendingSet.has(t.address));
+    } else if (sourceFilter === 'new') {
+      list = list.filter((t) => newSet.has(t.address));
+    }
+
+    if (safetyFilter !== 'all') {
+      list = list.filter((t) => (safetyByMint[t.address] ?? 'na') === safetyFilter);
+    }
+
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(t =>
+      list = list.filter((t) =>
         (t.name ?? '').toLowerCase().includes(q) ||
         (t.symbol ?? '').toLowerCase().includes(q) ||
         t.address.toLowerCase().startsWith(q)
       );
     }
+
     return [...list].sort((a, b) => {
       const av = (a[sortField] as number) ?? 0;
       const bv = (b[sortField] as number) ?? 0;
       return sortDir === 'desc' ? bv - av : av - bv;
     });
-  }, [tokens, search, sortField, sortDir]);
+  }, [newSet, safetyByMint, safetyFilter, search, sortDir, sortField, sourceFilter, tokens, trendingSet]);
 
-  // Headline stats
-  const totalMarketCap = tokens.reduce((s, t) => s + (t.mcap ?? 0), 0);
-  const totalVolume = tokens.reduce((s, t) => s + (t.volume24h ?? 0), 0);
-  const avgChange = tokens.length > 0
-    ? tokens.reduce((s, t) => s + (t.priceChange24h ?? 0), 0) / tokens.length
-    : 0;
-
-  const renderSortHead = (field: SortField, label: string) => (
-    <button
-      onClick={() => toggleSort(field)}
-      className={`flex items-center gap-1 ml-auto label-section-light transition-colors ${sortField === field ? 'text-[#11274d]' : 'text-[#6B7280] hover:text-[#11274d]'}`}
-    >
-      {label} <ArrowUpDown size={10} />
-    </button>
-  );
+  function handleRefresh() {
+    if (!hasTokensRef.current) setLoading(true);
+    setManualRefreshToken((value) => value + 1);
+  }
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <div
-        className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20"
-        style={{
-          marginLeft: 'calc(-50vw + 50%)',
-          marginRight: 'calc(-50vw + 50%)',
-          paddingLeft: 'calc(50vw - 50%)',
-          paddingRight: 'calc(50vw - 50%)',
-        }}
-      >
-        <div className="max-w-[1400px] mx-auto">
-          <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-1">
-            Market Overview
-          </h1>
-          <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">
-            Top Solana tokens by 24h volume — powered by Jupiter.
-          </p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { label: 'Tokens', value: tokens.length.toString(), color: 'text-white' },
-              { label: 'Total Market Cap', value: formatCompact(totalMarketCap), color: 'text-white' },
-              { label: '24h Volume', value: formatCompact(totalVolume), color: 'text-white' },
-              { label: 'Avg 24h Change', value: `${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(2)}%`, color: avgChange >= 0 ? 'text-[#7ee5c6]' : 'text-[#ef4444]' },
-            ].map(stat => (
-              <div key={stat.label}>
-                <p className="label-section mb-1">{stat.label}</p>
-                <p className={`data-lg ${stat.color}`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-[1400px] mx-auto space-y-4">
-        {/* ── Search ───────────────────────────────────────────── */}
+    <section id="market-table" className="space-y-3 scroll-mt-24">
+      <div className="rounded-sm border border-[#d8e1ee] bg-white p-3 space-y-3">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
           <input
@@ -132,111 +183,262 @@ export function MarketTokenList() {
           />
         </div>
 
-        {/* ── Error ────────────────────────────────────────────── */}
-        {error && (
-          <Card className="p-4 bg-[#FEF2F2] border border-[#FECACA]">
-            <p className="text-sm text-[#991B1B] font-ibm-plex-sans">Failed to load market data: {error}</p>
-          </Card>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip active={sourceFilter === 'all'} onClick={() => setSourceFilter('all')}>
+            All
+          </Chip>
+          <Chip active={sourceFilter === 'trending'} onClick={() => setSourceFilter('trending')}>
+            Trending
+          </Chip>
+          <Chip active={sourceFilter === 'new'} onClick={() => setSourceFilter('new')}>
+            New
+          </Chip>
 
-        {/* ── Token Table ──────────────────────────────────────── */}
-        {loading ? (
-          <Card className="p-4">
-            <div className="space-y-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="h-10 animate-pulse bg-[#e2e8f0] rounded-sm" />
-              ))}
-            </div>
-          </Card>
-        ) : (
-          <div className="overflow-x-auto bg-white rounded-sm raised-frosted">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#e2e8f0]">
-                  <th className="text-left py-3 pl-4 pr-2 w-10">
-                    <span className="label-section-light">#</span>
-                  </th>
-                  <th className="text-left py-3 pr-4">
-                    <span className="label-section-light">Token</span>
-                  </th>
-                  <th className="text-right py-3 px-3">
-                    {renderSortHead('price', 'Price')}
-                  </th>
-                  <th className="text-right py-3 px-3">
-                    {renderSortHead('priceChange24h', '24h %')}
-                  </th>
-                  <th className="text-right py-3 px-3 hidden md:table-cell">
-                    {renderSortHead('mcap', 'Mkt Cap')}
-                  </th>
-                  <th className="text-right py-3 pl-3 pr-4 hidden md:table-cell">
-                    {renderSortHead('volume24h', 'Volume')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((token) => {
-                  const change = token.priceChange24h ?? 0;
-                  const positive = change >= 0;
-                  const href = `/cockpit/token/${token.address}`;
-                  const icon = token.icon ?? getTokenIcon(token.address, token.symbol);
-
-                  return (
-                    <tr
-                      key={token.address}
-                      onClick={() => router.push(href)}
-                      className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc] transition-colors cursor-pointer"
-                    >
-                      <td className="py-3.5 pl-4 pr-2">
-                        <span className="data-sm text-[#6B7280]">{token.rank}</span>
-                      </td>
-                      <td className="py-3.5 pr-4">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- external CDN icon with dynamic fallback */}
-                          <img
-                            src={icon}
-                            alt={token.symbol}
-                            className="w-6 h-6 rounded-full object-cover shrink-0 bg-[#f1f5f9]"
-                            onError={(e) => {
-                              const t = e.currentTarget;
-                              t.src = `https://ui-avatars.com/api/?name=${(token.symbol ?? '?').slice(0, 3)}&background=19549b&color=fff&size=64&bold=true&format=svg`;
-                            }}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-[#11274d] truncate">{token.name || token.symbol}</p>
-                            <p className="text-xs text-[#6B7280] uppercase">{token.symbol}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="text-right py-3.5 px-3">
-                        <span className="data-md text-[#11274d]">
-                          {token.price < 0.01
-                            ? `$${token.price.toFixed(6)}`
-                            : formatUsd(token.price)}
-                        </span>
-                      </td>
-                      <td className="text-right py-3.5 px-3">
-                        <span className={`data-md flex items-center justify-end gap-1 ${positive ? 'text-[#059669]' : 'text-[#ef4444]'}`}>
-                          <TrendingUp size={12} className={!positive ? 'rotate-180' : ''} />
-                          {positive ? '+' : ''}{change.toFixed(2)}%
-                        </span>
-                      </td>
-                      <td className="text-right py-3.5 px-3 hidden md:table-cell">
-                        <span className="data-sm text-[#11274d]">{formatCompact(token.mcap)}</span>
-                      </td>
-                      <td className="text-right py-3.5 pl-3 pr-4 hidden md:table-cell">
-                        <span className="data-sm text-[#6B7280]">{formatCompact(token.volume24h)}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <p className="py-12 text-center text-[#6B7280] text-sm">No tokens found.</p>
-            )}
+          <div className="ml-auto flex items-center gap-2">
+            <label className="text-xs text-[#6a7282] font-ibm-plex-sans">Safety</label>
+            <select
+              value={safetyFilter}
+              onChange={(e) => setSafetyFilter(e.target.value as SafetyFilter)}
+              className="h-8 rounded-sm border border-[#d0d9e6] bg-white px-2 text-xs font-ibm-plex-sans text-[#11274d]"
+            >
+              <option value="all">All</option>
+              <option value="safe">Safe</option>
+              <option value="caution">Caution</option>
+              <option value="danger">Risk</option>
+              <option value="na">N/A</option>
+            </select>
+            <label className="text-xs text-[#6a7282] font-ibm-plex-sans">Sort</label>
+            <select
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value as SortField)}
+              className="h-8 rounded-sm border border-[#d0d9e6] bg-white px-2 text-xs font-ibm-plex-sans text-[#11274d]"
+            >
+              <option value="volume24h">24h Volume</option>
+              <option value="priceChange24h">24h %</option>
+              <option value="mcap">Mkt Cap</option>
+              <option value="price">Price</option>
+              <option value="rank">Rank</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
+              className="inline-flex items-center gap-1 h-8 px-2 rounded-sm border border-[#d0d9e6] text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#f8fafc]"
+            >
+              <ArrowDownUp size={12} />
+              {sortDir === 'desc' ? 'Desc' : 'Asc'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+
+      {loading && (
+        <StateNotice severity="info" message="Loading market table..." />
+      )}
+
+      {!loading && showStale && tokens.length > 0 && (
+        <StateNotice
+          severity="warning"
+          message="Showing cached market data while live data refreshes."
+          actionLabel="Refresh"
+          onAction={handleRefresh}
+          lastUpdated={lastUpdated}
+          showStaleBadge
+        />
+      )}
+
+      {!loading && !showStale && error && (
+        <StateNotice
+          severity={isRateLimited(error) ? 'warning' : 'error'}
+          message={
+            isRateLimited(error)
+              ? 'Rate limit reached (429). Please wait a moment and try again.'
+              : 'Market table is temporarily unavailable. Please try again.'
+          }
+          actionLabel="Retry"
+          onAction={handleRefresh}
+        />
+      )}
+
+      {loading ? (
+        <Card className="p-4">
+          <div className="space-y-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-10 animate-pulse bg-[#e2e8f0] rounded-sm" />
+            ))}
+          </div>
+        </Card>
+      ) : (
+        <div className="overflow-x-auto bg-white rounded-sm raised-frosted">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#e2e8f0]">
+                <th className="text-left py-3 pl-4 pr-2 w-10">
+                  <span className="label-section-light">#</span>
+                </th>
+                <th className="text-left py-3 pr-4">
+                  <span className="label-section-light">Token</span>
+                </th>
+                <th className="text-right py-3 px-3">
+                  <span className="label-section-light">Price</span>
+                </th>
+                <th className="text-right py-3 px-3">
+                  <span className="label-section-light">24h %</span>
+                </th>
+                <th className="text-right py-3 px-3 hidden md:table-cell">
+                  <span className="label-section-light">Volume 24h</span>
+                </th>
+                <th className="text-right py-3 px-3 hidden md:table-cell">
+                  <span className="label-section-light">Mkt Cap</span>
+                </th>
+                <th className="text-right py-3 px-3">
+                  <span className="label-section-light">Safety</span>
+                </th>
+                <th className="text-right py-3 pl-3 pr-4">
+                  <span className="label-section-light">Action</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((token) => {
+                const change = token.priceChange24h ?? 0;
+                const positive = change >= 0;
+                const href = `/cockpit/token/${token.address}`;
+                const icon = token.icon ?? getTokenIcon(token.address, token.symbol);
+                const safety = safetyByMint[token.address] ?? 'na';
+
+                return (
+                  <tr
+                    key={token.address}
+                    className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc] transition-colors"
+                  >
+                    <td className="py-3.5 pl-4 pr-2">
+                      <span className="data-sm text-[#6B7280]">{token.rank}</span>
+                    </td>
+                    <td className="py-3.5 pr-4">
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- external CDN icon with dynamic fallback */}
+                        <img
+                          src={icon}
+                          alt={token.symbol}
+                          className="w-6 h-6 rounded-full object-cover shrink-0 bg-[#f1f5f9]"
+                          onError={(e) => {
+                            const t = e.currentTarget;
+                            t.src = `https://ui-avatars.com/api/?name=${(token.symbol ?? '?').slice(0, 3)}&background=19549b&color=fff&size=64&bold=true&format=svg`;
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[#11274d] truncate">{token.name || token.symbol}</p>
+                          <p className="text-xs text-[#6B7280] uppercase">{token.symbol}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-right py-3.5 px-3">
+                      <span className="data-md text-[#11274d]">
+                        {token.price < 0.01
+                          ? `$${token.price.toFixed(6)}`
+                          : formatUsd(token.price)}
+                      </span>
+                    </td>
+                    <td className="text-right py-3.5 px-3">
+                      <span className={`data-md flex items-center justify-end gap-1 ${positive ? 'text-[#059669]' : 'text-[#ef4444]'}`}>
+                        <TrendingUp size={12} className={!positive ? 'rotate-180' : ''} />
+                        {positive ? '+' : ''}{change.toFixed(2)}%
+                      </span>
+                    </td>
+                    <td className="text-right py-3.5 px-3 hidden md:table-cell">
+                      <span className="data-sm text-[#11274d]">{formatCompact(token.volume24h)}</span>
+                    </td>
+                    <td className="text-right py-3.5 px-3 hidden md:table-cell">
+                      <span className="data-sm text-[#6B7280]">{formatCompact(token.mcap)}</span>
+                    </td>
+                    <td className="text-right py-3.5 px-3">
+                      <SafetyPill level={safety} />
+                    </td>
+                    <td className="text-right py-3.5 pl-3 pr-4">
+                      <Link
+                        href={href}
+                        className="inline-flex items-center h-7 px-2.5 rounded-sm border border-[#d0d9e6] text-xs font-ibm-plex-sans text-[#11274d] hover:bg-[#f8fafc]"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="p-4">
+              <StateNotice
+                severity="info"
+                message="No markets match your current filters."
+                actionLabel="Refresh"
+                onAction={handleRefresh}
+                lastUpdated={lastUpdated}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <p className="text-xs text-[#6a7282] font-ibm-plex-sans">
+        Safety legend: <span className="text-[#059669]">Safe</span> |{' '}
+        <span className="text-[#d97706]">Caution</span> |{' '}
+        <span className="text-[#dc2626]">Risk</span> |{' '}
+        <span className="text-[#64748b]">N/A</span>
+      </p>
+    </section>
   );
+}
+
+function Chip({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-8 px-3 rounded-sm text-xs font-ibm-plex-sans border transition-colors ${
+        active
+          ? 'border-[#19549b] bg-[#e8f0ff] text-[#19549b]'
+          : 'border-[#d0d9e6] text-[#11274d] hover:bg-[#f8fafc]'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SafetyPill({ level }: { level: SecurityLevel | 'na' }) {
+  if (level === 'na') {
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] border bg-[#f8fafc] text-[#64748b] border-[#dbe3ef] font-ibm-plex-sans">
+        N/A
+      </span>
+    );
+  }
+
+  const config = {
+    safe: 'bg-[#ecfdf5] text-[#059669] border-[#a7f3d0]',
+    caution: 'bg-[#fffbeb] text-[#d97706] border-[#fde68a]',
+    danger: 'bg-[#fef2f2] text-[#dc2626] border-[#fecaca]',
+  }[level];
+
+  const label = level === 'danger' ? 'Risk' : level === 'safe' ? 'Safe' : 'Caution';
+
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] border font-ibm-plex-sans ${config}`}>
+      {label}
+    </span>
+  );
+}
+
+function isRateLimited(rawError: string): boolean {
+  return /\b429\b/.test(rawError);
 }

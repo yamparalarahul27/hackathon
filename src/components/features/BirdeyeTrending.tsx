@@ -1,39 +1,63 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Flame, Loader2, TrendingUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Flame, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import { fetchTrendingTokens, type TrendingToken } from '@/services/BirdeyeService';
 import { getTokenIcon } from '@/lib/tokenIcons';
 
 interface Props {
   limit?: number;
+  refreshToken?: number;
+  onSuccessfulFetch?: (at: Date) => void;
 }
 
-export function BirdeyeTrending({ limit = 12 }: Props) {
+export function BirdeyeTrending({ limit = 12, refreshToken = 0, onSuccessfulFetch }: Props) {
   const [tokens, setTokens] = useState<TrendingToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const hasTokensRef = useRef(false);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         const data = await fetchTrendingTokens(limit);
-        if (!cancelled) setTokens(data);
+        if (!cancelled) {
+          setTokens(data);
+          setError(null);
+          const at = new Date();
+          setLastUpdated(at);
+          setShowStale(false);
+          onSuccessfulFetch?.(at);
+        }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load trending');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load trending');
+          setShowStale(hasTokensRef.current);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [limit]);
 
-  // Silent hide only when there's genuinely nothing to render and no error
-  // worth reporting. A visible error banner is better than a phantom section.
-  if (!loading && !error && tokens.length === 0) return null;
+    return () => { cancelled = true; };
+  }, [limit, manualRefreshToken, onSuccessfulFetch, refreshToken]);
+
+  function handleRefresh() {
+    if (!hasTokensRef.current) setLoading(true);
+    setManualRefreshToken((value) => value + 1);
+  }
 
   return (
     <section>
@@ -44,26 +68,64 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
       </div>
 
       {loading && (
-        <div className="flex items-center gap-2 text-[#94a3b8] py-4">
-          <Loader2 size={14} className="animate-spin" />
-          <span className="text-xs font-ibm-plex-sans">Loading trending…</span>
+        <div className="py-1">
+          <StateNotice severity="info" message="Loading trending tokens..." />
         </div>
       )}
 
-      {error && !loading && (
-        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
-          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
-            Trending unavailable — {error}
-          </p>
-        </Card>
+      {!loading && showStale && tokens.length > 0 && (
+        <div className="mb-3">
+          <StateNotice
+            severity="warning"
+            message="Showing cached trending tokens while live data refreshes."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+            showStaleBadge
+          />
+        </div>
       )}
 
-      {!loading && !error && tokens.length > 0 && (
-        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-          {tokens.map((t) => (
-            <TrendingCard key={t.address} token={t} />
-          ))}
+      {!loading && !showStale && error && (
+        <div className="py-1">
+          <StateNotice
+            severity={isRateLimited(error) ? 'warning' : 'error'}
+            message={
+              isRateLimited(error)
+                ? 'Rate limit reached (429). Please wait a moment and try again.'
+                : 'Trending data is temporarily unavailable. Please try again.'
+            }
+            actionLabel="Retry"
+            onAction={handleRefresh}
+          />
         </div>
+      )}
+
+      {!loading && !error && tokens.length === 0 && (
+        <div className="py-1">
+          <StateNotice
+            severity="info"
+            message="No trending tokens right now."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+          />
+        </div>
+      )}
+
+      {!loading && tokens.length > 0 && (
+        <>
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+            {tokens.map((t) => (
+              <TrendingCard key={t.address} token={t} />
+            ))}
+          </div>
+          <div className="pt-2">
+            <a href="#market-table" className="text-xs font-ibm-plex-sans text-[#19549b] hover:text-[#143f78]">
+              View all in table
+            </a>
+          </div>
+        </>
       )}
     </section>
   );
@@ -113,4 +175,8 @@ function formatPrice(price: number): string {
   if (price >= 0.01) return price.toFixed(4);
   if (price >= 0.0001) return price.toFixed(6);
   return price.toExponential(2);
+}
+
+function isRateLimited(rawError: string): boolean {
+  return /\b429\b/.test(rawError);
 }

@@ -191,10 +191,9 @@ function SwapPageInner() {
   const sameToken = inputToken && outputToken && inputToken.id === outputToken.id;
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-md mx-auto space-y-6">
-        <div>
-          <h2 className="font-display font-bold text-xl text-[#11274d]">Swap</h2>
+    <div className="max-w-md mx-auto space-y-6">
+      <div>
+        <h2 className="font-satoshi font-bold text-xl text-[#11274d]">Swap</h2>
           <p className="text-sm text-[#6a7282] mt-1">
             Powered by Jupiter Ultra — MEV-protected routing, Shield scam detection, Jupiter-landed transactions.
           </p>
@@ -370,7 +369,6 @@ function SwapPageInner() {
             Protected by Jupiter Ultra
           </p>
         </Card>
-      </div>
     </div>
   );
 }

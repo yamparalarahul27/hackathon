@@ -72,31 +72,26 @@ export default function TokenDetailPage({ params }: Props) {
   // "not found" before the metadata arrives.
   if (metadataResolved && !metadata) {
     return (
-      <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-        <div className="max-w-[1400px] mx-auto text-center py-20">
-          <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Token not found</p>
-          <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">Mint: {mint}</p>
-          <Link href="/cockpit/market" className="text-sm text-[#3B7DDD] hover:underline">← Back to Market</Link>
-        </div>
+      <div className="text-center py-20">
+        <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Token not found</p>
+        <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">Mint: {mint}</p>
+        <Link href="/cockpit/market" className="text-sm text-[#3B7DDD] hover:underline">← Back to Market</Link>
       </div>
     );
   }
 
   if (!metadata) {
     return (
-      <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-        <div className="max-w-[1400px] mx-auto space-y-4">
-          <div className="h-8 w-40 bg-[#e2e8f0] rounded-sm animate-pulse" />
-          <div className="h-20 bg-[#e2e8f0] rounded-sm animate-pulse" />
-          <div className="h-64 bg-[#e2e8f0] rounded-sm animate-pulse" />
-        </div>
+      <div className="space-y-4">
+        <div className="h-8 w-40 bg-[#e2e8f0] rounded-sm animate-pulse" />
+        <div className="h-20 bg-[#e2e8f0] rounded-sm animate-pulse" />
+        <div className="h-64 bg-[#e2e8f0] rounded-sm animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Back Link */}
         <Link href="/cockpit/market" className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans">
           <ArrowLeft size={12} /> Back to Market
@@ -128,7 +123,6 @@ export default function TokenDetailPage({ params }: Props) {
 
         {/* Token Info + Links */}
         <TokenInfo metadata={metadata} />
-      </div>
     </div>
   );
 }

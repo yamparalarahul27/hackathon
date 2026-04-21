@@ -7,12 +7,15 @@
  *
  *   - Token security scoring (/defi/token_security)
  *   - Trending tokens (/defi/token_trending)
- *   - New token listings (/v2/tokens/new_listing)
+ *   - New token listings (/defi/v2/tokens/new_listing)
  *
  * Free tier: 50 req/min. Docs: https://docs.birdeye.so
  */
 
 const BIRDEYE_PROXY_BASE = '/api/birdeye';
+const SECURITY_CACHE_TTL_MS = 5 * 60 * 1000;
+const securityCache = new Map<string, { expiresAt: number; value: TokenSecurity }>();
+const securityInflight = new Map<string, Promise<TokenSecurity>>();
 
 /**
  * Error thrown when the upstream Birdeye API returns a non-OK status.
@@ -124,9 +127,34 @@ export interface NewListingToken {
 // ── API Functions ────────────────────────────────────────────────
 
 export async function fetchTokenSecurity(mint: string): Promise<TokenSecurity> {
-  return birdeyeFetch<TokenSecurity>(
-    `/defi/token_security?address=${encodeURIComponent(mint)}`
-  );
+  const key = mint.trim();
+  const now = Date.now();
+  const cached = securityCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  const inflight = securityInflight.get(key);
+  if (inflight) {
+    return inflight;
+  }
+
+  const request = birdeyeFetch<TokenSecurity>(
+    `/defi/token_security?address=${encodeURIComponent(key)}`
+  )
+    .then((value) => {
+      securityCache.set(key, {
+        value,
+        expiresAt: Date.now() + SECURITY_CACHE_TTL_MS,
+      });
+      return value;
+    })
+    .finally(() => {
+      securityInflight.delete(key);
+    });
+
+  securityInflight.set(key, request);
+  return request;
 }
 
 export async function fetchTrendingTokens(
@@ -144,7 +172,7 @@ export async function fetchNewListings(
   timeRange = '24h'
 ): Promise<NewListingToken[]> {
   const data = await birdeyeFetch<{ tokens: NewListingToken[] }>(
-    `/v2/tokens/new_listing?time_to=${timeRange}&limit=${limit}&sort_by=liquidity&sort_type=desc`
+    `/defi/v2/tokens/new_listing?time_to=${timeRange}&limit=${limit}&sort_by=liquidity&sort_type=desc`
   );
   return data?.tokens ?? (Array.isArray(data) ? data as unknown as NewListingToken[] : []);
 }
