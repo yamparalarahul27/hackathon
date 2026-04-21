@@ -47,15 +47,22 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
 
         // Enrich with safety scores (best-effort, non-blocking)
         const enriched = [...withSafety];
-        const batch = enriched.slice(0, 10);
-        for (let i = 0; i < batch.length; i++) {
+        const batch = enriched.slice(0, 6).map((token, index) => ({ token, index }));
+        for (let i = 0; i < batch.length; i += 3) {
           if (cancelled) return;
-          try {
-            const sec = await fetchTokenSecurity(batch[i].address);
-            const score = scoreTokenSecurity(sec);
-            enriched[i] = { ...enriched[i], safetyLevel: score.level, safetyScore: score.score };
-          } catch {
-            // Skip tokens where security check fails
+          const chunk = batch.slice(i, i + 3);
+          const settled = await Promise.allSettled(
+            chunk.map(async ({ token, index }) => {
+              const sec = await fetchTokenSecurity(token.address);
+              const score = scoreTokenSecurity(sec);
+              return { index, score };
+            })
+          );
+          for (const result of settled) {
+            if (result.status === 'fulfilled') {
+              const { index, score } = result.value;
+              enriched[index] = { ...enriched[index], safetyLevel: score.level, safetyScore: score.score };
+            }
           }
         }
         if (!cancelled) setTokens([...enriched]);
@@ -73,7 +80,7 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
     <section>
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={14} className="text-[#8b5cf6]" />
-        <h2 className="label-section-light">New on Solana</h2>
+        <h2 className="label-section-light">New Listings (24h)</h2>
         <span className="text-[9px] text-[#94a3b8] font-ibm-plex-sans">via Birdeye · last 24h</span>
       </div>
 
@@ -85,9 +92,9 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
       )}
 
       {error && !loading && (
-        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
-          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
-            New listings unavailable — {error}
+        <Card className="px-3 py-2.5 bg-[#fff7ed] border border-[#fed7aa]">
+          <p className="text-xs text-[#9a3412] font-ibm-plex-sans">
+            {toNewListingsFallbackMessage(error)}
           </p>
         </Card>
       )}
@@ -221,4 +228,17 @@ function timeSince(ts: number): string {
 function short(addr: string): string {
   if (addr.length <= 12) return addr;
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+}
+
+function toNewListingsFallbackMessage(rawError: string): string {
+  if (/\b429\b/.test(rawError)) {
+    return 'New listings are temporarily rate-limited. Please retry in about a minute.';
+  }
+  if (/\b403\b/.test(rawError)) {
+    return 'New listings are temporarily unavailable due to provider access limits.';
+  }
+  if (/timeout|aborted|network/i.test(rawError)) {
+    return 'New listings request timed out. Please refresh and try again.';
+  }
+  return 'New listings are temporarily unavailable. Please try again shortly.';
 }

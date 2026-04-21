@@ -95,30 +95,32 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
     setSafetyByMint(base);
 
     (async () => {
-      const sample = tokens.slice(0, 25);
-      const settled = await Promise.allSettled(
-        sample.map(async (token) => {
-          const sec = await fetchTokenSecurity(token.address);
-          const score = scoreTokenSecurity(sec);
-          return { mint: token.address, level: score.level };
-        })
-      );
-
-      if (cancelled) return;
-
+      const sample = tokens.slice(0, 12);
       const next = { ...base };
-      for (const result of settled) {
-        if (result.status === 'fulfilled') {
-          next[result.value.mint] = result.value.level;
+
+      for (let i = 0; i < sample.length; i += 4) {
+        if (cancelled) return;
+        const chunk = sample.slice(i, i + 4);
+        const settled = await Promise.allSettled(
+          chunk.map(async (token) => {
+            const sec = await fetchTokenSecurity(token.address);
+            const score = scoreTokenSecurity(sec);
+            return { mint: token.address, level: score.level };
+          })
+        );
+        for (const result of settled) {
+          if (result.status === 'fulfilled') {
+            next[result.value.mint] = result.value.level;
+          }
         }
       }
-      setSafetyByMint(next);
+      if (!cancelled) setSafetyByMint(next);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [tokens, refreshToken]);
+  }, [tokens]);
 
   const filtered = useMemo(() => {
     let list = tokens;
@@ -212,8 +214,10 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
       </div>
 
       {error && (
-        <Card className="p-4 bg-[#FEF2F2] border border-[#FECACA]">
-          <p className="text-sm text-[#991B1B] font-ibm-plex-sans">Failed to load market data: {error}</p>
+        <Card className="p-4 bg-[#fff7ed] border border-[#fed7aa]">
+          <p className="text-sm text-[#9a3412] font-ibm-plex-sans">
+            {toMarketFallbackMessage(error, tokens.length > 0)}
+          </p>
         </Card>
       )}
 
@@ -387,4 +391,22 @@ function SafetyPill({ level }: { level: SecurityLevel | 'na' }) {
       {label}
     </span>
   );
+}
+
+function toMarketFallbackMessage(rawError: string, hasSnapshot: boolean): string {
+  if (/\b429\b/.test(rawError)) {
+    if (hasSnapshot) {
+      return 'Market API is temporarily rate-limited. Showing the latest available snapshot.';
+    }
+    return 'Market data is temporarily rate-limited. Please retry in about a minute.';
+  }
+  if (/\b403\b/.test(rawError)) {
+    return 'Market data is temporarily unavailable due to provider access limits.';
+  }
+  if (/timeout|aborted|network/i.test(rawError)) {
+    return 'Market request timed out. Please refresh and try again.';
+  }
+  return hasSnapshot
+    ? 'Live market refresh is temporarily unavailable. Showing the latest available snapshot.'
+    : 'Market data is temporarily unavailable. Please try again shortly.';
 }

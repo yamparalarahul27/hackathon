@@ -57,9 +57,9 @@ export function BirdeyeTrending({ limit = 12, refreshToken = 0, onSuccessfulFetc
       )}
 
       {error && !loading && (
-        <Card className="px-3 py-2.5 bg-[#fef2f2] border border-[#fecaca]">
-          <p className="text-xs text-[#991b1b] font-ibm-plex-sans">
-            Trending unavailable — {error}
+        <Card className="px-3 py-2.5 bg-[#fff7ed] border border-[#fed7aa]">
+          <p className="text-xs text-[#9a3412] font-ibm-plex-sans">
+            {toTrendingFallbackMessage(error)}
           </p>
         </Card>
       )}
@@ -126,4 +126,17 @@ function formatPrice(price: number): string {
   if (price >= 0.01) return price.toFixed(4);
   if (price >= 0.0001) return price.toFixed(6);
   return price.toExponential(2);
+}
+
+function toTrendingFallbackMessage(rawError: string): string {
+  if (/\b429\b/.test(rawError)) {
+    return 'Trending is temporarily rate-limited. Please retry in about a minute.';
+  }
+  if (/\b403\b/.test(rawError)) {
+    return 'Trending is temporarily unavailable due to provider access limits.';
+  }
+  if (/timeout|aborted|network/i.test(rawError)) {
+    return 'Trending request timed out. Please refresh and try again.';
+  }
+  return 'Trending is temporarily unavailable. Please try again shortly.';
 }

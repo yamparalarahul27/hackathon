@@ -13,6 +13,9 @@
  */
 
 const BIRDEYE_PROXY_BASE = '/api/birdeye';
+const SECURITY_CACHE_TTL_MS = 5 * 60 * 1000;
+const securityCache = new Map<string, { expiresAt: number; value: TokenSecurity }>();
+const securityInflight = new Map<string, Promise<TokenSecurity>>();
 
 /**
  * Error thrown when the upstream Birdeye API returns a non-OK status.
@@ -124,9 +127,34 @@ export interface NewListingToken {
 // ── API Functions ────────────────────────────────────────────────
 
 export async function fetchTokenSecurity(mint: string): Promise<TokenSecurity> {
-  return birdeyeFetch<TokenSecurity>(
-    `/defi/token_security?address=${encodeURIComponent(mint)}`
-  );
+  const key = mint.trim();
+  const now = Date.now();
+  const cached = securityCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  const inflight = securityInflight.get(key);
+  if (inflight) {
+    return inflight;
+  }
+
+  const request = birdeyeFetch<TokenSecurity>(
+    `/defi/token_security?address=${encodeURIComponent(key)}`
+  )
+    .then((value) => {
+      securityCache.set(key, {
+        value,
+        expiresAt: Date.now() + SECURITY_CACHE_TTL_MS,
+      });
+      return value;
+    })
+    .finally(() => {
+      securityInflight.delete(key);
+    });
+
+  securityInflight.set(key, request);
+  return request;
 }
 
 export async function fetchTrendingTokens(

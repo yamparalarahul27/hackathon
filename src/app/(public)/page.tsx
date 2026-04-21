@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BookOpen, LayoutDashboard, Radio } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Radio } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -36,22 +36,13 @@ export default function LandingPage() {
             <p className="font-ibm-plex-sans text-sm text-white/80 mb-4">
               Discover movers. Validate token safety.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/cockpit/market"
-                className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
-              >
-                <LayoutDashboard size={14} />
-                Open Market Pulse
-              </Link>
-              <Link
-                href="/log"
-                className="flex items-center gap-2 h-11 px-5 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
-              >
-                <BookOpen size={14} />
-                View Release Log
-              </Link>
-            </div>
+            <Link
+              href="/cockpit/market"
+              className="inline-flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
+            >
+              <LayoutDashboard size={14} />
+              Open Market Pulse
+            </Link>
           </div>
 
           <p className="font-ibm-plex-sans text-[11px] text-white/50 pt-1">
