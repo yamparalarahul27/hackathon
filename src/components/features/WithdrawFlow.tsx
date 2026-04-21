@@ -49,6 +49,7 @@ export function WithdrawFlow({ preSelectedVaultAddress, positions: positionsProp
     if (!selectedPosition && preSelectedVaultAddress) {
       const match = positions.find((p) => p.vaultAddress === preSelectedVaultAddress);
       if (match) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- prop arrives after positions fetch; sync is intentional
         setSelectedPosition(match);
         setStep('enter-amount');
       }

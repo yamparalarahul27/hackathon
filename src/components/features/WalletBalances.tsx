@@ -33,6 +33,7 @@ export function WalletBalances({ walletAddress, onMintsLoaded }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset fetch state when walletAddress changes
     setLoading(true);
     setError(null);
 
