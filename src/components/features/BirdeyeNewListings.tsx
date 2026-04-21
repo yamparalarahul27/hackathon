@@ -18,7 +18,12 @@ interface ListingWithSafety extends NewListingToken {
   safetyScore: number | null;
 }
 
-export function BirdeyeNewListings() {
+interface Props {
+  refreshToken?: number;
+  onSuccessfulFetch?: (at: Date) => void;
+}
+
+export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Props) {
   const [tokens, setTokens] = useState<ListingWithSafety[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +34,7 @@ export function BirdeyeNewListings() {
       try {
         const listings = await fetchNewListings(20, '24h');
         if (cancelled) return;
+        onSuccessfulFetch?.(new Date());
 
         const withSafety: ListingWithSafety[] = listings.map((t) => ({
           ...t,
@@ -36,6 +42,7 @@ export function BirdeyeNewListings() {
           safetyScore: null,
         }));
         setTokens(withSafety);
+        setError(null);
         setLoading(false);
 
         // Enrich with safety scores (best-effort, non-blocking)
@@ -58,7 +65,7 @@ export function BirdeyeNewListings() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [onSuccessfulFetch, refreshToken]);
 
   if (!loading && !error && tokens.length === 0) return null;
 
@@ -90,13 +97,20 @@ export function BirdeyeNewListings() {
       )}
 
       {!loading && tokens.length > 0 && (
-        <Card className="overflow-hidden p-0">
-          <div className="divide-y divide-[#e2e8f0]">
-            {tokens.slice(0, 10).map((t) => (
-              <NewListingRow key={t.address} token={t} />
-            ))}
+        <>
+          <Card className="overflow-hidden p-0">
+            <div className="divide-y divide-[#e2e8f0]">
+              {tokens.slice(0, 10).map((t) => (
+                <NewListingRow key={t.address} token={t} />
+              ))}
+            </div>
+          </Card>
+          <div className="pt-2">
+            <a href="#market-table" className="text-xs font-ibm-plex-sans text-[#19549b] hover:text-[#143f78]">
+              View all in table
+            </a>
           </div>
-        </Card>
+        </>
       )}
     </section>
   );
@@ -133,9 +147,7 @@ function NewListingRow({ token }: { token: ListingWithSafety }) {
           <span className="text-sm font-medium text-[#11274d] font-ibm-plex-sans truncate">
             {token.symbol || short(token.address)}
           </span>
-          {token.safetyLevel && (
-            <SafetyBadge level={token.safetyLevel} score={token.safetyScore} />
-          )}
+          <SafetyBadge level={token.safetyLevel} />
         </div>
         <div className="flex items-center gap-2 text-[10px] text-[#94a3b8] font-ibm-plex-sans">
           {token.name && <span className="truncate">{token.name}</span>}
@@ -162,16 +174,26 @@ function NewListingRow({ token }: { token: ListingWithSafety }) {
   );
 }
 
-function SafetyBadge({ level, score }: { level: SecurityLevel; score: number | null }) {
+function SafetyBadge({ level }: { level: SecurityLevel | null }) {
+  if (!level) {
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[8px] uppercase tracking-wider font-ibm-plex-sans border bg-[#f8fafc] text-[#64748b] border-[#dbe3ef]">
+        N/A
+      </span>
+    );
+  }
+
   const config = {
     safe: 'bg-[#ecfdf5] text-[#059669] border-[#a7f3d0]',
     caution: 'bg-[#fffbeb] text-[#d97706] border-[#fde68a]',
     danger: 'bg-[#fef2f2] text-[#dc2626] border-[#fecaca]',
   }[level];
 
+  const label = level === 'danger' ? 'RISK' : level === 'safe' ? 'SAFE' : 'CAUTION';
+
   return (
     <span className={`inline-flex items-center px-1 py-0.5 rounded-sm text-[8px] uppercase tracking-wider font-ibm-plex-sans border ${config}`}>
-      {score != null ? `${score}` : level}
+      {label}
     </span>
   );
 }

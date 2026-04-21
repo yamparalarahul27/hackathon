@@ -9,9 +9,11 @@ import { getTokenIcon } from '@/lib/tokenIcons';
 
 interface Props {
   limit?: number;
+  refreshToken?: number;
+  onSuccessfulFetch?: (at: Date) => void;
 }
 
-export function BirdeyeTrending({ limit = 12 }: Props) {
+export function BirdeyeTrending({ limit = 12, refreshToken = 0, onSuccessfulFetch }: Props) {
   const [tokens, setTokens] = useState<TrendingToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,11 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
     (async () => {
       try {
         const data = await fetchTrendingTokens(limit);
-        if (!cancelled) setTokens(data);
+        if (!cancelled) {
+          setTokens(data);
+          setError(null);
+          onSuccessfulFetch?.(new Date());
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load trending');
       } finally {
@@ -29,7 +35,7 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
       }
     })();
     return () => { cancelled = true; };
-  }, [limit]);
+  }, [limit, onSuccessfulFetch, refreshToken]);
 
   // Silent hide only when there's genuinely nothing to render and no error
   // worth reporting. A visible error banner is better than a phantom section.
@@ -59,11 +65,18 @@ export function BirdeyeTrending({ limit = 12 }: Props) {
       )}
 
       {!loading && !error && tokens.length > 0 && (
-        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-          {tokens.map((t) => (
-            <TrendingCard key={t.address} token={t} />
-          ))}
-        </div>
+        <>
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
+            {tokens.map((t) => (
+              <TrendingCard key={t.address} token={t} />
+            ))}
+          </div>
+          <div className="pt-2">
+            <a href="#market-table" className="text-xs font-ibm-plex-sans text-[#19549b] hover:text-[#143f78]">
+              View all in table
+            </a>
+          </div>
+        </>
       )}
     </section>
   );

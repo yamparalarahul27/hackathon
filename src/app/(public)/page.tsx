@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BookOpen, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, BookOpen, LayoutDashboard, Radio } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -26,38 +26,62 @@ export default function LandingPage() {
             Building in public for Colosseum Frontier Hackathon
           </p>
 
-          {/* CTAs */}
-          <div className="flex flex-col items-center justify-center gap-3 pt-4">
-            <div className="flex flex-row items-center justify-center gap-3">
+          <div className="rounded-sm border border-white/25 bg-white/10 backdrop-blur px-5 py-5 text-left max-w-xl mx-auto">
+            <div className="flex items-center gap-2 mb-2">
+              <Radio size={14} className="text-[#7ee5c6]" />
+              <p className="text-[11px] tracking-[0.14em] text-white/85 font-ibm-plex-sans">
+                BIRDEYE PULSE (NEW)
+              </p>
+            </div>
+            <p className="font-ibm-plex-sans text-sm text-white/80 mb-4">
+              Discover movers. Validate token safety.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/cockpit/market"
                 className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium bg-white text-[#11274d] hover:bg-white/90 active:scale-[0.97] transition-all duration-200"
               >
                 <LayoutDashboard size={14} />
-                Launch Cockpit
+                Open Market Pulse
               </Link>
               <Link
                 href="/log"
-                className="flex items-center gap-2 h-11 px-6 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 h-11 px-5 rounded-sm text-sm font-ibm-plex-sans font-medium text-white border border-white/30 hover:bg-white/10 transition-colors"
               >
                 <BookOpen size={14} />
-                View Log
+                View Release Log
               </Link>
             </div>
           </div>
-        </div>
 
-        {/* Subtle connect link */}
-        <div className="absolute bottom-6 left-0 right-0 text-center">
-          <a
-            href="https://x.com/yamparalarahul1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[11px] text-white/40 hover:text-white/70 font-ibm-plex-sans transition-colors"
-          >
-            Connect with the Engineer
-            <ArrowRight size={10} />
-          </a>
+          <p className="font-ibm-plex-sans text-[11px] text-white/50 pt-1">
+            Building in public for Colosseum Frontier Hackathon
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 max-w-xl mx-auto">
+            <div className="rounded-sm border border-white/20 bg-white/10 px-4 py-3 text-left">
+              <p className="text-sm text-white font-ibm-plex-sans">Yamparala Rahul</p>
+              <p className="text-xs text-white/70 font-ibm-plex-sans">Engineer & Builder</p>
+              <a
+                href="https://x.com/yamparalarahul1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] text-white/70 hover:text-white mt-2 font-ibm-plex-sans"
+              >
+                @yamparalarahul1 <ArrowRight size={10} />
+              </a>
+            </div>
+            <div className="rounded-sm border border-white/20 bg-white/10 px-4 py-3 text-left">
+              <p className="text-sm text-white font-ibm-plex-sans">Release Log</p>
+              <p className="text-xs text-white/70 font-ibm-plex-sans">Weekly updates + shipped work</p>
+              <Link
+                href="/log"
+                className="inline-flex items-center gap-1.5 text-[11px] text-white/70 hover:text-white mt-2 font-ibm-plex-sans"
+              >
+                View Release Log <ArrowRight size={10} />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
