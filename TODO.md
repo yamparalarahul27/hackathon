@@ -9,7 +9,7 @@
 
 ### Immediate (this week — Birdeye Sprint 1 deadline Apr 25)
 
-- [ ] **Set `BIRDEYE_API_KEY` on Vercel** — key: `<REDACTED_ROTATED>`
+- [ ] **Set `BIRDEYE_API_KEY` on Vercel** — key: `<ROTATED_SECRET>`
 - [ ] **Set `ALLOWED_ORIGINS` on Vercel** — value: `http://localhost:3000,https://defitriangle.xyz`
 - [ ] **Set `NEXT_PUBLIC_APP_URL` on Vercel** — value: `https://defitriangle.xyz`
 - [ ] **Post on X for Birdeye Sprint 1** — tag `@birdeye_data` + `#BirdeyeAPI`, show screenshots of safety score + trending rail + new listings
@@ -136,7 +136,7 @@
 | `JUPITER_API_KEY` | (existing) | ✅ Set |
 | `NEXT_PUBLIC_APP_URL` | `https://defitriangle.xyz` | ⚠️ Update |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,https://defitriangle.xyz` | ⚠️ Update |
-| `BIRDEYE_API_KEY` | `8192b2e...` | ⚠️ Add |
+| `BIRDEYE_API_KEY` | `<ROTATED_SECRET>` | ⚠️ Add |
 | `TORQUE_API_TOKEN` | (from platform.torque.so) | ❌ Need |
 | `TORQUE_API_KEY` | (from MCP `create_api_key`) | ❌ Need |
 | `NEXT_PUBLIC_UMBRA_WSS_RPC` | `wss://api.devnet.solana.com` | ⚠️ Check if QUICKNODE_WSS_URL covers it |

@@ -56,7 +56,6 @@ export function TokenSearchCombobox({ value, onChange, placeholder = 'Search tok
     const trimmed = query.trim();
     if (!trimmed) {
       // Nothing to search — results already default to [].
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear error when query is emptied
       setError(null);
       return;
     }

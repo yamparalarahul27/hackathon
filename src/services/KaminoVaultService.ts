@@ -100,11 +100,14 @@ export class KaminoVaultService {
     return vaults;
   }
 
-  /** Positions for a given wallet. */
-  async getUserPositions(walletAddress: string): Promise<KaminoVaultPosition[]> {
+  /** Positions for a given wallet. Accepts preloaded vaults to avoid duplicate fetches. */
+  async getUserPositions(
+    walletAddress: string,
+    preloadedVaults?: KaminoVaultInfo[]
+  ): Promise<KaminoVaultPosition[]> {
     const [positions, allVaults] = await Promise.all([
       this.api.getUserPositions(walletAddress).catch(() => []),
-      this.getVaults(), // reuse cache later if needed; for now acceptable cost
+      preloadedVaults ? Promise.resolve(preloadedVaults) : this.getVaults(),
     ]);
 
     if (positions.length === 0) return [];

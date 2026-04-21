@@ -34,7 +34,6 @@ export function useNftHoldings(walletAddress: string | null): UseNftHoldingsRetu
     }
   }, [walletAddress]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount
   useEffect(() => { void refresh(); }, [refresh]);
 
   return useMemo(
