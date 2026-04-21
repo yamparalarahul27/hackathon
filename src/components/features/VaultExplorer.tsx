@@ -56,8 +56,7 @@ export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
   );
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h2 className="font-satoshi font-bold text-xl text-[#11274d]">Vault Explorer</h2>
@@ -127,7 +126,6 @@ export function VaultExplorer({ vaults = [] }: VaultExplorerProps) {
           </table>
           {filtered.length === 0 && <p className="py-12 text-center text-[#6B7280] text-sm">No vaults found.</p>}
         </div>
-      </div>
     </div>
   );
 }

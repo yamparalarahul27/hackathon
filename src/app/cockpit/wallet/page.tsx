@@ -15,7 +15,7 @@ export default function WalletPage() {
   const [publicMints, setPublicMints] = useState<string[]>([]);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
+    <>
       {/* Hero */}
       <div
         className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20"
@@ -24,21 +24,19 @@ export default function WalletPage() {
           paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto">
-          <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
-            Wallet
-          </h1>
-          {connected && shortAddress ? (
-            <p className="font-mono text-sm text-white/70">{walletAddress}</p>
-          ) : (
-            <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70">
-              Connect your wallet to view holdings.
-            </p>
-          )}
-        </div>
+        <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
+          Wallet
+        </h1>
+        {connected && shortAddress ? (
+          <p className="font-mono text-sm text-white/70">{walletAddress}</p>
+        ) : (
+          <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70">
+            Connect your wallet to view holdings.
+          </p>
+        )}
       </div>
 
-      <div className="max-w-[1400px] mx-auto space-y-8">
+      <div className="space-y-8">
         {!connected ? (
           <Card className="p-8 text-center">
             <p className="text-sm text-[#11274d] font-ibm-plex-sans font-medium mb-2">
@@ -59,6 +57,6 @@ export default function WalletPage() {
           </>
         ) : null}
       </div>
-    </div>
+    </>
   );
 }

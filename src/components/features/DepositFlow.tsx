@@ -121,8 +121,7 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
   const currentStepIndex = steps.indexOf(step);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h2 className="font-satoshi font-bold text-xl text-[#11274d]">Deposit</h2>
           <p className="text-sm text-[#6a7282] mt-1">Deposit a single token into a Kamino K-Vault to earn yield.</p>
@@ -304,7 +303,6 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
             <Button onClick={handleReset}>Make Another Deposit</Button>
           </Card>
         )}
-      </div>
     </div>
   );
 }

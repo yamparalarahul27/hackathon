@@ -66,10 +66,10 @@ export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, error,
   const filtered = filter === 'all' ? positions : positions.filter(p => p.token.symbol === filter);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-12 min-h-screen">
+    <>
       {/* Hero stats on dark */}
       <div className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)' }}>
-        <div className="max-w-[1400px] mx-auto">
+        <div>
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">Your Vault Portfolio</h1>
           <p className="font-ibm-plex-sans text-xs lg:text-sm text-white/70 mb-6">Track your positions across Kamino K-Vaults — real on-chain data.</p>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -88,12 +88,12 @@ export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, error,
       </div>
 
       {error && (
-        <div className="max-w-[1400px] mx-auto mb-4">
+        <div className="mb-4">
           <RpcErrorBanner message={error} />
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto">
+      <div>
         <div className="flex flex-col gap-2 mb-4">
           <h2 className="label-section-light">Your Positions</h2>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
@@ -109,6 +109,6 @@ export function VaultDashboard({ positions = [], summary = EMPTY_SUMMARY, error,
         </div>
         {filtered.length === 0 && <div className="py-12 text-center text-[#6a7282] font-ibm-plex-sans text-sm">No positions found.</div>}
       </div>
-    </div>
+    </>
   );
 }

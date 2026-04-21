@@ -111,7 +111,7 @@ export function ProjectOverview({
   const topVaults = [...vaults].sort((a, b) => b.apy - a.apy).slice(0, 5);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
+    <>
       {/* ── Hero ──────────────────────────────────────────────── */}
       <div
         className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-8 border-b border-white/20"
@@ -122,7 +122,7 @@ export function ProjectOverview({
           paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto">
+        <div>
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-1">
             DeFi Triangle
           </h1>
@@ -161,12 +161,12 @@ export function ProjectOverview({
 
       {/* Error Banner */}
       {error && (
-        <div className="max-w-[1400px] mx-auto mb-4">
+        <div className="mb-4">
           <RpcErrorBanner message={error} />
         </div>
       )}
 
-      <div className="max-w-[1400px] mx-auto space-y-8">
+      <div className="space-y-8">
         {/* ── Quick Actions ─────────────────────────────────────── */}
         <section>
           <h2 className="label-section-light mb-3">Quick Actions</h2>
@@ -378,6 +378,6 @@ export function ProjectOverview({
           </section>
         )}
       </div>
-    </div>
+    </>
   );
 }

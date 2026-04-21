@@ -80,7 +80,7 @@ export function LstDirectory() {
   }, [allLsts]);
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-12 min-h-screen">
+    <>
       {/* Hero */}
       <div
         className="gradient-frost-hero -mt-6 mb-6 pt-16 pb-6 border-b border-white/20"
@@ -89,7 +89,7 @@ export function LstDirectory() {
           paddingLeft: 'calc(50vw - 50%)', paddingRight: 'calc(50vw - 50%)',
         }}
       >
-        <div className="max-w-[1400px] mx-auto">
+        <div>
           <h1 className="font-satoshi font-light text-2xl lg:text-4xl text-white tracking-tight mb-2">
             Solana LST Directory
           </h1>
@@ -112,7 +112,7 @@ export function LstDirectory() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto space-y-4">
+      <div className="space-y-4">
         {/* Search + Pool Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -209,7 +209,7 @@ export function LstDirectory() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

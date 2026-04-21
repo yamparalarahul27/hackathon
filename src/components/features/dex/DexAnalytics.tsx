@@ -60,17 +60,14 @@ export function DexAnalytics({ protocolName, trades, loading }: DexAnalyticsProp
 
   if (loading) {
     return (
-      <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-center min-h-[60vh]">
-          <p className="text-sm text-[#6a7282] font-ibm-plex-sans">Loading {protocolName} data...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-sm text-[#6a7282] font-ibm-plex-sans">Loading {protocolName} data...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h2 className="font-satoshi font-bold text-xl text-[#11274d]">{protocolName} Analytics</h2>
@@ -100,7 +97,6 @@ export function DexAnalytics({ protocolName, trades, loading }: DexAnalyticsProp
 
         {/* Trade Table */}
         <DexTradeTable trades={filteredTrades} />
-      </div>
     </div>
   );
 }

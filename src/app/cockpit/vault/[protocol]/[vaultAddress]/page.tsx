@@ -31,44 +31,40 @@ export default function VaultDetailPage({ params }: Props) {
 
   if (!vault) {
     return (
-      <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-        <div className="max-w-[1400px] mx-auto text-center py-20">
-          <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Vault not found</p>
-          <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">Address: {vaultAddress}</p>
-          <Link href={`/cockpit/vault/${protocol}`} className="text-sm text-[#3B7DDD] hover:underline">← Back to Vaults</Link>
-        </div>
+      <div className="text-center py-20">
+        <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Vault not found</p>
+        <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">Address: {vaultAddress}</p>
+        <Link href={`/cockpit/vault/${protocol}`} className="text-sm text-[#3B7DDD] hover:underline">← Back to Vaults</Link>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#f1f5f9] -mx-6 -mt-6 px-4.5 lg:px-10 pt-6 pb-16 min-h-screen">
-      <div className="max-w-[1400px] mx-auto space-y-6">
-        <Link
-          href={`/cockpit/vault/${protocol}`}
-          className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans"
-        >
-          <ArrowLeft size={12} /> Back to Vaults
+    <div className="space-y-6">
+      <Link
+        href={`/cockpit/vault/${protocol}`}
+        className="inline-flex items-center gap-1 text-xs text-[#6a7282] hover:text-[#11274d] transition-colors font-ibm-plex-sans"
+      >
+        <ArrowLeft size={12} /> Back to Vaults
+      </Link>
+
+      <VaultDetailHeader vault={vault} />
+      <VaultPosition position={position} connected={connected} />
+      <VaultDetails vault={vault} />
+
+      <div className="flex gap-3">
+        <Link href={`/cockpit/vault/${protocol}/deposit?vault=${vault.address}`} className="flex-1">
+          <Button className="w-full py-3">
+            Deposit
+          </Button>
         </Link>
-
-        <VaultDetailHeader vault={vault} />
-        <VaultPosition position={position} connected={connected} />
-        <VaultDetails vault={vault} />
-
-        <div className="flex gap-3">
-          <Link href={`/cockpit/vault/${protocol}/deposit?vault=${vault.address}`} className="flex-1">
-            <Button className="w-full py-3">
-              Deposit
+        {position && (
+          <Link href={`/cockpit/vault/${protocol}/withdraw?vault=${vault.address}`} className="flex-1">
+            <Button variant="secondary" className="w-full py-3">
+              Withdraw
             </Button>
           </Link>
-          {position && (
-            <Link href={`/cockpit/vault/${protocol}/withdraw?vault=${vault.address}`} className="flex-1">
-              <Button variant="secondary" className="w-full py-3">
-                Withdraw
-              </Button>
-            </Link>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
