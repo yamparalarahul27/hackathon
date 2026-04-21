@@ -19,7 +19,7 @@ export default function LendPage({ params }: Props) {
         <div className="text-center">
           <p className="text-lg text-[#11274d] font-ibm-plex-sans mb-2">Unsupported lending protocol</p>
           <p className="text-sm text-[#6a7282] font-ibm-plex-sans mb-4">{protocol}</p>
-          <Link href="/lend/kamino" className="text-sm text-[#3B7DDD] hover:underline">
+          <Link href="/cockpit/lend/kamino" className="text-sm text-[#3B7DDD] hover:underline">
             ← Go to Kamino Lending
           </Link>
         </div>

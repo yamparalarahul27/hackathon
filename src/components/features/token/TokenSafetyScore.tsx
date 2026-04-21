@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ShieldCheck, ShieldAlert, Shield, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import {
+  BirdeyeUpstreamError,
   fetchTokenSecurity,
   scoreTokenSecurity,
   type SecurityScore,
@@ -23,12 +24,13 @@ const LEVEL_CONFIG: Record<SecurityLevel, { icon: typeof ShieldCheck; color: str
 export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: Props) {
   const [score, setScore] = useState<SecurityScore | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setScore(null);
 
     (async () => {
       try {
@@ -37,7 +39,7 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
         setScore(scoreTokenSecurity(sec));
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Unable to fetch safety data.');
+        setError(err instanceof Error ? err : new Error('Unable to fetch safety data.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -45,10 +47,6 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
 
     return () => { cancelled = true; };
   }, [mint]);
-
-  // When the proxy returns a non-OK (e.g. 503 no key configured), hide the card
-  // rather than showing a scary error on a public page.
-  if (error) return null;
 
   if (loading) {
     return (
@@ -62,7 +60,28 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
     );
   }
 
-  if (!score) return null;
+  if (error || !score) {
+    const reason = summarizeSafetyError(error);
+    return (
+      <Card className="p-4">
+        <p className="label-section-light mb-3">Safety Score</p>
+        <div className="flex items-start gap-3 px-3 py-2.5 rounded-sm border bg-[#fff7ed] border-[#fdba74]">
+          <ShieldAlert size={20} className="text-[#c2410c] mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold font-ibm-plex-sans text-[#9a3412]">
+              Safety data unavailable
+            </p>
+            <p className="text-xs font-ibm-plex-sans text-[#9a3412]/90 mt-1">
+              {reason}
+            </p>
+          </div>
+        </div>
+        <p className="text-[9px] text-[#94a3b8] font-ibm-plex-sans mt-3">
+          Powered by Birdeye Data
+        </p>
+      </Card>
+    );
+  }
 
   const config = LEVEL_CONFIG[score.level];
   const Icon = config.icon;
@@ -114,3 +133,26 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
     </Card>
   );
 });
+
+function summarizeSafetyError(error: Error | null): string {
+  if (!error) {
+    return 'No safety payload was returned by Birdeye.';
+  }
+
+  if (error instanceof BirdeyeUpstreamError) {
+    const status = error.upstreamStatus;
+
+    if (status === 401 || status === 403) {
+      return `Birdeye authentication/config issue (status ${status}).`;
+    }
+    if (status === 429) {
+      return `Birdeye rate limit reached (status ${status}). Please retry shortly.`;
+    }
+    if (status >= 500) {
+      return `Birdeye service is temporarily unavailable (status ${status}).`;
+    }
+    return `Birdeye request failed (status ${status}).`;
+  }
+
+  return error.message || 'Unable to fetch safety data.';
+}

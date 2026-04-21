@@ -11,7 +11,7 @@ const ALLOWED_PATHS = new Set<string>([
   'defi/token_security',
   'defi/token_trending',
   'defi/history_price',
-  'v2/tokens/new_listing',
+  'defi/v2/tokens/new_listing',
 ]);
 
 // Per-endpoint cache TTL (ms). Trending/new listings change slowly; security
@@ -20,7 +20,7 @@ const CACHE_TTL_MS: Record<string, number> = {
   'defi/token_security': 10 * 60_000,
   'defi/token_trending': 60_000,
   'defi/history_price': 60_000,
-  'v2/tokens/new_listing': 60_000,
+  'defi/v2/tokens/new_listing': 60_000,
 };
 
 type CacheEntry = { expiresAt: number; status: number; body: string };

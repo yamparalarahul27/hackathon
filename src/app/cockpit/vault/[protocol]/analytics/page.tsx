@@ -16,7 +16,7 @@ export default function VaultAnalyticsPage() {
             require deposit event indexing, which is not yet available.
           </p>
           <Link
-            href="/vault/kamino"
+            href="/cockpit/vault/kamino"
             className="text-sm text-[#3B7DDD] hover:underline font-ibm-plex-sans"
           >
             ← Back to Vaults

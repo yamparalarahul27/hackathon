@@ -7,7 +7,7 @@
  *
  *   - Token security scoring (/defi/token_security)
  *   - Trending tokens (/defi/token_trending)
- *   - New token listings (/v2/tokens/new_listing)
+ *   - New token listings (/defi/v2/tokens/new_listing)
  *
  * Free tier: 50 req/min. Docs: https://docs.birdeye.so
  */
@@ -144,7 +144,7 @@ export async function fetchNewListings(
   timeRange = '24h'
 ): Promise<NewListingToken[]> {
   const data = await birdeyeFetch<{ tokens: NewListingToken[] }>(
-    `/v2/tokens/new_listing?time_to=${timeRange}&limit=${limit}&sort_by=liquidity&sort_type=desc`
+    `/defi/v2/tokens/new_listing?time_to=${timeRange}&limit=${limit}&sort_by=liquidity&sort_type=desc`
   );
   return data?.tokens ?? (Array.isArray(data) ? data as unknown as NewListingToken[] : []);
 }
