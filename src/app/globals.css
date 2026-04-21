@@ -51,6 +51,26 @@
   --green-main: #18df74;
   --danger: #ef4444;
   --warning: #f59e0b;
+
+  /* State Messaging Tokens */
+  --state-info-bg: #EFF6FF;
+  --state-info-border: #BFDBFE;
+  --state-info-text: #1D4ED8;
+  --state-info-icon: #2563EB;
+
+  --state-warning-bg: #FFFBEB;
+  --state-warning-border: #FDE68A;
+  --state-warning-text: #B45309;
+  --state-warning-icon: #D97706;
+
+  --state-error-bg: #FEF2F2;
+  --state-error-border: #FECACA;
+  --state-error-text: #B91C1C;
+  --state-error-icon: #DC2626;
+
+  --state-meta-text: #6B7280;
+  --state-meta-divider: #E5E7EB;
+  --state-surface: #FFFFFF;
 }
 
 @theme inline {
@@ -196,3 +216,105 @@ body {
 
 .frosted-icon-box svg { width: 1rem; height: 1rem; }
 
+/* ── State Messaging ──────────────────────────────────────────── */
+
+.state-notice {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.state-info {
+  background: var(--state-info-bg);
+  border-color: var(--state-info-border);
+}
+
+.state-warning {
+  background: var(--state-warning-bg);
+  border-color: var(--state-warning-border);
+}
+
+.state-error {
+  background: var(--state-error-bg);
+  border-color: var(--state-error-border);
+}
+
+.state-notice-text {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+}
+
+.state-info .state-notice-text { color: var(--state-info-text); }
+.state-warning .state-notice-text { color: var(--state-warning-text); }
+.state-error .state-notice-text { color: var(--state-error-text); }
+
+.state-notice-icon {
+  flex-shrink: 0;
+}
+
+.state-warning .state-notice-icon { color: var(--state-warning-icon); }
+.state-error .state-notice-icon { color: var(--state-error-icon); }
+
+.state-severity-label {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  margin-bottom: 2px;
+}
+
+.state-warning .state-severity-label { color: var(--state-warning-text); }
+.state-error .state-severity-label { color: var(--state-error-text); }
+
+.state-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.state-timestamp {
+  color: var(--state-meta-text);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+}
+
+.state-stale-badge {
+  background: var(--state-warning-bg);
+  border: 1px solid var(--state-warning-border);
+  color: var(--state-warning-text);
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+}
+
+.state-action-btn {
+  color: #19549B;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+}
+
+.state-action-btn:hover {
+  color: #143F78;
+}
+
+.state-action-btn:disabled {
+  color: #94A3B8;
+}
+
+.state-action-btn:focus-visible {
+  outline: 2px solid #93C5FD;
+  outline-offset: 2px;
+}

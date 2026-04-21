@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Search, TrendingUp, ArrowDownUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import { formatUsd, formatCompact } from '@/lib/utils';
 import { fetchTopTokens, type MarketToken } from '@/services/JupiterTokenListService';
 import {
@@ -37,21 +38,32 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
   const [trendingSet, setTrendingSet] = useState<Set<string>>(new Set());
   const [newSet, setNewSet] = useState<Set<string>>(new Set());
   const [safetyByMint, setSafetyByMint] = useState<Record<string, SecurityLevel | 'na'>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const hasTokensRef = useRef(false);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
       try {
         const data = await fetchTopTokens('toptraded', '24h');
         if (cancelled) return;
         setTokens(data);
         setError(null);
-        onSuccessfulFetch?.(new Date());
+        const at = new Date();
+        setLastUpdated(at);
+        setShowStale(false);
+        onSuccessfulFetch?.(at);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to fetch market data');
+          setShowStale(hasTokensRef.current);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -64,7 +76,7 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
       cancelled = true;
       clearInterval(interval);
     };
-  }, [onSuccessfulFetch, refreshToken]);
+  }, [manualRefreshToken, onSuccessfulFetch, refreshToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +163,11 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
     });
   }, [newSet, safetyByMint, safetyFilter, search, sortDir, sortField, sourceFilter, tokens, trendingSet]);
 
+  function handleRefresh() {
+    if (!hasTokensRef.current) setLoading(true);
+    setManualRefreshToken((value) => value + 1);
+  }
+
   return (
     <section id="market-table" className="space-y-3 scroll-mt-24">
       <div className="rounded-sm border border-[#d8e1ee] bg-white p-3 space-y-3">
@@ -213,12 +230,32 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
         </div>
       </div>
 
-      {error && (
-        <Card className="p-4 bg-[#fff7ed] border border-[#fed7aa]">
-          <p className="text-sm text-[#9a3412] font-ibm-plex-sans">
-            {toMarketFallbackMessage(error, tokens.length > 0)}
-          </p>
-        </Card>
+      {loading && (
+        <StateNotice severity="info" message="Loading market table..." />
+      )}
+
+      {!loading && showStale && tokens.length > 0 && (
+        <StateNotice
+          severity="warning"
+          message="Showing cached market data while live data refreshes."
+          actionLabel="Refresh"
+          onAction={handleRefresh}
+          lastUpdated={lastUpdated}
+          showStaleBadge
+        />
+      )}
+
+      {!loading && !showStale && error && (
+        <StateNotice
+          severity={isRateLimited(error) ? 'warning' : 'error'}
+          message={
+            isRateLimited(error)
+              ? 'Rate limit reached (429). Please wait a moment and try again.'
+              : 'Market table is temporarily unavailable. Please try again.'
+          }
+          actionLabel="Retry"
+          onAction={handleRefresh}
+        />
       )}
 
       {loading ? (
@@ -330,7 +367,15 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <p className="py-12 text-center text-[#6B7280] text-sm">No tokens found.</p>
+            <div className="p-4">
+              <StateNotice
+                severity="info"
+                message="No markets match your current filters."
+                actionLabel="Refresh"
+                onAction={handleRefresh}
+                lastUpdated={lastUpdated}
+              />
+            </div>
           )}
         </div>
       )}
@@ -393,20 +438,6 @@ function SafetyPill({ level }: { level: SecurityLevel | 'na' }) {
   );
 }
 
-function toMarketFallbackMessage(rawError: string, hasSnapshot: boolean): string {
-  if (/\b429\b/.test(rawError)) {
-    if (hasSnapshot) {
-      return 'Market API is temporarily rate-limited. Showing the latest available snapshot.';
-    }
-    return 'Market data is temporarily rate-limited. Please retry in about a minute.';
-  }
-  if (/\b403\b/.test(rawError)) {
-    return 'Market data is temporarily unavailable due to provider access limits.';
-  }
-  if (/timeout|aborted|network/i.test(rawError)) {
-    return 'Market request timed out. Please refresh and try again.';
-  }
-  return hasSnapshot
-    ? 'Live market refresh is temporarily unavailable. Showing the latest available snapshot.'
-    : 'Market data is temporarily unavailable. Please try again shortly.';
+function isRateLimited(rawError: string): boolean {
+  return /\b429\b/.test(rawError);
 }

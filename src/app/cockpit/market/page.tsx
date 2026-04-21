@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { BirdeyeTrending } from '@/components/features/BirdeyeTrending';
 import { BirdeyeNewListings } from '@/components/features/BirdeyeNewListings';
 import { MarketTokenList } from '@/components/features/MarketTokenList';
+import { formatLastUpdated } from '@/components/ui/StateNotice';
 
 export default function MarketPage() {
   const [refreshToken, setRefreshToken] = useState(0);
@@ -13,13 +14,7 @@ export default function MarketPage() {
 
   const lastUpdatedLabel = useMemo(() => {
     if (!lastUpdated) return '—';
-    const time = new Intl.DateTimeFormat('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Kolkata',
-    }).format(lastUpdated);
-    return `${time} IST`;
+    return formatLastUpdated(lastUpdated).replace('Last updated: ', '');
   }, [lastUpdated]);
 
   function onSuccessfulFetch(at: Date) {

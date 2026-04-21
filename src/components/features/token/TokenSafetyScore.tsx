@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { ShieldCheck, ShieldAlert, Shield, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import {
   BirdeyeUpstreamError,
   fetchTokenSecurity,
@@ -24,58 +25,96 @@ const LEVEL_CONFIG: Record<SecurityLevel, { icon: typeof ShieldCheck; color: str
 export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: Props) {
   const [score, setScore] = useState<SecurityScore | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [errorState, setErrorState] = useState<'rate_limited' | 'upstream_error' | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const scoreRef = useRef<SecurityScore | null>(null);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  useEffect(() => {
+    setScore(null);
+    setLoading(true);
+    setErrorState(null);
+    setLastUpdated(null);
+    setShowStale(false);
+  }, [mint]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
-    setScore(null);
+    setErrorState(null);
 
     (async () => {
       try {
         const sec = await fetchTokenSecurity(mint);
         if (cancelled) return;
-        setScore(scoreTokenSecurity(sec));
+        const next = scoreTokenSecurity(sec);
+        setScore(next);
+        setLastUpdated(new Date());
+        setShowStale(false);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err : new Error('Unable to fetch safety data.'));
+        const nextError = classifySafetyError(err);
+        if (scoreRef.current) {
+          setShowStale(true);
+        } else {
+          setErrorState(nextError);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [mint]);
+  }, [manualRefreshToken, mint]);
+
+  function handleRefresh() {
+    setManualRefreshToken((value) => value + 1);
+  }
 
   if (loading) {
     return (
       <Card className="p-4">
         <p className="label-section-light mb-2">Safety Score</p>
-        <div className="flex items-center gap-2 text-[#94a3b8]">
-          <Loader2 size={14} className="animate-spin" />
-          <span className="text-xs font-ibm-plex-sans">Analyzing via Birdeye…</span>
-        </div>
+        <StateNotice severity="info" message="Calculating token safety..." />
       </Card>
     );
   }
 
-  if (error || !score) {
-    const reason = summarizeSafetyError(error);
+  if (!score && errorState) {
     return (
       <Card className="p-4">
         <p className="label-section-light mb-3">Safety Score</p>
-        <div className="flex items-start gap-3 px-3 py-2.5 rounded-sm border bg-[#fff7ed] border-[#fdba74]">
-          <ShieldAlert size={20} className="text-[#c2410c] mt-0.5" />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold font-ibm-plex-sans text-[#9a3412]">
-              Safety data unavailable
-            </p>
-            <p className="text-xs font-ibm-plex-sans text-[#9a3412]/90 mt-1">
-              {reason}
-            </p>
-          </div>
-        </div>
+        <StateNotice
+          severity={errorState === 'rate_limited' ? 'warning' : 'error'}
+          message={
+            errorState === 'rate_limited'
+              ? 'Rate limit reached (429). Safety check is temporarily paused.'
+              : 'Token safety is temporarily unavailable. Please try again.'
+          }
+          actionLabel="Retry"
+          onAction={handleRefresh}
+        />
+        <p className="text-[9px] text-[#94a3b8] font-ibm-plex-sans mt-3">
+          Powered by Birdeye Data
+        </p>
+      </Card>
+    );
+  }
+
+  if (!score) {
+    return (
+      <Card className="p-4">
+        <p className="label-section-light mb-3">Safety Score</p>
+        <StateNotice
+          severity="info"
+          message="No safety profile is available for this token yet."
+          lastUpdated={lastUpdated}
+        />
         <p className="text-[9px] text-[#94a3b8] font-ibm-plex-sans mt-3">
           Powered by Birdeye Data
         </p>
@@ -89,6 +128,19 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
   return (
     <Card className="p-4">
       <p className="label-section-light mb-3">Safety Score</p>
+
+      {showStale ? (
+        <div className="mb-3">
+          <StateNotice
+            severity="warning"
+            message="Showing last known safety score while fresh data loads."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+            showStaleBadge
+          />
+        </div>
+      ) : null}
 
       <div className={`flex items-center gap-3 px-3 py-2.5 rounded-sm border ${config.bg} ${config.border} mb-3`}>
         <Icon size={20} className={config.color} />
@@ -134,25 +186,12 @@ export const TokenSafetyScore = React.memo(function TokenSafetyScore({ mint }: P
   );
 });
 
-function summarizeSafetyError(error: Error | null): string {
-  if (!error) {
-    return 'No safety payload was returned by Birdeye.';
-  }
-
+function classifySafetyError(error: unknown): 'rate_limited' | 'upstream_error' {
   if (error instanceof BirdeyeUpstreamError) {
-    const status = error.upstreamStatus;
-
-    if (status === 401 || status === 403) {
-      return `Birdeye authentication/config issue (status ${status}).`;
-    }
-    if (status === 429) {
-      return `Birdeye rate limit reached (status ${status}). Please retry shortly.`;
-    }
-    if (status >= 500) {
-      return `Birdeye service is temporarily unavailable (status ${status}).`;
-    }
-    return `Birdeye request failed (status ${status}).`;
+    return error.upstreamStatus === 429 ? 'rate_limited' : 'upstream_error';
   }
-
-  return error.message || 'Unable to fetch safety data.';
+  if (error instanceof Error && /\b429\b/.test(error.message)) {
+    return 'rate_limited';
+  }
+  return 'upstream_error';
 }

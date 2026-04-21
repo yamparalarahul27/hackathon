@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
+import { StateNotice } from '@/components/ui/StateNotice';
 import {
   fetchNewListings,
   fetchTokenSecurity,
@@ -27,14 +28,26 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
   const [tokens, setTokens] = useState<ListingWithSafety[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showStale, setShowStale] = useState(false);
+  const [manualRefreshToken, setManualRefreshToken] = useState(0);
+  const hasTokensRef = useRef(false);
+
+  useEffect(() => {
+    hasTokensRef.current = tokens.length > 0;
+  }, [tokens.length]);
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         const listings = await fetchNewListings(20, '24h');
         if (cancelled) return;
-        onSuccessfulFetch?.(new Date());
+        const at = new Date();
+        onSuccessfulFetch?.(at);
+        setLastUpdated(at);
+        setShowStale(false);
 
         const withSafety: ListingWithSafety[] = listings.map((t) => ({
           ...t,
@@ -67,14 +80,21 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
         }
         if (!cancelled) setTokens([...enriched]);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load new listings');
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load new listings');
+          setShowStale(hasTokensRef.current);
+          setLoading(false);
+        }
       }
     })();
-    return () => { cancelled = true; };
-  }, [onSuccessfulFetch, refreshToken]);
 
-  if (!loading && !error && tokens.length === 0) return null;
+    return () => { cancelled = true; };
+  }, [manualRefreshToken, onSuccessfulFetch, refreshToken]);
+
+  function handleRefresh() {
+    if (!hasTokensRef.current) setLoading(true);
+    setManualRefreshToken((value) => value + 1);
+  }
 
   return (
     <section>
@@ -85,22 +105,49 @@ export function BirdeyeNewListings({ refreshToken = 0, onSuccessfulFetch }: Prop
       </div>
 
       {loading && (
-        <div className="flex items-center gap-2 text-[#94a3b8] py-4">
-          <Loader2 size={14} className="animate-spin" />
-          <span className="text-xs font-ibm-plex-sans">Scanning new listings…</span>
+        <div className="py-1">
+          <StateNotice severity="info" message="Loading new listings..." />
         </div>
       )}
 
-      {error && !loading && (
-        <Card className="px-3 py-2.5 bg-[#fff7ed] border border-[#fed7aa]">
-          <p className="text-xs text-[#9a3412] font-ibm-plex-sans">
-            {toNewListingsFallbackMessage(error)}
-          </p>
-        </Card>
+      {!loading && showStale && tokens.length > 0 && (
+        <div className="mb-3">
+          <StateNotice
+            severity="warning"
+            message="Showing cached new listings while live data refreshes."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+            showStaleBadge
+          />
+        </div>
+      )}
+
+      {!loading && !showStale && error && (
+        <div className="py-1">
+          <StateNotice
+            severity={isRateLimited(error) ? 'warning' : 'error'}
+            message={
+              isRateLimited(error)
+                ? 'Rate limit reached (429). Please wait a moment and try again.'
+                : 'New listings are temporarily unavailable. Please try again.'
+            }
+            actionLabel="Retry"
+            onAction={handleRefresh}
+          />
+        </div>
       )}
 
       {!loading && !error && tokens.length === 0 && (
-        <p className="text-xs text-[#94a3b8] font-ibm-plex-sans py-2">No new listings found.</p>
+        <div className="py-1">
+          <StateNotice
+            severity="info"
+            message="No new listings found right now."
+            actionLabel="Refresh"
+            onAction={handleRefresh}
+            lastUpdated={lastUpdated}
+          />
+        </div>
       )}
 
       {!loading && tokens.length > 0 && (
@@ -230,15 +277,6 @@ function short(addr: string): string {
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 }
 
-function toNewListingsFallbackMessage(rawError: string): string {
-  if (/\b429\b/.test(rawError)) {
-    return 'New listings are temporarily rate-limited. Please retry in about a minute.';
-  }
-  if (/\b403\b/.test(rawError)) {
-    return 'New listings are temporarily unavailable due to provider access limits.';
-  }
-  if (/timeout|aborted|network/i.test(rawError)) {
-    return 'New listings request timed out. Please refresh and try again.';
-  }
-  return 'New listings are temporarily unavailable. Please try again shortly.';
+function isRateLimited(rawError: string): boolean {
+  return /\b429\b/.test(rawError);
 }
