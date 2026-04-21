@@ -24,8 +24,9 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname);
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CHUNKS_DIR = join(ROOT, '.next', 'static', 'chunks');
 const ENV_EXAMPLE = join(ROOT, '.env.example');
 

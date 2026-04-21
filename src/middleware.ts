@@ -4,17 +4,46 @@ import { NextRequest, NextResponse } from 'next/server';
 // or the preview-specific hash on PR previews). Auto-allowing it means stage +
 // preview deploys work without a manual ALLOWED_ORIGINS update per URL.
 const vercelOrigin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+const INTERNAL_API_SECRET_HEADER = 'x-internal-api-secret';
 
 const ALLOWED_ORIGINS = [
   ...(process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(','),
   ...(vercelOrigin ? [vercelOrigin] : []),
 ]
-  .map((o) => o.trim().toLowerCase())
-  .filter(Boolean);
+  .map((o) => normalizeOrigin(o.trim()))
+  .filter((o): o is string => Boolean(o));
+const ALLOWED_ORIGIN_SET = new Set(ALLOWED_ORIGINS);
 
 const API_RATE_LIMIT = 60;
 const API_RATE_WINDOW_MS = 60_000;
 const apiHits = new Map<string, { count: number; resetAt: number }>();
+
+function hasValidInternalBypass(request: NextRequest): boolean {
+  const expectedSecret = process.env.INTERNAL_API_SECRET;
+  if (!expectedSecret) return false;
+
+  const providedSecret = request.headers.get(INTERNAL_API_SECRET_HEADER);
+  return Boolean(providedSecret && providedSecret === expectedSecret);
+}
+
+function normalizeOrigin(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).origin.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function denyMutation(status: 401 | 403, denyReason: string): NextResponse {
+  return NextResponse.json(
+    {
+      error: status === 401 ? 'Unauthorized' : 'Forbidden',
+      code: denyReason,
+    },
+    { status, headers: { 'X-Deny-Reason': denyReason } }
+  );
+}
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,28 +55,25 @@ export default function middleware(request: NextRequest) {
 
   // --- Origin check: only for mutating requests ---
   // GET /api/* is public, read-only, no cookies/auth → no CSRF surface.
-  // Mutations (POST/PUT/DELETE/PATCH) must come from an allowed or same
-  // origin to prevent browser-side CSRF from other sites.
-  const origin = request.headers.get('origin')?.toLowerCase();
-  const referer = request.headers.get('referer')?.toLowerCase();
-  const host = request.headers.get('host')?.toLowerCase();
+  // Mutations (POST/PUT/DELETE/PATCH) must come from an allowed/same
+  // browser origin. Origin-less server-side calls require explicit
+  // internal auth via x-internal-api-secret.
+  const requestOrigin = request.nextUrl.origin.toLowerCase();
+  const origin = normalizeOrigin(request.headers.get('origin'));
+  const refererOrigin = normalizeOrigin(request.headers.get('referer'));
+  const hasBrowserProvenance = Boolean(origin || refererOrigin);
 
-  const isSameOrigin = Boolean(
-    host &&
-      ((origin && safeUrlHost(origin) === host) ||
-        (referer && safeUrlHost(referer) === host))
-  );
-
-  const isServerSide = !origin && !referer;
-  const originAllowed = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o));
-  const refererAllowed = referer && ALLOWED_ORIGINS.some((o) => referer.startsWith(o));
-  const originOk = isServerSide || isSameOrigin || originAllowed || refererAllowed;
+  const isSameOrigin = origin === requestOrigin || refererOrigin === requestOrigin;
+  const originAllowed = origin ? ALLOWED_ORIGIN_SET.has(origin) : false;
+  const refererAllowed = refererOrigin ? ALLOWED_ORIGIN_SET.has(refererOrigin) : false;
+  const internalBypassAllowed = !hasBrowserProvenance && hasValidInternalBypass(request);
+  const originOk = isSameOrigin || originAllowed || refererAllowed || internalBypassAllowed;
 
   if (isMutation && !originOk) {
-    return NextResponse.json(
-      { error: 'Forbidden' },
-      { status: 403, headers: { 'X-Deny-Reason': 'origin_not_allowed' } }
-    );
+    if (!hasBrowserProvenance) {
+      return denyMutation(401, 'internal_auth_required');
+    }
+    return denyMutation(403, 'origin_not_allowed');
   }
 
   // --- Rate limit per IP ---
@@ -78,14 +104,6 @@ export default function middleware(request: NextRequest) {
   }
 
   return response;
-}
-
-function safeUrlHost(value: string): string | null {
-  try {
-    return new URL(value).host;
-  } catch {
-    return null;
-  }
 }
 
 export const config = {

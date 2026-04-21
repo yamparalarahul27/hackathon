@@ -70,7 +70,7 @@ function isValidWalletAddress(walletAddress: string): boolean {
 async function fetchOverview(walletAddress: string | null): Promise<KaminoOverviewResponse> {
   const service = new KaminoVaultService();
   const vaults = await service.getVaults();
-  const positions = walletAddress ? await service.getUserPositions(walletAddress) : [];
+  const positions = walletAddress ? await service.getUserPositions(walletAddress, vaults) : [];
   const summary = service.calculateSummary(positions);
 
   return {

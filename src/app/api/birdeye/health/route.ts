@@ -29,6 +29,12 @@ export const dynamic = 'force-dynamic';
  * }
  */
 export async function GET() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const publicDiagnosticsEnabled = process.env.ENABLE_PUBLIC_DIAGNOSTICS === 'true';
+  if (isProduction && !publicDiagnosticsEnabled) {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
+
   const apiKey = process.env.BIRDEYE_API_KEY;
   const configured = Boolean(apiKey);
   const keyPreview = apiKey ? `${apiKey.slice(0, 4)}…${apiKey.slice(-4)}` : null;

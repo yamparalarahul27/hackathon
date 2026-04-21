@@ -19,6 +19,8 @@ export const dynamic = 'force-dynamic';
  */
 
 const JUPITER_UPSTREAM = 'https://api.jup.ag';
+const INTERNAL_API_SECRET_HEADER = 'x-internal-api-secret';
+const EXECUTE_PATH = 'ultra/v1/execute';
 
 // Allow-list of forwarded Jupiter paths. Prevents use as open relay.
 // Match by prefix — query strings vary too much to enumerate exactly.
@@ -46,10 +48,79 @@ function jupiterHeaders(extra: Record<string, string> = {}): Record<string, stri
   return headers;
 }
 
+function normalizeOrigin(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).origin.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function hasValidInternalBypass(request: NextRequest): boolean {
+  const expectedSecret = process.env.INTERNAL_API_SECRET;
+  if (!expectedSecret) return false;
+
+  const providedSecret = request.headers.get(INTERNAL_API_SECRET_HEADER);
+  return Boolean(providedSecret && providedSecret === expectedSecret);
+}
+
+function isSameOriginBrowserRequest(request: NextRequest): boolean {
+  const requestOrigin = request.nextUrl.origin.toLowerCase();
+  const origin = normalizeOrigin(request.headers.get('origin'));
+  const refererOrigin = normalizeOrigin(request.headers.get('referer'));
+  return origin === requestOrigin || refererOrigin === requestOrigin;
+}
+
+function denyExecute(
+  joinedPath: string,
+  status: 401 | 403,
+  code: 'internal_auth_required' | 'invalid_internal_auth' | 'same_origin_required'
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: status === 401 ? 'Unauthorized' : 'Forbidden',
+      code,
+      path: joinedPath,
+    },
+    {
+      status,
+      headers: { 'X-Deny-Reason': code },
+    }
+  );
+}
+
+function canRunExecutePost(request: NextRequest, joinedPath: string): NextResponse | null {
+  const isExecutePost = request.method === 'POST' &&
+    (joinedPath === EXECUTE_PATH || joinedPath.startsWith(`${EXECUTE_PATH}/`));
+  if (!isExecutePost) return null;
+
+  if (isSameOriginBrowserRequest(request) || hasValidInternalBypass(request)) {
+    return null;
+  }
+
+  const hasOriginOrReferer = Boolean(
+    normalizeOrigin(request.headers.get('origin')) ||
+      normalizeOrigin(request.headers.get('referer'))
+  );
+  const providedSecret = request.headers.get(INTERNAL_API_SECRET_HEADER);
+
+  if (providedSecret) {
+    return denyExecute(joinedPath, 401, 'invalid_internal_auth');
+  }
+  if (!hasOriginOrReferer) {
+    return denyExecute(joinedPath, 401, 'internal_auth_required');
+  }
+  return denyExecute(joinedPath, 403, 'same_origin_required');
+}
+
 async function proxy(request: NextRequest, joinedPath: string): Promise<NextResponse> {
   if (!pathAllowed(joinedPath)) {
     return NextResponse.json({ error: 'Path not allowed', path: joinedPath }, { status: 404 });
   }
+
+  const executePolicyDenial = canRunExecutePost(request, joinedPath);
+  if (executePolicyDenial) return executePolicyDenial;
 
   const query = request.nextUrl.searchParams.toString();
   const upstreamUrl = `${JUPITER_UPSTREAM}/${joinedPath}${query ? `?${query}` : ''}`;

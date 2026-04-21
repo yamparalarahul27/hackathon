@@ -288,7 +288,7 @@ export function ProjectOverview({
                         <span className="data-sm text-[#6B7280]">{vault.holders.toLocaleString()}</span>
                       </td>
                       <td className="text-right py-3.5 pl-3 pr-4">
-                        <Link href={`/vault/kamino/${vault.address}`}>
+                        <Link href={`/cockpit/vault/kamino/${vault.address}`}>
                           <Button variant="execute" size="sm">Deposit</Button>
                         </Link>
                       </td>
@@ -317,7 +317,7 @@ export function ProjectOverview({
             {positions.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {positions.slice(0, 3).map((p, i) => (
-                    <Link key={p.id} href={`/vault/kamino/${p.vaultAddress}`}>
+                    <Link key={p.id} href={`/cockpit/vault/kamino/${p.vaultAddress}`}>
                       <Card hover className="animate-fade-up" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'backwards' }}>
                         <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3 border-b-thin">
                           <div className="flex items-center gap-2">

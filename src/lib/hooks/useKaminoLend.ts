@@ -63,7 +63,6 @@ export function useKaminoLend(): UseKaminoLendReturn {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + polling interval
     void refresh();
     intervalRef.current = setInterval(() => void refresh(), REFRESH_INTERVAL_MS);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };

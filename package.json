@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "audit:high": "npm audit --omit=dev --audit-level=high",
     "audit:gate": "node ./scripts/audit-gate.mjs",
