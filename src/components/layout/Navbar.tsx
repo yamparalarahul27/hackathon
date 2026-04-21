@@ -35,11 +35,22 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
   const [addressCopied, setAddressCopied] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const walletRef = useRef<HTMLDivElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
     if (href === '/cockpit') return pathname === '/cockpit';
     return pathname.startsWith(href);
   };
+
+  // Center the active item in the mobile nav rail on route change
+  useEffect(() => {
+    const container = mobileNavRef.current;
+    if (!container) return;
+    const active = container.querySelector<HTMLElement>('[data-active="true"]');
+    if (!active) return;
+    const offset = active.offsetLeft - (container.clientWidth - active.clientWidth) / 2;
+    container.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+  }, [pathname]);
 
   // Close dropdown on outside click or Escape
   useEffect(() => {
@@ -91,25 +102,29 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
             <span className="hidden lg:block font-satoshi font-bold text-sm text-[#11274d] mt-0.5">DeFi Triangle</span>
           </Link>
           <nav className="hidden lg:flex items-center gap-6">
-            {NAV_ITEMS.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'font-ibm-plex-sans text-xs font-normal leading-4 transition-colors duration-150 whitespace-nowrap',
-                  isActive(item.href) ? 'text-[#11274d]' : 'text-[#6a7282] hover:text-[#11274d]'
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map(item => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'font-ibm-plex-sans text-xs font-normal leading-4 transition-colors duration-150 whitespace-nowrap',
+                    active ? 'text-[#11274d]' : 'text-[#6a7282] hover:text-[#11274d]'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
         <div className="flex items-center gap-2">
           <div ref={settingsRef} className="relative">
             <button
               onClick={() => setSettingsMenuOpen((v) => !v)}
-              className="flex items-center justify-center h-7 px-2 rounded-sm transition-colors duration-150 bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0]"
+              className="flex items-center justify-center h-8 w-8 rounded-sm transition-colors duration-150 bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0]"
               aria-label="Settings menu"
               aria-haspopup="menu"
               aria-expanded={settingsMenuOpen}
@@ -119,7 +134,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
             {settingsMenuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-8 z-30 min-w-[180px] bg-white border border-[#cbd5e1] rounded-sm raised-frosted py-1"
+                className="absolute right-0 top-9 z-30 min-w-[180px] bg-white border border-[#cbd5e1] rounded-sm raised-frosted py-1"
               >
                 <button
                   role="menuitem"
@@ -148,7 +163,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
             <div ref={walletRef} className="relative">
               <button
                 onClick={() => setWalletMenuOpen((v) => !v)}
-                className="flex items-center gap-2 h-7 px-3 bg-white border border-[#cbd5e1] rounded-sm text-xs text-[#11274d] font-ibm-plex-sans hover:bg-[#e2e8f0] transition-colors"
+                className="flex items-center gap-2 h-8 px-3 bg-white border border-[#cbd5e1] rounded-sm text-xs text-[#11274d] font-ibm-plex-sans hover:bg-[#e2e8f0] transition-colors"
                 aria-label="Wallet menu"
                 aria-haspopup="menu"
                 aria-expanded={walletMenuOpen}
@@ -160,7 +175,7 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
               {walletMenuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-8 z-30 min-w-[240px] bg-white border border-[#cbd5e1] rounded-sm raised-frosted py-1"
+                  className="absolute right-0 top-9 z-30 min-w-[240px] bg-white border border-[#cbd5e1] rounded-sm raised-frosted py-1"
                 >
                   <div className="px-3 py-2 border-b border-[#e2e8f0]">
                     <div className="flex items-center gap-1.5 mb-1">
@@ -208,27 +223,42 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
               )}
             </div>
           ) : (
-            <Button variant="ghost-light" size="sm" className="border border-[#cbd5e1] bg-white hover:bg-[#e2e8f0]" onClick={onConnectWallet}>
+            <Button variant="ghost-light" size="sm" className="h-8 border border-[#cbd5e1] bg-white hover:bg-[#e2e8f0]" onClick={onConnectWallet}>
               <span className="hidden md:inline">Connect Wallet</span>
               <span className="md:hidden">Connect</span>
             </Button>
           )}
         </div>
       </div>
-      {/* Mobile nav */}
-      <div className="lg:hidden flex items-center gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide">
-        {NAV_ITEMS.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'font-ibm-plex-sans text-xs font-normal px-3 py-1.5 whitespace-nowrap transition-colors',
-              isActive(item.href) ? 'text-[#11274d]' : 'text-[#6a7282]'
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
+      {/* Mobile nav rail */}
+      <div className="lg:hidden relative">
+        {/* Edge fades — hint at horizontal scroll */}
+        <div className="pointer-events-none absolute left-0 top-0 bottom-2 w-6 bg-gradient-to-r from-[#f1f5f9] to-transparent z-10" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-6 bg-gradient-to-l from-[#f1f5f9] to-transparent z-10" />
+        <div
+          ref={mobileNavRef}
+          className="flex items-center gap-1 px-4 pb-2 overflow-x-auto scrollbar-hide scroll-smooth"
+        >
+          {NAV_ITEMS.map(item => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-active={active}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'font-ibm-plex-sans text-xs font-medium px-3 py-2 rounded-sm whitespace-nowrap transition-colors',
+                  active
+                    ? 'bg-white text-[#11274d] border border-[#cbd5e1]'
+                    : 'text-[#6a7282] hover:text-[#11274d]'
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </header>
   );
