@@ -73,7 +73,7 @@ export function DexAnalytics({ protocolName, trades, loading }: DexAnalyticsProp
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h2 className="font-display font-bold text-xl text-[#11274d]">{protocolName} Analytics</h2>
+          <h2 className="font-satoshi font-bold text-xl text-[#11274d]">{protocolName} Analytics</h2>
           <p className="text-sm text-[#6a7282] mt-1">Trade analytics and performance tracking</p>
         </div>
 

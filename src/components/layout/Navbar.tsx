@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/Button';
-import { Menu, Settings, Sliders, Plug, Copy, Check, ArrowLeftRight, LogOut, ChevronDown } from 'lucide-react';
+import { Settings, Sliders, Plug, Copy, Check, ArrowLeftRight, LogOut, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -213,9 +213,6 @@ export function Navbar({ walletConnected, walletAddress, onConnectWallet, onDisc
               <span className="md:hidden">Connect</span>
             </Button>
           )}
-          <button className="flex items-center justify-center h-7 px-2 rounded-sm transition-colors duration-150 bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0] lg:hidden">
-            <Menu size={14} />
-          </button>
         </div>
       </div>
       {/* Mobile nav */}

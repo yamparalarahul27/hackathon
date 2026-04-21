@@ -8,7 +8,7 @@ interface RpcErrorBannerProps {
 
 export function RpcErrorBanner({ message }: RpcErrorBannerProps) {
   return (
-    <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-3 flex items-center gap-3">
+    <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-sm px-4 py-3 flex items-center gap-3">
       <AlertTriangle size={16} className="text-[#EF4444] flex-shrink-0" />
       <div>
         <p className="text-sm font-ibm-plex-sans font-medium text-[#991B1B]">
