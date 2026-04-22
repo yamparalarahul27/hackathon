@@ -104,7 +104,7 @@ export function MarketTokenList({ refreshToken = 0, onSuccessfulFetch }: Props) 
 
     const base: Record<string, SecurityLevel | 'na'> = {};
     for (const token of tokens) base[token.address] = 'na';
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed placeholder map synchronously before streaming Birdeye safety scores
+     
     setSafetyByMint(base);
 
     (async () => {

@@ -49,7 +49,7 @@ export function DepositFlow({ preSelectedVaultAddress, vaults: vaultsProp }: Dep
     if (!selectedVault && preSelectedVaultAddress) {
       const match = vaults.find((v) => v.address === preSelectedVaultAddress);
       if (match) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- prop arrives after vaults fetch; sync is intentional
+         
         setSelectedVault(match);
         setStep('enter-amount');
       }

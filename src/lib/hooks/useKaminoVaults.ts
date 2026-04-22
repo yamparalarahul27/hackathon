@@ -119,7 +119,7 @@ export function useKaminoVaults(walletAddress: string | null): UseKaminoVaultsRe
   }, [walletAddress]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch on mount via memoized refresh
+     
     void refresh();
 
     intervalRef.current = setInterval(() => {
