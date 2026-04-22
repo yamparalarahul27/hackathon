@@ -7,8 +7,6 @@
  * into our DexTrade type.
  *
  * Pipeline: getSignaturesForAddress → getParsedTransaction → logsDecode → DexTrade[]
- *
- * References: github.com/yamparalarahul27/Deriverse
  */
 
 import { Connection, type ParsedTransactionWithMeta } from '@solana/web3.js';
