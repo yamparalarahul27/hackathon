@@ -36,9 +36,6 @@ export function BottomBar() {
             SOL {solPrice !== null ? `$${solPrice.toFixed(2)}` : '...'}
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="font-ibm-plex-sans text-xs text-[#94a3b8]">Design & Engineered by Yamparala Rahul</span>
-        </div>
       </div>
     </div>
   );
