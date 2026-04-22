@@ -6,7 +6,6 @@ import { BottomBar } from '@/components/layout/BottomBar';
 import { SettingsModal, applyThemeSettings } from '@/components/ui/SettingsModal';
 import { useWalletConnection } from '@/lib/hooks/useWalletConnection';
 import { trackWalletConnect } from '@/services/TorqueService';
-import { Agentation } from 'agentation';
 
 export default function CockpitLayout({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -36,7 +35,6 @@ export default function CockpitLayout({ children }: { children: React.ReactNode 
 
       <BottomBar />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <Agentation />
     </div>
   );
 }
