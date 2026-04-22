@@ -1,480 +1,734 @@
-# DESIGN.md — TBD Design System
+# Design System — DeFi Triangle / Y-Vault
 
-> Single source of truth for the TBD product design language.
-> Inspired by Asgard Finance's institutional DeFi aesthetic.
-> All AI agents and code generation must follow these specifications.
-
----
-
-## 1. Visual Theme & Atmosphere
-
-The design embodies a **"refined institutional DeFi terminal"** — a premium, trustworthy, and data-dense trading interface that communicates competence and authority without visual noise.
-
-**Key Characteristics:**
-- Deep navy darkness with generous breathing room between elements
-- Clean data presentation — financial numbers are the hero, not decorative elements
-- Light-on-dark modals and overlays create clear layering hierarchy
-- Rounded, approachable shape language softening the institutional density
-- Minimal borders — separation through spacing and subtle background shifts
-- Quiet confidence — no neon glows, no aggressive gradients, no visual gimmicks
-
-**Mood Words:** Institutional, clean, spacious, trustworthy, premium, precise, calm authority
-
-**Anti-Mood Words:** Flashy, neon, aggressive, cluttered, playful, gamified
+> Single source of truth for the DeFi Triangle product design language.
+> Authored to the [Stitch Design.md specification](https://stitch.withgoogle.com/docs/design-md/specification).
+> All AI agents, Stitch prompts, and code generation must follow these specifications.
+> Last audited against: `globals.css`, `Button.tsx`, `Card.tsx`, `Pill.tsx`, `Navbar.tsx`, `BottomBar.tsx`, `StatusDot.tsx`, `TokenIcon.tsx`
 
 ---
 
-## 2. Color Palette & Roles
+## Identity
 
-### Primary Backgrounds
-- **Deep Navy** (#0F1521) — Primary application background, the canvas everything sits on
-- **Elevated Surface** (#1A2332) — Cards, side panels, elevated containers; slightly lighter to create depth
-- **Panel Dark** (#151C28) — Alternative surface for dense data areas (chart backgrounds, table containers)
-- **Bottom Bar** (#0B0F18) — Deepest tone for persistent status bars and footers
+**Product name:** TBD (Y-Vault)
+**Visual theme:** Refined Institutional DeFi Terminal
+**Aesthetic:** A premium, data-dense trading interface that communicates competence and authority. Deep dark-navy hero sections bleed into a clean light-surface body — numbers are the hero, decoration is the enemy.
 
-### Light Surfaces (Modals & Overlays)
-- **Modal White** (#FFFFFF) — Modal backgrounds, search overlays, settings panels
-- **Modal Gray** (#F8F9FA) — Secondary modal surface for subtle sectioning
-- **Modal Border** (#E5E7EB) — Light borders within modal components
-
-### Accent & Interactive
-- **Primary Blue** (#3B7DDD) — Primary CTA buttons (Execute, active tabs, BUY actions), links
-- **Primary Blue Hover** (#2B6BC4) — Hover state for primary actions
-- **Primary Blue Subtle** (rgba(59, 125, 221, 0.12)) — Soft background tint for active/selected states
-
-### Semantic Colors
-- **Success Green** (#10B981) — Positive PnL, APY values, live indicators, long positions
-- **Success Green Bright** (#22C55E) — Higher emphasis positive values (large APY numbers)
-- **Danger Red** (#EF4444) — Negative PnL, price drops, short positions, errors
-- **Danger Red Soft** (#F87171) — Lower emphasis negative values
-- **Warning Amber** (#F59E0B) — Warnings, pending states, caution indicators
-- **Teal Banner** (#0D9373) — Promotional/info banners, special CTA backgrounds
-
-### Typography Colors
-- **Text Primary** (#FFFFFF) — Headings, key values, primary content on dark backgrounds
-- **Text Secondary** (#9CA3AF) — Labels, descriptions, nav items, supporting text
-- **Text Muted** (#6B7280) — Placeholders, disabled text, tertiary information
-- **Text Subtle** (#4B5563) — Barely visible hints, watermarks
-- **Text Dark** (#111827) — Primary text on light/modal backgrounds
-- **Text Dark Secondary** (#6B7280) — Secondary text on light/modal backgrounds
-
-### Borders & Dividers
-- **Border Subtle** (rgba(255, 255, 255, 0.08)) — Table rows, card edges on dark backgrounds
-- **Border Light** (rgba(255, 255, 255, 0.12)) — Input borders, more visible separation
-- **Border Active** (rgba(255, 255, 255, 0.20)) — Focus/hover state borders
-- **Border Modal** (#E5E7EB) — Borders within light modals
+**Mood words:** Institutional · Precise · Spacious · Trustworthy · Calm authority
+**Anti-mood words:** Flashy · Neon · Cluttered · Gamified · Playful
 
 ---
 
-## 3. Typography Rules
+## Color
 
-### Font Families
-- **Display/Headings:** Satoshi — a modern geometric sans-serif with distinctive character. Used for hero headlines, page titles, and display text.
-- **Body/UI:** IBM Plex Sans — clean, highly readable geometric sans-serif for all interface text, labels, buttons, descriptions.
-- **Data/Monospace:** IBM Plex Mono — financial figures, prices, APY values, percentages, wallet addresses, code.
+### Palette Naming Convention
 
-### Hierarchy & Weights
+The palette uses three named scales — **Frost** (blues), **Hela** (neutrals), **Loki** (greens) — plus semantic and state tokens.
 
-| Level | Font | Weight | Size | Letter-Spacing | Use |
-|-------|------|--------|------|----------------|-----|
-| Hero Display | Satoshi | 700 | 2.5-3rem (40-48px) | -0.02em | Landing headlines, feature titles |
-| Page Title (H1) | Satoshi | 700 | 1.75-2rem (28-32px) | -0.01em | Page headings |
-| Section Label | IBM Plex Sans | 600 | 0.75rem (12px) | 0.08em | Uppercase section dividers ("MOST EXECUTED CBP'S") |
-| Nav Item | IBM Plex Sans | 500 | 0.875rem (14px) | 0 | Navigation links |
-| Body | IBM Plex Sans | 400 | 0.875rem (14px) | 0 | General UI text, descriptions |
-| Body Small | IBM Plex Sans | 400 | 0.8125rem (13px) | 0 | Supporting text, footnotes |
-| Label | IBM Plex Sans | 500 | 0.75rem (12px) | 0 | Form labels, table headers |
-| Button | IBM Plex Sans | 600 | 0.875rem (14px) | 0.01em | Button text |
-| Data Large | IBM Plex Mono | 500 | 1.25-1.5rem (20-24px) | -0.01em | Hero financial numbers (APY, PnL) |
-| Data Medium | IBM Plex Mono | 500 | 0.875rem (14px) | 0 | Table values, prices |
-| Data Small | IBM Plex Mono | 400 | 0.75rem (12px) | 0 | Secondary data, timestamps |
+### Frost (Blues)
 
-### Spacing Principles
-- Body text line-height: 1.5 for readability
-- Data/numbers line-height: 1.2 for compact display
-- Headings line-height: 1.2-1.3
-- Uppercase labels always use expanded letter-spacing (0.05-0.08em)
+| Token | Value | Role |
+|---|---|---|
+| `--frost-200` | `#f1f5f9` | Page background (light body) |
+| `--frost-300` | `#cbd5e1` | Muted borders on light surfaces |
+| `--frost-400` | `#19549b` | Interactive blue, card gradient end |
+| `--frost-500` | `#11274d` | Deep blue surface, card gradient start |
+| `--frost-600` | `#091731` | Dark header surface |
+| `--frost-700` | `#030f1a` | Deepest navy (hero bottom) |
+
+### Hela (Neutrals)
+
+| Token | Value | Role |
+|---|---|---|
+| `--hela-600` | `#4c4c5b` | Muted text on dark surfaces |
+| `--hela-750` | `#1d2836` | Elevated card surface in dark contexts |
+| `--hela-800` | `#061322` | Deep panel background |
+| `--hela-900` | `#020e1a` | Absolute background floor |
+
+### Loki (Greens)
+
+| Token | Value | Role |
+|---|---|---|
+| `--loki-100` | `#e5f7f2` | Subtle success background |
+| `--loki-600` | `#0fa87a` | Success / positive PnL / live indicator |
+| `--loki-700` | `#157357` | Hover state for success actions |
+
+### Semantic Tokens
+
+| Token | Value | Role |
+|---|---|---|
+| `--main-bg` | `#f1f5f9` | Body page background |
+| `--ink` | `#212121` | Primary text on light surfaces |
+| `--muted` | `#6a7282` | Secondary / supporting text |
+| `--true-black` | `#111113` | Absolute black for borders and overlays |
+| `--green-main` | `#18df74` | High-emphasis positive (hero APY) |
+| `--danger` | `#ef4444` | Negative PnL, errors, short positions |
+| `--warning` | `#f59e0b` | Warnings, pending states |
+| `--cta-color` | `#3B7DDD` | Primary CTA (user-customisable via Settings) |
+
+### Customisable Tokens (Settings Modal)
+
+| Token | Default | Role |
+|---|---|---|
+| `--card-gradient-from` | `#091731` | Card gradient dark stop |
+| `--card-gradient-to` | `#19549b` | Card gradient light stop |
+| `--cta-color` | `#3B7DDD` | Button / link accent colour |
+
+### State Messaging Tokens
+
+| Variant | Background | Border | Text | Icon |
+|---|---|---|---|---|
+| Info | `#EFF6FF` | `#BFDBFE` | `#1D4ED8` | `#2563EB` |
+| Warning | `#FFFBEB` | `#FDE68A` | `#B45309` | `#D97706` |
+| Error | `#FEF2F2` | `#FECACA` | `#B91C1C` | `#DC2626` |
+
+State surface: `#FFFFFF` · State meta text: `#6B7280` · State divider: `#E5E7EB`
+
+### Dark Surface Overrides (Terminal / Trade Views)
+
+When rendered on dark surfaces use the following instead of the semantic tokens above:
+
+| Role | Value |
+|---|---|
+| Primary background | `#0F1521` |
+| Elevated card | `#1A2332` |
+| Dense panel | `#151C28` |
+| Bottom status bar | `#0B0F18` |
+| Border subtle | `rgba(255,255,255,0.08)` |
+| Border light | `rgba(255,255,255,0.12)` |
+| Border active | `rgba(255,255,255,0.20)` |
+| Text primary | `#FFFFFF` |
+| Text secondary | `#9CA3AF` |
+| Text muted | `#6B7280` |
+| Success | `#10B981` |
+| Success bright | `#22C55E` |
+| Danger | `#EF4444` |
+
+### Hero Gradient
+
+```css
+background: linear-gradient(
+  #000003,
+  #000036 37.9%,
+  #143f79 81.7%,
+  #496d93 110%,
+  #8cacc6 152.7%,
+  #b6d0dc 196.7%,
+  #fcffff 285%
+);
+```
+
+Used on the full-bleed landing hero section only.
 
 ---
 
-## 4. Component Stylings
+## Typography
 
-### Buttons
+### Font Stack
 
-**Primary CTA (Execute, BUY, Connect Wallet):**
-- Background: Primary Blue (#3B7DDD)
-- Text: White (#FFFFFF), IBM Plex Sans 600
-- Padding: 10px 20px (0.625rem 1.25rem)
-- Border-radius: 8px (0.5rem)
-- Hover: Darken to Primary Blue Hover (#2B6BC4), 200ms ease
-- Min-height: 40px for accessibility
+| Family | Source | Role |
+|---|---|---|
+| **Geist Mono** | Google Fonts | Hero display headings |
+| **Geist Pixel Square** | Self-hosted `/fonts/GeistPixel-Square.woff2` | Financial data (prices, APY, PnL) |
+| **IBM Plex Mono** | Google Fonts | Fallback data font, addresses |
+| **IBM Plex Sans** | Google Fonts | All UI labels, buttons, descriptions |
+| **Instrument Sans** | Google Fonts | Alternative UI sans |
+| **Inter** | Google Fonts | Body copy fallback |
 
-**Connect Wallet (Large):**
-- Background: Deep Navy (#1A2332) or dark surface
-- Text: White, IBM Plex Sans 600
-- Padding: 14px 24px
-- Border-radius: 12px (0.75rem)
-- Full-width within its container
-- Border: 1px solid Border Light
+**Font smoothing:** `antialiased` on all body text.
 
-**Secondary/Outlined:**
-- Background: Transparent
-- Border: 1px solid Border Light (rgba(255,255,255,0.12))
-- Text: Text Secondary (#9CA3AF)
-- Hover: Background rgba(255,255,255,0.05), text brightens to white
-- Border-radius: 8px
+### CSS Utility Classes
 
-**BUY Action:**
-- Background: Transparent
-- Border: 1px solid Success Green (#10B981)
-- Text: Success Green
-- Border-radius: 8px
-- Hover: Background rgba(16,185,129,0.08)
+```css
+.font-satoshi        /* Geist Mono → IBM Plex Mono fallback */
+.font-ibm-plex-sans  /* IBM Plex Sans → Inter fallback */
+.font-instrument     /* Instrument Sans → Inter fallback */
+```
 
-**SHORT SELL Action:**
-- Text: Text Muted (#6B7280)
-- No border, text-only with hover brightening
+### Type Scale
+
+| Class / Level | Font | Weight | Size (mobile → desktop) | Line-height | Letter-spacing | Use |
+|---|---|---|---|---|---|---|
+| Hero Display | Geist Mono | 700 | 2rem → 3rem | 1.2 | −0.02em | Landing headline |
+| Page Title (H1) | Geist Mono | 700 | 1.5rem → 2rem | 1.2 | −0.01em | Page headings |
+| `.label-section` | IBM Plex Sans | 600 | 0.6875rem | 1 | 0.1em | Dark-bg section dividers (uppercase) |
+| `.label-section-light` | IBM Plex Sans | 600 | 0.6875rem | 1 | 0.1em | Light-bg section dividers (uppercase) |
+| Nav Item | IBM Plex Sans | 500 | 0.875rem | 1.35 | 0 | Navigation links |
+| Body | Inter / IBM Plex Sans | 400 | 0.875rem | 1.5 | 0 | Descriptions, general UI |
+| Button | IBM Plex Sans | 600 | 0.875rem | 1 | 0.01em | Button labels |
+| `.data-lg` | Geist Pixel Square | 400 | 1.125rem → 1.875rem | 1.2 | 0 | Hero financial figures |
+| `.data-md` | Geist Pixel Square | 400 | 0.875rem | 1.2 | 0 | Table values, prices |
+| `.data-sm` | Geist Pixel Square | 400 | 0.75rem | 1.2 | 0 | Secondary data, timestamps |
+| State notice text | IBM Plex Sans | 500 | 0.75rem | 1.333 | 0 | State/alert messages |
+| State severity label | IBM Plex Sans | 600 | 0.625rem | 1.2 | 0.02em | Alert severity badge |
+
+### Rules
+
+- All financial numbers use **Geist Pixel Square** (fallback: IBM Plex Mono). Never a serif or variable-weight font.
+- Section labels are always **uppercase with letter-spacing ≥ 0.08em**.
+- Dark surface labels use `rgba(255,255,255,0.4)`.
+- Light surface labels use `rgba(17,17,19,0.5)`.
+- Never use serif fonts anywhere in the UI.
+
+---
+
+## Spacing
+
+**Base unit:** 8px
+
+| Step | Value | Name | Use |
+|---|---|---|---|
+| 1 | 4px | Micro | Icon-to-text gap, inline |
+| 2 | 8px | Tight | Related elements within a group |
+| 3 | 12px | Compact | Form field gaps, tight card padding |
+| 4 | 16px | Standard | Component spacing, card padding |
+| 5 | 24px | Comfortable | Section padding, modal padding |
+| 6 | 32px | Spacious | Between major sections |
+| 7 | 48px | Generous | Hero section padding, page-level |
+
+**Border radius scale:**
+- `4px` — icon boxes, segmented control segments
+- `6px` — state notice, inner segments
+- `8px` — cards, buttons, inputs, pills (default)
+- `12px` — large modals, connect-wallet button
+- `9999px` — filter pills, badges
+
+---
+
+## Components
+
+### Button
+
+> Source: `src/components/ui/Button.tsx`
+> Base classes: `font-instrument font-semibold rounded-sm transition-all duration-150 inline-flex items-center justify-center gap-2`
+> Disabled: `opacity-40 cursor-not-allowed`
+
+**⚠️ Important:** Buttons use `rounded-sm` (2px radius) and `Instrument Sans` — NOT `rounded` (8px) or IBM Plex Sans.
+
+| Variant | Background | Text | Hover |
+|---|---|---|---|
+| `primary` | `#19549b` (frost-400) | white | `#143f78` |
+| `execute` | `#19549b` (frost-400) | white | `#143f78` |
+| `secondary` | `#FFFFFF` + `border border-[#cbd5e1]` | `#11274d` | bg `#f1f5f9` |
+| `ghost-dark` | `rgba(255,255,255,0.10)` | white | bg `rgba(255,255,255,0.20)` |
+| `ghost-light` | transparent | `#6a7282` | text `#212121`, bg `#f1f5f9` |
+
+| Size | Padding | Font size |
+|---|---|---|
+| `sm` | `6px 12px` | 12px |
+| `md` | `8px 16px` | 14px |
+| `lg` | `10px 20px` | 14px |
+
+**Transition:** `all 150ms` (not 200ms)
+
+**Connect Wallet button (navbar):**
+- Uses `ghost-light` variant + explicit `border border-[#cbd5e1] bg-white hover:bg-[#e2e8f0]`
+- Height: `28px` (h-7), padding: `0 12px`
+
+---
 
 ### Pills / Filter Tabs
 
-**Active State:**
-- Background: Primary Blue (#3B7DDD)
-- Text: White
-- Border-radius: 9999px (fully rounded pill)
-- Padding: 8px 16px
+> Source: `src/components/ui/Pill.tsx`
+> Base: `rounded-sm` (2px) — NOT fully rounded pills
+> Font: IBM Plex Sans medium
+> Transition: `all 150ms`
 
-**Inactive State:**
-- Background: Transparent
-- Border: 1px solid Border Light
-- Text: Text Secondary
-- Border-radius: 9999px
-- Hover: Border brightens, text brightens
+**Active:**
+- Background: `#19549b` (frost-400)
+- Text: white
+- Shadow: `raised-frosted-active` → `0 2px 8px rgba(25,84,155,0.25)`
 
-**Leverage Badge (9.00x, 4.50x):**
-- Background: Primary Blue Subtle
-- Text: Primary Blue or white
-- Border-radius: 9999px
-- Padding: 2px 8px
-- Font: IBM Plex Mono, 12px, weight 500
+**Inactive:**
+- Background: `#FFFFFF`
+- Text: `rgba(17,39,77,0.50)` (frost-500 at 50%)
+- Shadow: `raised-frosted-tab` → `0 1px 2px rgba(0,0,0,0.05)`
+- Hover text: `rgba(17,39,77,0.70)`
+
+| Size | Height | Padding | Font size |
+|---|---|---|---|
+| Mobile | `36px` (h-9) | `6px 16px` | 12px |
+| Desktop (lg+) | `40px` (h-10) | `8px 18px` | 14px |
+
+**Leverage / Status Badge (inline):**
+- Background: `#f1f5f9`
+- Text: `#6a7282`, 9px, uppercase, `tracking-wider`
+- Border-radius: `rounded-sm`
+- Padding: `2px 6px`
+- Example: "Soon" badge in navbar disabled items
+
+---
 
 ### Cards & Containers
 
-- Background: Elevated Surface (#1A2332)
-- Border: 1px solid Border Subtle (rgba(255,255,255,0.08))
-- Border-radius: 8px (0.5rem)
-- Padding: 16-24px (1-1.5rem)
-- No shadow by default (depth via background color)
-- Hover: Border brightens to Border Active, 200ms ease
+**Light surface (body):**
+- Background: `#FFFFFF`
+- Border: `1px solid rgba(17,17,19,0.08)`
+- Border-radius: `8px`
+- Padding: `16–24px`
+- Shadow (rest): `0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)`
+- Shadow (hover): `0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)`
+- Shadow (active): `0 2px 8px rgba(25,84,155,0.25)`
+
+**Dark surface (terminal):**
+- Background: `#1A2332`
+- Border: `1px solid rgba(255,255,255,0.08)`
+- Border-radius: `8px`
+- No shadow (depth via background shift only)
+- Hover border: `rgba(255,255,255,0.20)`, `200ms ease`
+
+**Gradient card (customisable):**
+```css
+background: linear-gradient(var(--card-gradient-from), var(--card-gradient-to));
+```
+
+**Card footer tint:**
+```css
+background-color: rgba(15, 23, 42, 0.03); /* .bg-frost-tint */
+```
+
+---
 
 ### Inputs & Form Controls
 
-**Text Input:**
-- Background: Transparent or rgba(255,255,255,0.03)
-- Border: 1px solid Border Light
-- Border-radius: 8px
-- Padding: 10px 14px
-- Text: White (IBM Plex Sans 400, 14px)
-- Placeholder: Text Muted (#6B7280)
-- Focus: Border brightens to rgba(255,255,255,0.25)
+**Text / Search Input:**
+- Background: `transparent` or `rgba(255,255,255,0.03)`
+- Border: `1px solid rgba(255,255,255,0.12)`
+- Border-radius: `8px`
+- Padding: `10px 14px`
+- Text: white, IBM Plex Sans 400, 14px
+- Placeholder: `#6B7280`
+- Focus border: `rgba(255,255,255,0.25)`
 
-**Search Input:**
-- Same as text input with left search icon (Text Muted color)
-- Border-radius: 8px
-- Icon: 16px, Text Muted color
+**Segmented Control (e.g. Slippage):**
+- Container: `rgba(255,255,255,0.05)`, border-radius `8px`
+- Active segment: `#1A2332`, text white
+- Inactive segment: transparent, text `#9CA3AF`
+- Segment border-radius: `6px`
+- Padding per segment: `8px 12px`
 
-**Segmented Control (Slippage: 0.01% | 0.1% | 0.5% | 1.0%):**
-- Container: Background rgba(255,255,255,0.05), border-radius 8px
-- Active segment: Background Deep Navy (#1A2332) or dark, text white
-- Inactive: Transparent, text Text Secondary
-- Individual segment border-radius: 6px
-- Padding: 8px 12px per segment
-
-**Slider (Credit Line 1x-9x):**
-- Track: rgba(255,255,255,0.1), height 4px, border-radius 2px
-- Filled: Primary Blue (#3B7DDD)
-- Thumb: White circle, 16px, with subtle shadow
-- Step markers: Small dots at intervals
+**Slider (Leverage 1x–9x):**
+- Track: `rgba(255,255,255,0.1)`, height `4px`
+- Filled: `#3B7DDD`
+- Thumb: white circle, `16px`
 
 **Toggle Switch:**
-- Active: Teal/Primary Blue background
-- Inactive: Gray track
-- Thumb: White circle
-- Size: 20px height
+- Active: `--cta-color` or teal track
+- Inactive: gray track
+- Thumb: white circle, height `20px`
+
+---
+
+### State Notice
+
+```
+.state-notice           padding: 10px 12px; border-radius: 6px; border: 1px solid;
+.state-info             bg #EFF6FF, border #BFDBFE
+.state-warning          bg #FFFBEB, border #FDE68A
+.state-error            bg #FEF2F2, border #FECACA
+.state-notice-text      IBM Plex Sans 500, 12px/16px
+.state-severity-label   IBM Plex Sans 600, 10px/12px, tracking 0.02em
+.state-stale-badge      pill, warning colours, 10px/12px 600
+.state-action-btn       #19549B, IBM Plex Sans 500, 12px; hover #143F78
+```
+
+---
 
 ### Navigation (Top Bar)
 
-- Background: Deep Navy (#0F1521) with subtle bottom border
-- Height: ~56-64px
-- Logo: Left-aligned, brand icon + wordmark
-- Nav items: IBM Plex Sans 500, 14px, Text Secondary color
-- Active nav item: Text Primary (white), may have underline or bold
-- Right side: Notification bell icon, Connect Wallet button, hamburger menu
-- Padding: 0 24px (desktop), 0 16px (mobile)
+> Source: `src/components/layout/Navbar.tsx`
+
+**Container:**
+- `sticky top-0 z-20`
+- Background: `rgba(241,245,249,0.95)` (`bg-[#f1f5f9]/95`) + `backdrop-blur-lg`
+- Border: `border-b border-[#cbd5e1]`
+- Height: **48px** (h-12) — not 56–64px
+- Max-width: `1400px`, centered
+- Padding: `0 16px` mobile, `0 24px` desktop (lg+)
+
+**Logo area (left):**
+- Logo `/logo.svg` — `24×24px`
+- Wordmark: Geist Mono (`.font-satoshi`) bold 14px `#11274d` — hidden on mobile, visible `lg+`
+
+**Nav items (desktop, hidden on mobile):**
+- Font: IBM Plex Sans, `12px`, weight `400`
+- Inactive: `#6a7282` → `#11274d` on hover
+- Active: `#11274d`
+- Transition: `colors 150ms`
+- Gap between items: `24px`
+
+**Nav items (mobile):**
+- Horizontal scroll row below main bar (`pb-2`, `overflow-x-auto scrollbar-hide`)
+- Same font as desktop but no hover (touch)
+- Visible only below `lg` breakpoint
+
+**Right side controls:**
+
+| Control | Style |
+|---|---|
+| Settings button | `h-7 px-2 rounded-sm bg-white border border-[#cbd5e1] text-[#11274d] hover:bg-[#e2e8f0]` |
+| Connect Wallet | `Button ghost-light sm` + `border border-[#cbd5e1] bg-white hover:bg-[#e2e8f0]` |
+| Hamburger | Same as settings button, `lg:hidden` |
+| Wallet chip (connected) | `h-7 px-3 bg-white border border-[#cbd5e1] rounded-sm text-xs IBM Plex Sans hover:bg-[#e2e8f0]` |
+
+---
+
+### Dropdown Menus
+
+> Used in: Settings menu, Wallet menu (Navbar)
+
+- Background: `#FFFFFF`
+- Border: `1px solid #cbd5e1`
+- Border-radius: `rounded-sm` (2px)
+- Shadow: `raised-frosted`
+- `z-30`, `min-w-[180px]` (settings) / `min-w-[240px]` (wallet)
+- Position: `absolute right-0 top-8`
+- Padding: `py-1`
+
+**Menu item:**
+- `w-full flex items-center gap-2 px-3 py-2`
+- Font: IBM Plex Sans, 12px, `#11274d`
+- Hover: `bg-[#f1f5f9]`, transition `colors`
+- Icon: 12px, `#6a7282`
+
+**Wallet chip (connected state):**
+- Green dot (`w-1.5 h-1.5 rounded-full bg-[#0fa87a]`) + truncated address (`0x1234...5678`) + `ChevronDown` icon
+- Address label: `font-mono text-xs text-[#11274d]`
+- "Connected" badge header inside dropdown: `text-[10px] uppercase tracking-wider text-[#6a7282]`
+- Full address: `font-mono text-[11px] text-[#11274d] break-all`
+
+**Dismiss:** Click outside or `Escape` key
+
+---
+
+### Tables
+
+**Dark background:**
+- Header: `#6B7280`, uppercase, IBM Plex Sans 500, 12px, `letter-spacing: 0.05em`
+- Row border: `1px solid rgba(255,255,255,0.08)`
+- Row hover: `rgba(255,255,255,0.02)`
+- Cell padding: `12–16px` vertical, `16px` horizontal
+- Numbers: Geist Pixel Square / IBM Plex Mono
+- Text cells: IBM Plex Sans
+
+**Light modal:**
+- Header: `#6B7280`, uppercase, 12px
+- Row border: `1px solid #E5E7EB`
+- Row hover: `rgba(0,0,0,0.02)`
+
+---
 
 ### Modals & Overlays
 
-**Modal Container:**
-- Background: Modal White (#FFFFFF)
-- Border-radius: 12-16px (0.75-1rem)
-- Padding: 24px
-- Max-width: 480px (settings), 640px (search/pair selector)
-- Shadow: 0 25px 50px rgba(0,0,0,0.5) (heavy shadow on dark backdrop)
+- Background: `#FFFFFF`
+- Border-radius: `12–16px`
+- Padding: `24px`
+- Max-width: `480px` (settings), `640px` (pair selector)
+- Shadow: `0 25px 50px rgba(0,0,0,0.5)`
+- Backdrop: `rgba(0,0,0,0.6)`, `backdrop-filter: blur(4px)`
+- Title: `#111827`, IBM Plex Sans 600, 18px
+- Body text: `#111827` primary, `#6B7280` secondary
+- Dividers: `#E5E7EB`
+- Mobile: full-width bottom-sheet, border-radius top only
 
-**Modal Backdrop:**
-- Background: rgba(0,0,0,0.6)
-- Backdrop-filter: blur(4px)
+---
 
-**Modal Header:**
-- Title: Text Dark (#111827), IBM Plex Sans 600, 18px
-- Close button: X icon, top-right, Text Dark Secondary
+### Frosted Icon Box
 
-**Modal Content:**
-- Text: Text Dark (#111827) for primary, Text Dark Secondary (#6B7280) for descriptions
-- Dividers: Border Modal (#E5E7EB)
-- Accordions: Chevron icons, clean section separation
+```css
+.frosted-icon-box {
+  width: 2rem; height: 2rem; border-radius: 0.25rem;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.70);
+}
+```
+Icon size: `1rem`.
 
-**Search/Pair Selector Modal:**
-- Search input at top with icon
-- Table below: sortable columns with hover rows
-- Favorite star icons (left side)
-- Clean alternating row hover: rgba(0,0,0,0.02)
-
-### Tables
-
-**Dark Background Tables (main app):**
-- Header: Text Muted (#6B7280), uppercase, IBM Plex Sans 500, 12px, letter-spacing 0.05em
-- Rows: Border-bottom 1px solid Border Subtle
-- Row hover: rgba(255,255,255,0.02)
-- Cell padding: 12-16px vertical, 16px horizontal
-- Values: IBM Plex Mono for numbers, IBM Plex Sans for text
-
-**Light Background Tables (modals):**
-- Header: Text Dark Secondary, uppercase, 12px
-- Rows: Border-bottom 1px solid Modal Border
-- Row hover: rgba(0,0,0,0.02)
-
-### Bottom Status Bar
-
-- Background: Bottom Bar (#0B0F18)
-- Height: ~36px
-- Left: Green dot + "Live" label, SOL price with hamburger icon
-- Right: Links (Book a call, Docs), social icons
-- Text: IBM Plex Sans 400, 12-13px, Text Secondary
-- Sticky to bottom of viewport
+---
 
 ### Token Icons
 
-- Size: 24-28px (table rows), 32px (selected pair)
-- Shape: Circular
-- Stacking: Overlapping with -4px margin for pairs
-- Fallback: First 2-3 letters of symbol on colored circle
+> Source: `src/components/ui/TokenIcon.tsx`
+
+| Size prop | Class | Pixels |
+|---|---|---|
+| `sm` | `w-5 h-5` | 20×20 |
+| `md` (default) | `w-6 h-6` | 24×24 |
+| `lg` | `w-8 h-8` | 32×32 |
+
+- Shape: `rounded-full object-cover shrink-0`
+- Source: Solana token-list CDN via `getTokenIcon(mint, symbol)`
+- Fallback: `handleIconError` replaces with avatar URL
+
+**Token Pair (`TokenPairIcons`):**
+- Wrapper: `flex -space-x-1` (4px overlap)
+- Each icon: `border-2 border-white` (white separator ring)
+
+### StatusDot
+
+> Source: `src/components/ui/StatusDot.tsx`
+
+- Size: `w-1.5 h-1.5` (6×6px), `rounded-full`
+- Wrapper: `relative inline-flex`
+
+| Variant | Color |
+|---|---|
+| `live` | `#0fa87a` (loki-600) |
+| `success` | `#0fa87a` (loki-600) |
+| `danger` | `#ef4444` |
+| `warning` | `#f59e0b` |
+
+**Pulse mode** (`pulse={true}`):
+- Adds `absolute` behind-dot ring: `animate-ping opacity-75` in same color
+- Use sparingly — only for "live" real-time indicators
+
+---
+
+### Bottom Status Bar
+
+> Source: `src/components/layout/BottomBar.tsx`
+
+**⚠️ Correction:** Bottom bar is **light**, not dark.
+
+- `fixed bottom-0 left-0 right-0 z-40`
+- Background: `rgba(255,255,255,0.95)` + `backdrop-blur`
+- Border: `border-t border-[#cbd5e1]`
+- Height: `36px` (h-9)
+- Max-width: `1400px`, centered, padding `0 16px` / `0 24px` desktop
+
+**Left side:**
+- `StatusDot` (live, no pulse) + "Live" label — IBM Plex Sans 12px `#6a7282`
+- SOL price — `font-mono text-xs text-[#6a7282]`, fetched from Binance every 30s, shows `...` while loading
+
+**Right side:**
+- "Design & Engineered by Yamparala Rahul" — IBM Plex Sans 12px `#94a3b8`
+
+---
 
 ### Banner / CTA Strip
 
-- Background: Linear gradient from Teal Banner (#0D9373) to slightly darker
-- Text: White, IBM Plex Sans 500, 14px
-- Icon: Left-aligned emoji or icon
-- Border-radius: 8px
-- Padding: 12px 16px
+- Background: `linear-gradient(#0D9373, <darker>)`
+- Text: white, IBM Plex Sans 500, 14px
+- Border-radius: `8px`
+- Padding: `12px 16px`
+- Left: emoji or icon
 
 ---
 
-## 5. Layout Principles
+## Layout
 
-### Grid & Structure
-- **Max content width:** 1400px, centered
-- **Page padding:** 24px desktop, 16px tablet, 12px mobile
-- **Grid system:** CSS Grid / Flexbox, no rigid column count
-- **Trade layout:** 70/30 split (chart area / order panel), collapsible on mobile
+### Page Structure
 
-### Spacing Scale (8px base unit)
-- **4px** — Micro: icon-to-text gaps, inline spacing
-- **8px** — Tight: related elements within a group
-- **12px** — Compact: form field gaps, tight card padding
-- **16px** — Standard: component spacing, card padding
-- **24px** — Comfortable: section padding, modal padding
-- **32px** — Spacious: between major sections
-- **48px** — Generous: hero section padding, page-level separation
-
-### Content Density
-- **Dashboard/Invest page:** Medium density — generous spacing, scannable
-- **Trade terminal:** High density — maximize data visibility, compact spacing
-- **Modals/Settings:** Low density — generous whitespace, focused attention
-
----
-
-## 6. Depth & Elevation
-
-### Surface Hierarchy (darkest to lightest)
-1. **Layer 0 — Bottom Bar:** #0B0F18 (deepest)
-2. **Layer 1 — Page Background:** #0F1521 (main canvas)
-3. **Layer 2 — Elevated Surface:** #1A2332 (cards, panels, right sidebar)
-4. **Layer 3 — Active Element:** rgba(255,255,255,0.05) (hovered cards, active inputs)
-5. **Layer 4 — Modal Backdrop:** rgba(0,0,0,0.6) with blur
-6. **Layer 5 — Modal Surface:** #FFFFFF (floating modals, overlays)
-
-### Shadow Strategy
-- **No shadows on dark surfaces** — depth communicated purely through background color shifts
-- **Heavy shadow on modals** — `0 25px 50px rgba(0,0,0,0.5)` to lift white modals off dark background
-- **Subtle shadow on dropdowns** — `0 4px 12px rgba(0,0,0,0.3)`
-- Never use colored glows or neon shadows
-
----
-
-## 7. Do's and Don'ts
-
-### Do
-- Use background color shifts for depth (not shadows on dark surfaces)
-- Keep numbers in monospace (IBM Plex Mono) — always
-- Use fully-rounded pills for filter tabs and badges
-- Use 8px border-radius for cards, buttons, inputs
-- Use white modals on dark backdrop for clear layer separation
-- Keep uppercase labels with expanded letter-spacing for section dividers
-- Show green for positive financial values, red for negative — always
-- Maintain generous padding (16-24px) inside containers
-
-### Don't
-- Don't use `border-radius: 0` (rounded-none) — everything is rounded
-- Don't use neon glows, text shadows, or colorful drop shadows
-- Don't use glassmorphism/backdrop-blur on cards (reserve blur for modal backdrops only)
-- Don't use decorative corner accents or shine effects
-- Don't use pixel/bitmap fonts — only the three specified font families
-- Don't use gradients on cards or buttons (flat colors only, except banners)
-- Don't put borders on everything — use them sparingly, most separation is through spacing
-- Don't use serif fonts anywhere in the UI
-- Don't use colored backgrounds for table rows (no alternating stripe pattern)
-
----
-
-## 8. Responsive Behavior
+- **Split layout:** dark gradient hero header → light `#f1f5f9` body
+- **Max content width:** `1400px`, centered
+- **Page padding:** `24px` desktop · `16px` tablet · `12px` mobile
+- **Trade terminal:** `70/30` split — chart left, order panel right
 
 ### Breakpoints
-- **Mobile:** < 640px (sm)
-- **Tablet:** 640-1024px (md)
-- **Desktop:** 1024-1400px (lg)
-- **Wide:** > 1400px (xl)
 
-### Navigation
-- **Desktop (lg+):** Horizontal top nav with all items visible
-- **Tablet (md):** Horizontal top nav, items may compress
-- **Mobile (sm):** Hamburger menu, full-screen overlay menu
+| Name | Width | Behaviour |
+|---|---|---|
+| Mobile | `< 640px` | Single column, hamburger nav, bottom-sheet modals |
+| Tablet | `640–1024px` | Stacked layouts, compressed nav |
+| Desktop | `1024–1400px` | Full layouts, horizontal nav |
+| Wide | `> 1400px` | Capped at 1400px content width |
 
-### Trade Layout
-- **Desktop:** 70/30 split — chart left, order panel right
-- **Tablet:** Stack — chart on top, order panel below (full width)
-- **Mobile:** Stack — chart on top (reduced height), order panel below
+### Content Density
 
-### Tables
-- **Desktop:** Full columns visible
-- **Tablet:** Hide less critical columns (24h Vol, Borrow Rate) with `hidden md:table-cell`
-- **Mobile:** Horizontal scroll with visual indicator, or card layout for key data
-
-### Modals
-- **Desktop:** Centered, max-width constrained
-- **Mobile:** Full-width, bottom-sheet pattern (slides up from bottom), border-radius only on top
+| Context | Density | Notes |
+|---|---|---|
+| Dashboard / Invest | Medium | Generous spacing, scannable |
+| Trade Terminal | High | Maximise data, compact |
+| Modals / Settings | Low | Generous whitespace, focused |
 
 ### Touch Targets
-- Minimum 44px height for all interactive elements on mobile
-- 48px recommended for primary CTAs on mobile
 
-### Typography Scaling
-- Hero display: 3rem desktop → 2rem mobile
-- Page titles: 2rem desktop → 1.5rem mobile
-- Body/data: No scaling needed (14px works across all sizes)
+- Minimum `44px` height for all interactive elements on mobile
+- `48px` recommended for primary CTAs
 
 ---
 
-## 9. Agent Prompt Guide
+## Depth & Elevation
 
-### Quick Color Reference
-When generating UI code, use these Tailwind-compatible tokens:
+### Surface Hierarchy (dark-first)
 
-```
-Background:        bg-[#0F1521]
-Surface:           bg-[#1A2332]
-Panel:             bg-[#151C28]
-Bottom bar:        bg-[#0B0F18]
+| Layer | Token / Value | Role |
+|---|---|---|
+| 0 | `#0B0F18` | Bottom status bar (floor) |
+| 1 | `#0F1521` / `#030f1a` | Page background |
+| 2 | `#1A2332` / `#1d2836` | Cards, side panels |
+| 3 | `rgba(255,255,255,0.05)` | Hovered cards, active inputs |
+| 4 | `rgba(0,0,0,0.6) + blur(4px)` | Modal backdrop |
+| 5 | `#FFFFFF` | Modals, overlays |
 
-Modal bg:          bg-white
-Modal border:      border-[#E5E7EB]
+### Shadow Rules
 
-Primary CTA:       bg-[#3B7DDD] hover:bg-[#2B6BC4] text-white
-Success:           text-[#10B981]
-Danger:            text-[#EF4444]
-Banner teal:       bg-[#0D9373]
+| Class | Value | Use |
+|---|---|---|
+| `.raised-frosted` | `0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)` | Default light card |
+| `.raised-frosted:hover` | `0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)` | Hovered light card |
+| `.raised-frosted-active` | `0 2px 8px rgba(25,84,155,0.25)` | Active/selected state |
+| `.raised-frosted-tab` | `0 1px 2px rgba(0,0,0,0.05)` | Pill inactive state |
+| Modal on dark | `0 25px 50px rgba(0,0,0,0.50)` | White modal over dark backdrop |
 
-Text primary:      text-white
-Text secondary:    text-[#9CA3AF]
-Text muted:        text-[#6B7280]
-Text dark (modal): text-[#111827]
-
-Border subtle:     border-white/8
-Border light:      border-white/12
-Border active:     border-white/20
-```
-
-### Font Application
-```
-Hero headings:     font-satoshi font-bold text-[2.5rem]
-Page titles:       font-satoshi font-bold text-[1.75rem]
-Section labels:    font-['IBM_Plex_Sans'] font-semibold text-xs uppercase tracking-widest
-Body text:         font-['IBM_Plex_Sans'] text-sm
-Buttons:           font-['IBM_Plex_Sans'] font-semibold text-sm
-Financial data:    font-['IBM_Plex_Mono'] font-medium
-```
-
-### Component Prompts
-
-**Creating a data table:**
-"Create a table with dark background (#1A2332), uppercase gray headers in IBM Plex Sans 12px with wide tracking, IBM Plex Mono for numerical values, subtle border-bottom on rows (white/8), and row hover at white/2. Green for positive values, red for negative."
-
-**Creating a modal:**
-"Create a white-background modal (#FFFFFF) with 12px border-radius, 24px padding, heavy shadow (0 25px 50px rgba(0,0,0,0.5)), over a dark backdrop (black/60 with 4px blur). Title in dark text (#111827) 18px semibold, close X button top-right."
-
-**Creating a CTA button:**
-"Create a rounded button (8px radius) with #3B7DDD background, white text in IBM Plex Sans 600 14px, 10px 20px padding, hover darkens to #2B6BC4 with 200ms ease transition."
-
-**Creating filter pills:**
-"Create fully-rounded pill tabs. Active: #3B7DDD background, white text. Inactive: transparent with white/12 border, #9CA3AF text. Hover inactive: border brightens, text brightens. 8px 16px padding."
-
-**Creating the trade layout:**
-"Create a 70/30 responsive split. Left: chart area with #151C28 background. Right: order panel with #1A2332 background and white/8 left border. Collapses to stacked on mobile."
+- **Dark surfaces:** no shadows — depth via background colour shift only
+- Never use coloured glows or neon shadows
 
 ---
 
-## Appendix: Font Loading
+## Motion
+
+| Interaction | Duration | Easing | Property |
+|---|---|---|---|
+| Button / Pill hover | **`150ms`** | `ease` | all (background, color, border) |
+| Nav item color | `150ms` | — | color |
+| Card hover (interactive) | `150ms` | `ease-in-out` | all |
+| `.animate-fade-up` | `400ms` | `ease-out` | opacity, transform (Y +8px → 0) |
+| Active card press | — | — | `scale(0.98)` |
+| Active CTA press (landing) | — | `200ms` | `scale(0.97)` |
+| Chevron rotate (dropdown) | — | — | `rotate-180` on open |
+| Modal entry | `300ms` | `ease-out` | opacity, transform |
+
+**Note:** The standard transition is `150ms` across all interactive UI components — the old doc incorrectly stated `200ms`.
+
+### `fade-up` keyframe
+```css
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+```
+
+**Rules:**
+- Reserve `backdrop-filter: blur()` for modal backdrops only — never on cards
+- No shine, sweep, or parallax effects
+- No looping animations on data elements
+
+---
+
+## Scrollbar
+
+```css
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--main-bg); }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.10); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
+.scrollbar-hide            { scrollbar-width: none; }
+```
+
+---
+
+## Do's & Don'ts
+
+### Do ✅
+- Use background-color shifts for depth on dark surfaces (not shadows)
+- Keep all financial numbers in **Geist Pixel Square** or IBM Plex Mono
+- Use `rounded-sm` (2px) on buttons, pills, cards, inputs — it is the system default radius
+- Use `#19549b` (frost-400) as the primary interactive blue on light surfaces
+- Use white modals over dark blurred backdrops for clear layer separation
+- Show green (`#0fa87a` / `#18df74`) for positive values, red (`#ef4444`) for negative — always
+- Use 0.08–0.10em letter-spacing on all uppercase section labels
+- Keep a minimum `44px` touch target on mobile
+- Use `150ms` for all hover/active transitions
+
+### Don't ❌
+- Don't use `border-radius: 0` — minimum is `rounded-sm` (2px)
+- Don't use `rounded-full` (9999px) on buttons or pills — that's for status dots only
+- Don't use neon glows, coloured shadows, or text shadows
+- Don't use `backdrop-filter: blur()` on cards (Navbar and BottomBar use it — but not data cards)
+- Don't use decorative corner accents or shine/sweep animations
+- Don't use serif fonts anywhere
+- Don't use gradients on cards or buttons (flat colours only, except banners and hero)
+- Don't alternate table row background colours
+- Don't override `--cta-color` in component code — it's user-controlled
+- Don't use `#3B7DDD` as the primary blue on **light surfaces** — that's for dark-terminal context; use `#19549b` on light backgrounds
+
+---
+
+## Font Loading
 
 ```html
-<!-- IBM Plex Sans + Mono from Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
-<!-- Satoshi — free from Indian Type Foundry, self-hosted -->
-<!-- Download from https://www.fontshare.com/fonts/satoshi -->
-<!-- Place .woff2 files in /public/fonts/ and load via @font-face in globals.css -->
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 ```
 
 ```css
+/* Self-hosted: place .woff2 in /public/fonts/ */
 @font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-family: 'Geist Pixel Square';
+  src: url('/fonts/GeistPixel-Square.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 ```
+
+---
+
+## Quick Reference for AI Agents
+
+### Colour Tokens (Tailwind arbitrary values)
+
+```
+/* Light body */
+bg-[#f1f5f9]          /* page background */
+text-[#212121]        /* body text */
+text-[#6a7282]        /* muted text */
+
+/* Dark terminal */
+bg-[#0F1521]          /* page bg */
+bg-[#1A2332]          /* surface / card */
+bg-[#151C28]          /* dense panel */
+bg-[#0B0F18]          /* status bar */
+
+/* Accents */
+bg-[#3B7DDD] hover:bg-[#2B6BC4] text-white   /* primary CTA */
+text-[#10B981]        /* success / positive */
+text-[#18df74]        /* success bright (hero) */
+text-[#ef4444]        /* danger / negative */
+text-[#f59e0b]        /* warning */
+
+/* Borders */
+border-white/[0.08]   /* subtle */
+border-white/[0.12]   /* light */
+border-white/[0.20]   /* active */
+```
+
+### Font Tokens
+
+```
+/* Hero numbers */
+font-['Geist_Pixel_Square','IBM_Plex_Mono',monospace]
+
+/* Headings */
+font-['Geist_Mono','IBM_Plex_Mono',monospace] font-bold
+
+/* UI / Labels */
+font-['IBM_Plex_Sans','Inter',sans-serif]
+
+/* Section labels */
+font-['IBM_Plex_Sans'] font-semibold text-[11px] uppercase tracking-[0.1em]
+```
+
+### Component Prompt Recipes
+
+**Data table (dark):**
+> "Table with `#1A2332` background. Headers: IBM Plex Sans 500, 12px, uppercase, `letter-spacing: 0.05em`, `#6B7280`. Numbers: Geist Pixel Square. Row border: `rgba(255,255,255,0.08)`. Row hover: `rgba(255,255,255,0.02)`. Green positive, red negative."
+
+**Card (light surface):**
+> "White card, `rgba(17,17,19,0.08)` border, `8px` radius, `16–24px` padding. Shadow: `0 1px 3px rgba(0,0,0,0.06)`. Hover: `0 4px 12px rgba(0,0,0,0.08)`."
+
+**Modal:**
+> "White modal, `12–16px` radius, `24px` padding, shadow `0 25px 50px rgba(0,0,0,0.5)`, over `rgba(0,0,0,0.6)` backdrop with `blur(4px)`. Title: `#111827`, IBM Plex Sans 600, 18px."
+
+**Primary button:**
+> "`#3B7DDD` background, white IBM Plex Sans 600 14px, `10px 20px` padding, `8px` radius. Hover `#2B6BC4`, `200ms ease`."
+
+**Filter pills:**
+> "Fully-rounded pills (`9999px`). Active: `#3B7DDD` bg, white text. Inactive: transparent, `rgba(255,255,255,0.12)` border, `#9CA3AF` text. Hover: brighten border and text."
+
+**Trade layout:**
+> "70/30 CSS Grid. Left: chart, `#151C28`. Right: order panel, `#1A2332`, `rgba(255,255,255,0.08)` left border. Stack vertically below `1024px`."
+
+**Hero section:**
+> "Full-bleed gradient: `#000003 → #000036 (37.9%) → #143f79 (81.7%) → #fcffff (285%)`. Geist Mono bold display heading. Fade-up animation on entry (`400ms ease-out`)."
