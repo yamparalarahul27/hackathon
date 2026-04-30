@@ -146,12 +146,13 @@ async function proxy(request: NextRequest, joinedPath: string): Promise<NextResp
     const body = await upstream.text();
 
     if (!upstream.ok) {
-      console.warn('[api/jupiter] upstream non-OK', joinedPath, upstream.status, body.slice(0, 300));
+      // Don't log or return upstream body — Jupiter error responses can
+      // include request echoes / auth diagnostics. Status code only.
+      console.warn('[api/jupiter] upstream non-OK', joinedPath, upstream.status);
       return NextResponse.json(
         {
           error: 'Jupiter upstream returned non-OK status.',
           upstreamStatus: upstream.status,
-          upstreamBodyPreview: body.slice(0, 300),
           path: joinedPath,
         },
         {
@@ -169,9 +170,10 @@ async function proxy(request: NextRequest, joinedPath: string): Promise<NextResp
       },
     });
   } catch (err) {
+    // Don't echo err.message — it may include hostnames / auth state.
     console.error('[api/jupiter] upstream failed', joinedPath, err);
     return NextResponse.json(
-      { error: 'Jupiter upstream request failed.', detail: err instanceof Error ? err.message : String(err) },
+      { error: 'Jupiter upstream request failed.' },
       { status: 502 }
     );
   }

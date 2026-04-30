@@ -16,7 +16,29 @@ const ALLOWED_ORIGIN_SET = new Set(ALLOWED_ORIGINS);
 
 const API_RATE_LIMIT = 60;
 const API_RATE_WINDOW_MS = 60_000;
+// Cap entries to prevent unbounded growth (memory leak / DoS via IP rotation).
+const API_HITS_MAX_ENTRIES = 5_000;
 const apiHits = new Map<string, { count: number; resetAt: number }>();
+
+function evictApiHitsIfFull(): void {
+  if (apiHits.size <= API_HITS_MAX_ENTRIES) return;
+  const drop = Math.max(1, Math.floor(API_HITS_MAX_ENTRIES * 0.1));
+  let i = 0;
+  for (const k of apiHits.keys()) {
+    apiHits.delete(k);
+    if (++i >= drop) break;
+  }
+}
+
+function clientIp(request: NextRequest): string {
+  // Prefer Vercel-set headers (verified at the edge); fall back to the
+  // first XFF entry if x-real-ip isn't present.
+  const real = request.headers.get('x-real-ip');
+  if (real) return real.trim();
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]?.trim() ?? 'unknown';
+  return 'unknown';
+}
 
 function hasValidInternalBypass(request: NextRequest): boolean {
   const expectedSecret = process.env.INTERNAL_API_SECRET;
@@ -77,12 +99,12 @@ export default function middleware(request: NextRequest) {
   }
 
   // --- Rate limit per IP ---
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = clientIp(request);
   const now = Date.now();
 
   let entry = apiHits.get(ip);
   if (!entry || now > entry.resetAt) {
+    evictApiHitsIfFull();
     entry = { count: 0, resetAt: now + API_RATE_WINDOW_MS };
     apiHits.set(ip, entry);
   }
