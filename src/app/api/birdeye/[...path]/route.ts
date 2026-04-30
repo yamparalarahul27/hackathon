@@ -25,9 +25,23 @@ const CACHE_TTL_MS: Record<string, number> = {
 
 type CacheEntry = { expiresAt: number; status: number; body: string };
 const responseCache = new Map<string, CacheEntry>();
+// Cap entries to prevent unbounded growth from cache-busting query strings.
+const RESPONSE_CACHE_MAX_ENTRIES = 1_000;
 
 function cacheKey(path: string, query: string): string {
   return `${path}?${query}`;
+}
+
+function cacheSet(key: string, entry: CacheEntry): void {
+  if (responseCache.size >= RESPONSE_CACHE_MAX_ENTRIES) {
+    const drop = Math.max(1, Math.floor(RESPONSE_CACHE_MAX_ENTRIES * 0.1));
+    let i = 0;
+    for (const k of responseCache.keys()) {
+      responseCache.delete(k);
+      if (++i >= drop) break;
+    }
+  }
+  responseCache.set(key, entry);
 }
 
 export async function GET(
@@ -81,18 +95,17 @@ export async function GET(
 
     if (upstream.ok) {
       const ttl = CACHE_TTL_MS[joinedPath] ?? 60_000;
-      responseCache.set(key, { expiresAt: now + ttl, status: upstream.status, body });
+      cacheSet(key, { expiresAt: now + ttl, status: upstream.status, body });
     }
 
     if (!upstream.ok) {
-      console.warn('[api/birdeye] upstream non-OK', joinedPath, upstream.status, body.slice(0, 300));
-      // Return a JSON envelope so the client can distinguish upstream
-      // failures from our own issues without parsing Birdeye's body.
+      // Don't log or return upstream body — it can contain auth-error
+      // diagnostics that fingerprint our API key / plan tier.
+      console.warn('[api/birdeye] upstream non-OK', joinedPath, upstream.status);
       return NextResponse.json(
         {
           error: 'Birdeye upstream returned non-OK status.',
           upstreamStatus: upstream.status,
-          upstreamBodyPreview: body.slice(0, 300),
           path: joinedPath,
           hint:
             upstream.status === 401 || upstream.status === 403

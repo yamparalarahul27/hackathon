@@ -22,6 +22,20 @@ const responseCache = new Map<string, { expiresAt: number; payload: KaminoOvervi
 const inFlightRequests = new Map<string, Promise<KaminoOverviewResponse>>();
 const rateLimitState = new Map<string, { windowStart: number; count: number }>();
 
+// Caps to prevent unbounded growth (memory leak / DoS via key rotation).
+const RESPONSE_CACHE_MAX = 1_000;
+const RATE_LIMIT_MAX_KEYS = 5_000;
+
+function evictIfFull<V>(store: Map<string, V>, max: number): void {
+  if (store.size <= max) return;
+  const drop = Math.max(1, Math.floor(max * 0.1));
+  let i = 0;
+  for (const k of store.keys()) {
+    store.delete(k);
+    if (++i >= drop) break;
+  }
+}
+
 function extractIp(request: NextRequest): string {
   if (TRUST_PROXY_HEADERS) {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -46,6 +60,7 @@ function isRateLimited(key: string): { limited: boolean; retryAfterSeconds: numb
   const entry = rateLimitState.get(key);
 
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    evictIfFull(rateLimitState, RATE_LIMIT_MAX_KEYS);
     rateLimitState.set(key, { windowStart: now, count: 1 });
     return { limited: false, retryAfterSeconds: 0 };
   }
@@ -123,6 +138,7 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = await inFlight;
+    evictIfFull(responseCache, RESPONSE_CACHE_MAX);
     responseCache.set(cacheKey, {
       payload,
       expiresAt: now + RESPONSE_CACHE_TTL_MS,
